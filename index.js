@@ -4,7 +4,7 @@ const prompt = require('prompt');
 const yargs = require('yargs');
 const auth = require('./auth');
 
-const login = (username, password, cb) => {
+const login = () => {
 
     const schema = {
         properties: {
@@ -19,7 +19,7 @@ const login = (username, password, cb) => {
         }
     };
 
-    prompt.message = colors.grey('[linc] ');
+    prompt.message = colors.grey('(linc) ');
     prompt.delimiter = '';
 
     prompt.start();
@@ -30,10 +30,9 @@ const login = (username, password, cb) => {
         }
         else {
             console.log(`Logging in ${result.username}`);
-            auth(result.username, result.password, (err, data) => {
-                if (err) console.log(err);
-                else console.log(JSON.stringify(data, null, 2));
-            })
+            auth(result.username, result.password)
+                .then((x) => console.log(JSON.stringify(x, null, 2)))
+                .catch((err) => console.log(err));
         }
     })
 };

@@ -1,7 +1,7 @@
 "use strict";
 const request = require('request');
 
-const login = (username, password, cb) => {
+const login = (username, password) => new Promise((resolve, reject) => {
     const params = {
         url: 'https://bitgenics.auth0.com/oauth/ro',
         json: {
@@ -15,18 +15,36 @@ const login = (username, password, cb) => {
     };
 
     request.post(params, (err, res, body) => {
-        const id_token = body.id_token;
-        console.log(JSON.stringify(body, null, 2));
-
-        if (id_token) {
-            return cb(null, body);
+        if (err) {
+            reject(err);
         } else {
-            return cb(err || body);
+            resolve(body);
         }
     })
-};
+});
 
-const getUserProfile = (id_token, cb) => {
+const getAWSCredentials = (id_token) => new Promise((resolve, reject) => {
+    const params = {
+        url: 'https://bitgenics.auth0.com/delegation',
+        json: {
+            client_id: 'kr5ZgNFYFOHXCoEkKPquQrgUA3oeRRjV',
+            grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+            id_token: id_token,
+            target: 'kr5ZgNFYFOHXCoEkKPquQrgUA3oeRRjV',
+            api_type: 'aws'
+        }
+    };
+
+    request.post(params, (err, res, body) => {
+        if (err) {
+            return reject(err)
+        } else {
+            return resolve(body);
+        }
+    });
+});
+
+const getUserProfile = (id_token) => new Promise((resolve, reject) => {
     const params = {
         url: 'https://bitgenics.auth0.com/tokeninfo',
         json: {
@@ -34,21 +52,22 @@ const getUserProfile = (id_token, cb) => {
         }
     };
     request.post(params, (err, res, body) => {
-        if (body.user_id) {
-            return cb(null, body);
+        if (err) {
+            return reject(err);
         } else {
-            return err || body;
+            console.log(JSON.stringify(body, null, 2));
+            return resolve(body);
         }
     })
-};
+});
 
-module.exports = (username, password, cb) => {
-    login(username, password, (err, authInfo) => {
-        if (authInfo) {
-            const id_token = authInfo.id_token;
-            getUserProfile(id_token, cb);
-        } else {
-            cb(err);
-        }
-    })
-};
+module.exports = (username, password) => new Promise((resolve, reject) =>  {
+    login(username, password)
+        .then((json) => json.id_token)
+        .then((token) => getAWSCredentials(token))
+        .then((body) => resolve(body))
+        // .then((token) => getUserProfile(token))
+        // .then((profile) => profile.user_id)
+        // .then((user_id) => console.log(user_id))
+        .catch((err) => reject(err));
+});
