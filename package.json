@@ -1,0 +1,19 @@
+{
+  "name": "linc-cli",
+  "version": "0.0.1",
+  "description": "LINC command line tools",
+  "main": "index.js",
+  "dependencies": {
+    "auth0-js": "^8.1.2",
+    "colors": "^1.1.2",
+    "prompt": "^1.0.0",
+    "request": "^2.79.0",
+    "yargs": "^6.6.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Sander Huijsen <sander.huijsen@gmail.com> (http://www.sanderhuijsen.com)",
+  "license": "ISC"
+}
