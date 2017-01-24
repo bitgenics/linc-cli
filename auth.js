@@ -51,11 +51,11 @@ const getUserProfile = (id_token) => new Promise((resolve, reject) => {
             id_token: id_token
         }
     };
+
     request.post(params, (err, res, body) => {
         if (err) {
             return reject(err);
         } else {
-            console.log(JSON.stringify(body, null, 2));
             return resolve(body);
         }
     })
@@ -63,7 +63,12 @@ const getUserProfile = (id_token) => new Promise((resolve, reject) => {
 
 module.exports = (username, password) => new Promise((resolve, reject) =>  {
     login(username, password)
-        .then(json => json.id_token)
+        .then(json => {
+            if (!json.id_token) {
+                return reject('No token found');
+            }
+            return json.id_token;
+        })
         .then(token => getAWSCredentials(token))
         .then(body => resolve(body))
         // .then((token) => getUserProfile(token))

@@ -42,7 +42,7 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 const login = () => {
     cred.login()
         .then(x => auth(x.username, x.password))
-        .then(response => console.log(JSON.stringify(response, null, 2)))
+        .then(response => console.log('You have successfully logged in.'))
         .catch(() => {
             cred.rm()
                 .then(() => credentialsFromPrompt())

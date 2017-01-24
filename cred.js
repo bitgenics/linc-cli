@@ -53,6 +53,13 @@ const save = (username, password) => new Promise((resolve, reject) => {
     };
 
     fs.ensureDir(LINC_DIR)
+        .then(() => fs.exists(credentials))
+        .then((x) => {
+            if (x) {
+                // We don't overwrite an existing file
+                return resolve();
+            }
+        })
         .then(() => fs.writeJson(credentials, json))
         .then(() => fs.chmod(credentials, 0o600))
         .then(() => resolve())
