@@ -63,11 +63,11 @@ const getUserProfile = (id_token) => new Promise((resolve, reject) => {
 
 module.exports = (username, password) => new Promise((resolve, reject) =>  {
     login(username, password)
-        .then((json) => json.id_token)
-        .then((token) => getAWSCredentials(token))
-        .then((body) => resolve(body))
+        .then(json => json.id_token)
+        .then(token => getAWSCredentials(token))
+        .then(body => resolve(body))
         // .then((token) => getUserProfile(token))
         // .then((profile) => profile.user_id)
         // .then((user_id) => console.log(user_id))
-        .catch((err) => reject(err));
+        .catch(err => reject(err));
 });

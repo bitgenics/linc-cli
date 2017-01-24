@@ -3,13 +3,16 @@ const colors = require('colors/safe');
 const prompt = require('prompt');
 const yargs = require('yargs');
 const auth = require('./auth');
+const cred = require('./cred');
 
-const login = () => {
+const USAGE = 'Usage: linc login';
+
+const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 
     const schema = {
         properties: {
             username: {
-                description: colors.white('Username'),
+                description: colors.white('Username (your email address)'),
                 required: true
             },
             password: {
@@ -26,19 +29,32 @@ const login = () => {
 
     prompt.get(schema, (err, result) => {
         if (err) {
-            console.log(err);
-        }
-        else {
-            console.log(`Logging in ${result.username}`);
-            auth(result.username, result.password)
-                .then((x) => console.log(JSON.stringify(x, null, 2)))
-                .catch((err) => console.log(err));
+            return reject(err);
+        } else {
+            return resolve({
+                username: result.username,
+                password: result.password
+            });
         }
     })
+});
+
+const login = () => {
+    cred.login()
+        .then(x => auth(x.username, x.password))
+        .then(response => console.log(JSON.stringify(response, null, 2)))
+        .catch(() => {
+            cred.rm()
+                .then(() => credentialsFromPrompt())
+                .then(y => cred.save(y.username, y.password))
+                .then(z => auth(z.username, z.password))
+                .then(res => console.log('You have successfully logged in.'))
+                .catch(err => console.log('Oops! ' + err))
+        });
 };
 
 var argv = yargs
-    .usage('Usage: linc login')
+    .usage(USAGE)
     .demand(1)
     .argv;
 
@@ -47,6 +63,6 @@ switch (argv._[0]) {
         return login();
 
     default:
-        console.log('Usage: linc login');
+        console.log(USAGE);
         break;
 }
