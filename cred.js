@@ -55,7 +55,7 @@ const save = (username, password) => new Promise((resolve, reject) => {
     fs.ensureDir(LINC_DIR)
         .then(() => fs.writeJson(credentials, json))
         .then(() => fs.chmod(credentials, 0o600))
-        .then(() => resolve(json.User))
+        .then(() => resolve())
         .catch(err => reject(err));
 });
 

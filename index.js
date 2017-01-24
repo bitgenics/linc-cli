@@ -47,6 +47,7 @@ const login = () => {
             cred.rm()
                 .then(() => credentialsFromPrompt())
                 .then(y => cred.save(y.username, y.password))
+                .then(() => cred.login())
                 .then(z => auth(z.username, z.password))
                 .then(res => console.log('You have successfully logged in.'))
                 .catch(err => console.log('Oops! ' + err))
