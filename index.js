@@ -4,8 +4,13 @@ const prompt = require('prompt');
 const yargs = require('yargs');
 const auth = require('./auth');
 const cred = require('./cred');
+const config = require('./config');
 
-const USAGE = 'Usage: linc login';
+const USAGE = "Usage: linc <command>\n\n"
+    + "Commands:\n"
+    + "   login - login (you might need to re-enter your credentials)\n"
+    + "   deploy - deploy your site (requires config.linc in your project directory)\n"
+    ;
 
 const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 
@@ -39,19 +44,35 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
     })
 });
 
-const login = () => {
+const login = (silent) => new Promise((resolve, reject) => {
+    const success = (t) => {
+        if (! silent) {
+            console.log('You have successfully logged in');
+        }
+        return resolve(t);
+    };
+
     cred.login()
         .then(x => auth(x.username, x.password))
-        .then(response => console.log('You have successfully logged in.'))
+        .then(y => success(y))
         .catch(() => {
             cred.rm()
                 .then(() => credentialsFromPrompt())
-                .then(y => cred.save(y.username, y.password))
+                .then(q => cred.save(q.username, q.password))
                 .then(() => cred.login())
                 .then(z => auth(z.username, z.password))
-                .then(res => console.log('You have successfully logged in.'))
-                .catch(err => console.log('Oops! ' + err))
+                .then(r => success(r))
+                .catch(err => reject(err))
         });
+});
+
+const deploy = () => {
+    var params = {};
+    login(true)
+        .then(() => config.load())
+        .then(doc => params = doc)
+        .then(() => console.log(JSON.stringify(params)))
+        .catch(err => console.log('An error occurred. Are you logged in? (Try \'linc login\'.)'));
 };
 
 var argv = yargs
@@ -61,7 +82,10 @@ var argv = yargs
 
 switch (argv._[0]) {
     case 'login':
-        return login();
+        return login(false);
+
+    case 'deploy':
+        return deploy();
 
     default:
         console.log(USAGE);
