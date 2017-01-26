@@ -67,12 +67,17 @@ const login = (silent) => new Promise((resolve, reject) => {
 });
 
 const deploy = () => {
+    var jwtToken = null;
     var params = {};
-    login(true)
-        .then(() => config.load())
-        .then(doc => params = doc)
-        .then(() => console.log(JSON.stringify(params)))
-        .catch(err => console.log('An error occurred. Are you logged in? (Try \'linc login\'.)'));
+
+    const p1 = config.load();
+    const p2 = login(true);
+    Promise.all([p1, p2])
+        .then(r => {
+            params = r[0];      // Configuration parameters
+            jwtToken = r[1];    // jwt token for authentication
+        })
+        .catch(err => console.log(err));
 };
 
 var argv = yargs
