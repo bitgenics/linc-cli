@@ -62,7 +62,7 @@ const getUserProfile = (id_token) => new Promise((resolve, reject) => {
 });
 
 module.exports = (username, password) => new Promise((resolve, reject) =>  {
-    var jwtToken = null;
+    let jwtToken = null;
     login(username, password)
         .then(json => !json.id_token ? reject('No token found') : jwtToken = json.id_token)
         .then(token => getAWSCredentials(token))
