@@ -1,6 +1,10 @@
 # Joe backup files
 *~ 
 
+# Just an example folder
+public/
+
+
 # Logs
 logs
 *.log
