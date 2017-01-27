@@ -25,9 +25,12 @@ const createZipfile = (config, filename) => new Promise((resolve, reject) => {
 });
 
 const uploadZipfile = (auth, config, zipfile) => new Promise((resolve, reject) => {
+    const cred = auth.aws.credentials;
     let s3Client = s3.createClient({
         's3Options': {
-            credentials: auth.aws.credentials
+            'accessKeyId': cred.AccessKeyId,
+            'secretAccessKey': cred.SecretAccessKey,
+            'sessionToken': cred.SessionToken
         }
     });
 
@@ -42,7 +45,6 @@ const uploadZipfile = (auth, config, zipfile) => new Promise((resolve, reject) =
 
     let uploader = s3Client.uploadFile(params);
     uploader.on('error', err => reject(err));
-    uploader.on('progress', () => console.log('progress', uploader.progressMd5Amount, uploader.progressAmount, uploader.progressTotal));
     uploader.on('end', () => resolve());
 });
 
