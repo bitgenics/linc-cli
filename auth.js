@@ -62,13 +62,24 @@ const getUserProfile = (id_token) => new Promise((resolve, reject) => {
 });
 
 module.exports = (username, password) => new Promise((resolve, reject) =>  {
-    let jwtToken = null;
+    let authParams = {
+        jwtToken: null,
+        auth0: {},
+        aws: {}
+    };
+
     login(username, password)
-        .then(json => !json.id_token ? reject('No token found') : jwtToken = json.id_token)
-        .then(token => getAWSCredentials(token))
-        .then(body => resolve(jwtToken))
-        // .then((token) => getUserProfile(token))
-        // .then((profile) => profile.user_id)
-        // .then((user_id) => console.log(user_id))
+        .then(json => !json.id_token ? reject('No token found') : authParams.jwtToken = json.id_token)
+        .then(token => {
+            let p1 = getAWSCredentials(token);
+            let p2 = getUserProfile(token);
+            Promise.all([p1, p2])
+                .then(r => {
+                    authParams.aws = { credentials: r[0].Credentials};
+                    authParams.auth0 = { profile: r[1]};
+                    return resolve(authParams);
+                })
+                .catch(err => reject(err))
+        })
         .catch(err => reject(err));
 });
