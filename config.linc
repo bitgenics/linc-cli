@@ -1,1 +1,5 @@
 framework: hugo
+property:
+    org: bitgenics
+    name: bg-demo-page
+    srcdir: public
