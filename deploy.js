@@ -2,50 +2,46 @@
 const config = require('./config');
 const login = require('./login');
 const crypto = require('crypto');
-const s3 = require('s3');
+const aws = require('aws-sdk');
 const zip = require('deterministic-zip');
+const fs = require('fs-promise');
 
 const BUCKET_NAME = 'hugo-fresh-deployables';
 
-const tmpDir = '/tmp';
+const tmpDir = '/tmp/';
 
-const createFilename = (config) => {
+const createKey = (cfg) => {
     const dummySHA = crypto.randomBytes(4).toString('hex').substring(0, 7);
-    return `${config.name}-${dummySHA}.zip`;
+    return `${cfg.property.org}/${cfg.property.name}-${dummySHA}.zip`;
 };
 
-const createZipfile = (config, filename) => new Promise((resolve, reject) => {
-    const localdir = './' + config.srcdir;
-    const outfile = tmpDir + '/' + filename;
+const createZipfile = (cfg) => new Promise((resolve, reject) => {
+    const localdir = './' + cfg.property.srcdir;
+    const zipfile = tmpDir + cfg.property.name + '.zip';
 
-    zip(localdir, outfile, {cwd: localdir}, err => {
+    zip(localdir, zipfile, {cwd: localdir}, err => {
         if (err) return reject(err);
-        else return resolve(outfile);
+        else return resolve(zipfile);
     })
 });
 
-const uploadZipfile = (auth, config, zipfile) => new Promise((resolve, reject) => {
-    const cred = auth.aws.credentials;
-    let s3Client = s3.createClient({
-        's3Options': {
-            'accessKeyId': cred.AccessKeyId,
-            'secretAccessKey': cred.SecretAccessKey,
-            'sessionToken': cred.SessionToken
-        }
-    });
+const uploadZipfile = (auth, cfg, zipfile) => new Promise((resolve, reject) => {
+    aws.config = new aws.Config({credentials: auth.aws.credentials});
 
-    const key = config.property.arg + '/' + zipfile.substring(0, zipfile.length - 4);   // strip the .zip
-    const params = {
-        'localFile': zipfile,
-        's3Params': {
-            Bucket: BUCKET_NAME,
-            Key: key
-        }
-    };
-
-    let uploader = s3Client.uploadFile(params);
-    uploader.on('error', err => reject(err));
-    uploader.on('end', () => resolve());
+    const s3 = new aws.S3();
+    fs.readFile(zipfile)
+        .then((data) => {
+            return {
+                Body: data,
+                Bucket: BUCKET_NAME,
+                Key: createKey(cfg)
+            }
+        })
+        .then((params) => s3.putObject(params, (err, data) => {
+            if (err) return reject(err);
+            else return resolve(data);
+        }))
+        .catch(err => reject(err))
 });
 
 const deploy = () => {
@@ -59,10 +55,9 @@ const deploy = () => {
             configuration = r[0];   // Configuration parameters
             auth = r[1];            // authentication parameters (auth0, AWS)
         })
-        .then(() => createFilename(configuration.property))
-        .then((filename) => createZipfile(configuration.property, filename))
+        .then((filename) => createZipfile(configuration, filename))
         .then((zipfile) => uploadZipfile(auth, configuration, zipfile))
-        .then((x) => console.log('Your property has been deployed: ' + JSON.stringify(x)))
+        .then((x) => console.log('Your property has been deployed.'))
         .catch(err => console.log(err));
 };
 
