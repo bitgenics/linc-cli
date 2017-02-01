@@ -40,7 +40,7 @@ const uploadZipfile = (auth, cfg, zipfile) => new Promise((resolve, reject) => {
         .then(params => s3.putObject(params, (err, data) => {
             if (err) return reject(err);
             else return resolve(data);
-        })
+        }))
         .catch(err => reject(err));
 });
 
