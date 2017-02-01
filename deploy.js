@@ -34,7 +34,7 @@ const uploadZipfile = (auth, cfg, zipfile) => new Promise((resolve, reject) => {
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(sha1file(zipfile), cfg)
+                Key: createKey(sha1file(zipfile).substring(0, 7), cfg)
             }
         })
         .then(params => s3.putObject(params, (err, data) => {
