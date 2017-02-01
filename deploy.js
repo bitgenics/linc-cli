@@ -4,16 +4,12 @@ const login = require('./login');
 const crypto = require('crypto');
 const aws = require('aws-sdk');
 const zip = require('deterministic-zip');
+const sha1file = require('sha1-file');
 const fs = require('fs-promise');
 
 const BUCKET_NAME = 'hugo-fresh-deployables';
 
 const tmpDir = '/tmp/';
-
-const createKey = (cfg) => {
-    const dummySHA = crypto.randomBytes(4).toString('hex').substring(0, 7);
-    return `${cfg.property.org}/${cfg.property.name}-${dummySHA}.zip`;
-};
 
 const createZipfile = (cfg) => new Promise((resolve, reject) => {
     const localdir = './' + cfg.property.srcdir;
@@ -25,21 +21,36 @@ const createZipfile = (cfg) => new Promise((resolve, reject) => {
     })
 });
 
+const createKey = (sha1, cfg) => {
+    return `${cfg.property.org}/${cfg.property.name}-${sha1}.zip`;
+};
+
 const uploadZipfile = (auth, cfg, zipfile) => new Promise((resolve, reject) => {
     aws.config = new aws.Config({credentials: auth.aws.credentials});
 
     const s3 = new aws.S3();
     fs.readFile(zipfile)
-        .then((data) => {
+        .then(data => {
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(cfg)
+                Key: createKey(sha1file(zipfile), cfg)
             }
         })
-        .then((params) => s3.putObject(params, (err, data) => {
-            if (err) return reject(err);
-            else return resolve(data);
+        .then(params => s3.headObject({Bucket: params.Bucket, Key: params.Key}, (err, data) => {
+            // If a target file already exists, we don't redeploy.
+            if (err && err.code === 'NotFound') {
+                // Not found, so we can safely deploy the file.
+                s3.putObject(params, (err, data) => {
+                    if (err) return reject(err);
+                    else return resolve(data);
+                })
+            } else {
+                if (err) console.log(err);
+                else console.log('File already exists. Redeployment not needed.');
+
+                return resolve();
+            }
         }))
         .catch(err => reject(err))
 });
