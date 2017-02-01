@@ -37,22 +37,11 @@ const uploadZipfile = (auth, cfg, zipfile) => new Promise((resolve, reject) => {
                 Key: createKey(sha1file(zipfile), cfg)
             }
         })
-        .then(params => s3.headObject({Bucket: params.Bucket, Key: params.Key}, (err, data) => {
-            // If a target file already exists, we don't redeploy.
-            if (err && err.code === 'NotFound') {
-                // Not found, so we can safely deploy the file.
-                s3.putObject(params, (err, data) => {
-                    if (err) return reject(err);
-                    else return resolve(data);
-                })
-            } else {
-                if (err) console.log(err);
-                else console.log('File already exists. Redeployment not needed.');
-
-                return resolve();
-            }
-        }))
-        .catch(err => reject(err))
+        .then(params => s3.putObject(params, (err, data) => {
+            if (err) return reject(err);
+            else return resolve(data);
+        })
+        .catch(err => reject(err));
 });
 
 const deploy = () => {
