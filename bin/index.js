@@ -1,7 +1,7 @@
 'use strict';
 const yargs = require('yargs');
-const login = require('./login');
-const deploy = require('./deploy');
+const login = require('../lib/login/');
+const deploy = require('../lib/deploy/');
 
 const argv = yargs
     .command("login", "Log in", {}, argv => login(false))
