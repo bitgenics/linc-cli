@@ -2,7 +2,10 @@
   "name": "linc-cli",
   "version": "0.0.1",
   "description": "LINC command line tools",
-  "main": "index.js",
+  "main": "bin/index.js",
+  "bin": {
+    "linc": "bin/index.js"
+  },
   "dependencies": {
     "auth0-js": "^8.1.2",
     "colors": "^1.1.2",

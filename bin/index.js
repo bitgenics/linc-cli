@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 'use strict';
 const yargs = require('yargs');
 const login = require('../lib/login/');
