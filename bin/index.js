@@ -9,7 +9,7 @@ const serve = require('../lib/serve');
 
 const argv = yargs
     .command("adduser", "Add a user.", {}, argv => user.add())
-    .command("deploy", "Deploy a property.", {}, argv => deploy())
+    .command("deploy", "Deploy a site.", {}, argv => deploy())
     .command("login", "Log in.", {}, argv => login(false))
     .command("build", "Build a SSR package", {}, argv => build())
     .command("serve", "Run a HTTP server with SSR", {}, argv => serve())
