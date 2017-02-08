@@ -1,4 +1,4 @@
-framework: hugo
+profile: hugo
 site:
     org: bitgenics
     name: bg-demo-page
