@@ -13,6 +13,11 @@
     "colors": "^1.1.2",
     "crypto": "0.0.3",
     "deterministic-zip": "^1.0.4",
+    "eslint": "^3.15.0",
+    "eslint-config-airbnb": "^14.1.0",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jsx-a11y": "^4.0.0",
+    "eslint-plugin-react": "^6.9.0",
     "express": "^4.14.1",
     "fs-promise": "^1.0.0",
     "homedir": "^0.6.0",
@@ -25,6 +30,7 @@
   },
   "devDependencies": {},
   "scripts": {
+    "lint": "eslint src test",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Sander Huijsen <sander.huijsen@gmail.com> (http://www.sanderhuijsen.com)",
