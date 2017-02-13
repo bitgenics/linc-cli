@@ -18,4 +18,5 @@ const argv = yargs
     .demand(1)
     .help("h")
     .alias("h", "help")
+    .version()
     .argv;
