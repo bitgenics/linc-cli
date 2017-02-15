@@ -1,0 +1,11 @@
+profile = 'react'
+settingsVariable = 'settings'
+[site]
+    org = "sandyman"
+    name = "coffee-bean-ninja"
+    srcdir = "dist"
+
+    [site.environments.prod]
+        apiUrl = 'https://nspetvbhpk.execute-api.us-east-1.amazonaws.com/prod'
+        searchUrl = 'https://dkedjs4vvb.execute-api.us-east-1.amazonaws.com/prod'
+        imgUrl = 'https://s3.amazonaws.com/img.coffeebean.ninja/'

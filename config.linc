@@ -1,5 +1,0 @@
-profile: hugo
-site:
-    org: bitgenics
-    name: bg-demo-page
-    srcdir: public
