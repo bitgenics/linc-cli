@@ -7,6 +7,7 @@ const user = require('../lib/user/');
 const site = require('../lib/site/');
 const build = require('../lib/build');
 const serve = require('../lib/serve');
+const config = require('../lib/config');
 
 const argv = yargs
     .command("addsite", "Add a site.", {}, argv => site.add())
@@ -16,6 +17,7 @@ const argv = yargs
     .command("delsite", "Remove a site.", {}, argv => site.del())
     .command("login", "Log in.", {}, argv => login(false))
     .command("serve", "Run a HTTP server with SSR.", {}, argv => serve())
+    .command("test", "Test the config file", {}, argv => config.load().then(x => config.test(x, false)))
     .demand(1)
     .help("h")
     .alias("h", "help")
