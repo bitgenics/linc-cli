@@ -13,6 +13,7 @@ const argv = yargs
     .command("adduser", "Add a user.", {}, argv => user.add())
     .command("build", "Build a SSR package.", {}, argv => build())
     .command("deploy", "Deploy a site.", {}, argv => deploy())
+    .command("delsite", "Remove a site.", {}, argv => site.del())
     .command("login", "Log in.", {}, argv => login(false))
     .command("serve", "Run a HTTP server with SSR.", {}, argv => serve())
     .demand(1)
