@@ -16,6 +16,9 @@ const argv = yargs
     .command("delsite", "Remove a site.", {}, argv => site.del())
     .command("login", "Log in.", {}, argv => login(false))
     .command("serve", "Run a HTTP server with SSR.", {}, argv => serve())
+    .fail((_, b) => {
+        console.log(b);
+    })
     .demand(1)
     .help("h")
     .alias("h", "help")
