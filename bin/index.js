@@ -18,6 +18,9 @@ const argv = yargs
     .command("login", "Log in.", {}, argv => login(false))
     .command("serve", "Run a HTTP server with SSR.", {}, argv => serve())
     .command("test", "Test the config file", {}, argv => config.load().then(x => config.test(x, false)))
+    .fail((_, b) => {
+        console.log(b);
+    })
     .demand(1)
     .help("h")
     .alias("h", "help")
