@@ -1,5 +1,7 @@
 'use strict';
 
+
+
 const build = () => {
     const path = require('path');
     const buildssr = require('@bitgenics/linc-build-ssr');
@@ -10,4 +12,8 @@ const build = () => {
     });
 };
 
-module.exports = build;
+exports.command = 'build';
+exports.desc = 'Build & package a site for deployment';
+exports.handler = (argv) => {
+	build();
+}
