@@ -39,7 +39,7 @@ const createKey = (user_id, sha1, site_name) => {
 
 const uploadZipfile = (sha1, auth, site, zipfile) => new Promise((resolve, reject) => {
     aws.config = new aws.Config({credentials: auth.aws.credentials});
-    const s3 = new aws.S3()
+    const s3 = new aws.S3();
 
     fs.readFile(zipfile)
         .then(data => {
