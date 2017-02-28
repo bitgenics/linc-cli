@@ -6,18 +6,6 @@ const cred = require('../../cred');
 
 const LINC_API_USERS_ENDPOINT = 'https://aduppa8es1.execute-api.us-west-2.amazonaws.com/v0/users';
 
-exports.command = 'create'
-exports.desc = 'Create an account'
-exports.handler = (argv) => {
-    getUserEmail()
-        .then(email => createNewUser(email))
-        .then(apiResponse => {
-            showUserCredentials(apiResponse);
-            cred.save(apiResponse.clientId, apiResponse.clientSecret)
-        })
-        .catch(err => console.log(err));
-}
-
 const getUserEmail = () => new Promise((resolve, reject) => {
 
     const schema = {
@@ -79,4 +67,16 @@ Please also store these credentials in a safe place. We do not store them on our
 servers, so it's impossible for us to retrieve them should you lose them.`
 
     console.log(msg);
+};
+
+exports.command = 'create';
+exports.desc = 'Create an account';
+exports.handler = (argv) => {
+    getUserEmail()
+        .then(email => createNewUser(email))
+        .then(apiResponse => {
+            showUserCredentials(apiResponse);
+            cred.save(apiResponse.clientId, apiResponse.clientSecret)
+        })
+        .catch(err => console.log(err));
 };
