@@ -36,8 +36,6 @@ const getSiteName = (message, askDescription) => new Promise((resolve, reject) =
 });
 
 const createNewSite = (site, authInfo) => new Promise((resolve, reject) => {
-    console.log('Please wait...');
-
     if (site.description.length === 0) site.description = "[No description]";
 
     const options = {
@@ -61,8 +59,6 @@ const createNewSite = (site, authInfo) => new Promise((resolve, reject) => {
 });
 
 const deleteSite = (site, authInfo) => new Promise((resolve, reject) => {
-    console.log('Please wait...');
-
     const options = {
         method: 'DELETE',
         url: LINC_API_SITES_ENDPOINT,
@@ -92,8 +88,11 @@ const add = (argv) => {
     let authInfo = null;
     let siteName = null;
     getSiteName('Name of site to create:', true)
-        .then(name => siteName = name)
-        .then(() => login(true))
+        .then(name => {
+            console.log('Just a second...');
+            siteName = name;
+            return login(true);
+        })
         .then(auth => authInfo = auth)
         .then(() => createNewSite(siteName, authInfo))
         .then(() => console.log('Site successfully created.'))
@@ -104,8 +103,11 @@ const del = (argv) => {
     let authInfo = null;
     let siteName = null;
     getSiteName('Name of site to delete:')
-        .then(name => siteName = name)
-        .then(() => login(true))
+        .then(name => {
+            console.log('Just a second...');
+            siteName = name;
+            return login(true);
+        })
         .then(auth => authInfo = auth)
         .then(() => deleteSite(siteName, authInfo))
         .then(() => console.log('Site successfully deleted.'))
