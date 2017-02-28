@@ -106,6 +106,7 @@ const deploy = (argv) => {
         .then(settings => saveSettings(tempDir, settings))
         .then(() => createZipfile(tmpDir, '/', site_name, {cwd: tempDir}))
         .then(zipfile => uploadZipfile(sha1, authParams, argv.site, zipfile))
+        .then(() => console.log('Your site has been deployed.'))
         .catch(err => console.log(err));
 };
 
