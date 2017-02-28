@@ -56,4 +56,4 @@ exports.command = 'login';
 exports.desc = 'Log in to Linc';
 exports.handler = (argv) => {
 	login(argv.silent).catch((err) => {console.log(err)});
-}
+};
