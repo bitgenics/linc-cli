@@ -124,7 +124,7 @@ const deploy = (argv) => {
         })
         .then(() => createZipfile(tmpDir, '/', site_name, {cwd: tempDir}))
         .then(zipfile => uploadZipfile(code_id, authParams, argv.site, zipfile))
-        .then(() => console.log(`\
+        .then(() => console.log(`
 Your site has been deployed with the deployment key ${deploy_key}. Your site can
 be reached at the following URL: http://${deploy_key}.bitgenicstest.com. 
 Please note that it may take a short while for this URL to come online.
