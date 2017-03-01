@@ -12,7 +12,20 @@ const BUCKET_NAME = 'linc-deployables-dev';
 const tmpDir = '/tmp/';
 
 const sha1Dir = (source_dir) => {
-    return sha1Sync(path.join(process.cwd(), source_dir));
+    return sha1Sync(path.join(process.cwd(), source_dir)).substring(0, 8);
+};
+
+const sha1 = (s) => {
+    console.log(s);
+    return crypto.createHash('sha1').update(s).digest('hex');
+};
+
+const settingsId = (settings) => {
+    return sha1(JSON.stringify(settings, null, 0));
+};
+
+const deployKey = (code_id, settings_id) => {
+    return sha1(`${code_id}.${settings_id}`).substr(0, 8);
 };
 
 const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((resolve, reject) => {
@@ -65,7 +78,7 @@ const getSiteSettings = () => new Promise((resolve, reject) => {
         }
 
         fs.readFile(settingsFile)
-            .then(x => resolve(x.toString()))
+            .then(x => resolve(JSON.parse(x.toString())))
             .catch(err => reject(err))
     });
 });
@@ -89,8 +102,10 @@ const deploy = (argv) => {
 
     const site_name = argv.site.name;
     const source_dir = 'dist';
-    const sha1 = sha1Dir(source_dir);
+    const code_id = sha1Dir(source_dir);
 
+    let settings_id = null;
+    let deploy_key = null;
     let authParams = null;
     let tempDir = null;
     auth(argv.accessKey, argv.secretKey)
@@ -103,10 +118,18 @@ const deploy = (argv) => {
             return createZipfile(temp_dir, source_dir, site_name)
         })
         .then(() => getSiteSettings())
-        .then(settings => saveSettings(tempDir, settings))
+        .then(settings => {
+            settings_id = settingsId(settings);
+            deploy_key = deployKey(code_id, settings_id);
+            saveSettings(tempDir, settings);
+        })
         .then(() => createZipfile(tmpDir, '/', site_name, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(sha1, authParams, argv.site, zipfile))
-        .then(() => console.log('Your site has been deployed.'))
+        .then(zipfile => uploadZipfile(code_id, authParams, argv.site, zipfile))
+        .then(() => console.log(`\
+Your site has been deployed with the deployment key ${deploy_key}. Your site can
+be reached at the following URL: https://${deploy_key}.bitgenicstest.com. 
+Please note that it may take a short while for this URL to come online.
+`))
         .catch(err => console.log(err));
 };
 
