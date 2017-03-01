@@ -11,18 +11,6 @@ const BUCKET_NAME = 'linc-deployables-dev';
 
 const tmpDir = '/tmp/';
 
-const sha1 = (s) => {
-    return crypto.createHash('sha1').update(s).digest('hex');
-};
-
-const calculateSettingsId = (settings) => {
-    return sha1(JSON.stringify(settings.replace(/(\r\n|\n|\r)/gm,"")));
-};
-
-const calculateDeployKey = (code_id, settings_id) => {
-    return sha1(`${code_id}.${settings_id}`).substr(0, 12);
-};
-
 const sha1Dir = (source_dir) => {
     return sha1Sync(path.join(process.cwd(), source_dir));
 };
@@ -49,7 +37,7 @@ const createKey = (user_id, sha1, site_name) => {
     return `${user_id}/${site_name}-${sha1}.zip`;
 };
 
-const uploadZipfile = (sha1, auth, site_name, zipfile) => new Promise((resolve, reject) => {
+const uploadZipfile = (sha1, auth, site, zipfile) => new Promise((resolve, reject) => {
     aws.config = new aws.Config({credentials: auth.aws.credentials});
     const s3 = new aws.S3();
 
@@ -59,7 +47,7 @@ const uploadZipfile = (sha1, auth, site_name, zipfile) => new Promise((resolve, 
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(user_id, sha1.substring(0, 8), site_name)
+                Key: createKey(user_id, sha1.substring(0, 8), site.name)
             }
         })
         .then(params => s3.putObject(params, (err, data) => {
@@ -82,8 +70,8 @@ const getSiteSettings = () => new Promise((resolve, reject) => {
     });
 });
 
-const saveSettings = (temp_dir, filename, settings) => new Promise((resolve, reject) => {
-    fs.writeJson(path.join(temp_dir, filename), settings, err => {
+const saveSettings = (temp_dir, settings) => new Promise((resolve, reject) => {
+    fs.writeJson(path.join(temp_dir, 'settings.json'), settings, err => {
         if (err) return reject(err);
         else return resolve();
     });
@@ -101,9 +89,7 @@ const deploy = (argv) => {
 
     const site_name = argv.site.name;
     const source_dir = 'dist';
-    const code_id = sha1Dir(source_dir);
-    let settings_id = null;
-    let deploy_key = null;
+    const sha1 = sha1Dir(source_dir);
 
     let authParams = null;
     let tempDir = null;
@@ -117,19 +103,10 @@ const deploy = (argv) => {
             return createZipfile(temp_dir, source_dir, site_name)
         })
         .then(() => getSiteSettings())
-        .then(settings => {
-            settings_id = calculateSettingsId(settings);
-            deploy_key = calculateDeployKey(code_id, settings_id);
-            saveSettings(tempDir, 'settings.json', settings);
-        })
-        .then(() => saveSettings(tempDir, 'deployment.json', {deploy_key: deploy_key}))
+        .then(settings => saveSettings(tempDir, settings))
         .then(() => createZipfile(tmpDir, '/', site_name, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(code_id, authParams, site_name, zipfile))
-        .then(() => console.log(`
-Your site has been deployed. The latest version has a deployment key of ${deploy_key},
-and it can be reached at this URL: https://${deploy_key}.bitgenictest.com.
-Please note that it may take a few moments to become available.
-        `))
+        .then(zipfile => uploadZipfile(sha1, authParams, argv.site, zipfile))
+        .then(() => console.log('Your site has been deployed.'))
         .catch(err => console.log(err));
 };
 
