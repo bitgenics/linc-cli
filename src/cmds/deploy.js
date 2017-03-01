@@ -88,7 +88,7 @@ const deploy = (argv) => {
     console.log('Starting. Please wait...');
 
     const site_name = argv.site.name;
-    const source_dir = argv.site.srcdir;
+    const source_dir = 'dist';
     const sha1 = sha1Dir(source_dir);
 
     let authParams = null;
