@@ -11,7 +11,7 @@ const getCredentials = () => {
     try {
         if( fs.existsSync(credentials) ) {
             if((fs.statSync(credentials).mode & 0o777) === 0o600) {
-                const json = JSON.parse(fs.readFileSync(credentials))
+                const json = JSON.parse(fs.readFileSync(credentials));
                 return json.User ? json.User : {}
             } else {
                 console.log(`WARNING: permissions of credentials file ${credentials} has been tampered with.`);
@@ -22,7 +22,7 @@ const getCredentials = () => {
         console.log(`Error happened while parsing credentials file ${credentials}`);
         console.log(e);
     }
-}
+};
 
 const login = () => new Promise((resolve, reject) => {
 
@@ -64,8 +64,8 @@ const rm = () => new Promise((resolve, reject) => {
 const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
     const json = {
         User: {
-            access_key_id: accessKey,
-            secret_access_key: secretKey
+            accessKey: accessKey,
+            secretKey: secretKey
         }
     };
 
