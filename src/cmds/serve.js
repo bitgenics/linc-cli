@@ -4,9 +4,13 @@ const fs = require('fs');
 
 const getOptions = () => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
-    const settings = fs.readFileSync(settingsFile, {encoding: 'utf-8'});
-    const jsonObj = JSON.parse(settings);
-    return {settingsVariable: jsonObj.SettingsVariableName, settings: jsonObj.Settings};
+    try {
+        const settings = fs.readFileSync(settingsFile, {encoding: 'utf-8'});
+        const jsonObj = JSON.parse(settings);
+        return {settingsVariable: jsonObj.SettingsVariableName, settings: jsonObj.Settings};
+    } catch (e) {
+        return {};
+    }
 };
 
 const serve = (argv) => {
