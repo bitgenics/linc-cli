@@ -12,19 +12,19 @@ const askReleaseInfo = () => new Promise((resolve, reject) => {
             site_name: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
-                description: colors.green('For which site do you want to create a release:'),
+                description: colors.green('Site name for release:'),
                 required: true
             },
             deploy_key: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
-                pattern: /^[a-z0-9]+$/,
-                description: colors.green('Which deploy key will the release use:'),
+                pattern: /^[a-f0-9]+$/,
+                description: colors.green('Deploy key for release:'),
                 required: true
             },
             domain_name: {
-                // Only a-z, 0-9 and - are allowed. Must start with a-z.
-                pattern: /^[a-z0-9-.]+$/,
-                description: colors.green('To which domain name does this release pertain:'),
+                // Fairly good regex for domain name.
+                pattern: /^([a-z0-9-]{1,63}\.)*[a-z0-9-]{1,63}\.[a-z0-9-]{2,63}$/,
+                description: colors.green('Domain name for release:'),
                 required: true
             }
         }
