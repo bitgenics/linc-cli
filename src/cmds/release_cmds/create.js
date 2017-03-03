@@ -6,15 +6,29 @@ const auth = require('../../auth');
 
 const LINC_API_SITES_ENDPOINT = 'https://aduppa8es1.execute-api.us-west-2.amazonaws.com/v0/sites';
 
-const askReleaseInfo = () => new Promise((resolve, reject) => {
+const askSiteName = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             site_name: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
-                description: colors.green('Site name for release:'),
+                description: colors.green('Name of site to release:'),
                 required: true
-            },
+            }
+        }
+    };
+    prompt.message = colors.magenta('(linc) ');
+    prompt.delimiter = '';
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const askReleaseInfo = () => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
             deploy_key: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-f0-9]+$/,
@@ -39,6 +53,43 @@ const askReleaseInfo = () => new Promise((resolve, reject) => {
     })
 });
 
+const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, reject) => {
+    console.log('Please wait...');
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/deployments`,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authInfo.jwtToken}`
+        }
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (json.error) return reject(json.error);
+
+        return resolve(json);
+    });
+});
+
+const showAvailableDeployments = (results) => {
+    const deployments = results.deployments;
+    const count = deployments.length;
+    const site_name = results.site_name;
+
+    console.log(`Here are the most recent deployments for ${site_name}:`);
+    deployments.forEach(d => {
+        console.log(`Deployment created at ${d.created_at}:`);
+        console.log(`  +- Deployment key: ${d.deploy_key}`);
+        console.log(`  +- Code ID: ${d.code_id}`);
+        if (d.description !== undefined) {
+            console.log(`\tDescription: ${d.description}`);
+        }
+    });
+    console.log(`Found ${count} deployments.\n`);
+};
+
 const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'PUT',
@@ -57,7 +108,6 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
 
         return resolve(json);
     });
-
 });
 
 const error = (err) => {
@@ -68,18 +118,23 @@ const error = (err) => {
 exports.command = 'create';
 exports.desc = 'Create an account';
 exports.handler = (argv) => {
+    let authParams = null;
     let siteName = null;
     let deployKey = null;
     let domainName = null;
-    askReleaseInfo(true)
+    askSiteName()
+        .then(result => siteName = result.site_name.trim())
+        .then(() => auth(argv.accessKey, argv.secretKey))
+        .then(auth_params => authParams = auth_params)
+        .then(() => getAvailableDeployments(siteName, authParams))
+        .then(result => showAvailableDeployments(result))
+        .then(() => askReleaseInfo(true))
         .then(result => {
-            siteName = result.site_name;
             deployKey = result.deploy_key;
             domainName = result.domain_name;
             console.log('Please wait...');
         })
-        .then(() => auth(argv.accessKey, argv.secretKey))
-        .then(auth_params => createNewRelease(siteName, deployKey, domainName, auth_params))
+        .then(() => createNewRelease(siteName, deployKey, domainName, authParams))
         .then(() => console.log('Release successfully created.'))
         .catch(err => error(err));
 };
