@@ -81,11 +81,11 @@ const showAvailableDeployments = (results) => {
     console.log(`Here are the most recent deployments for ${site_name}:`);
     deployments.forEach(d => {
         console.log(`Deployment created at ${d.created_at}:`);
-        console.log(`  +- Deployment key: ${d.deploy_key}`);
-        console.log(`  +- Code ID: ${d.code_id}`);
         if (d.description !== undefined) {
-            console.log(`\tDescription: ${d.description}`);
+            console.log(`  +- Description: ${d.description}`);
         }
+        console.log(`  +- Code ID: ${d.code_id}`);
+        console.log(`  +- Deployment key: ${d.deploy_key}`);
     });
     console.log(`Found ${count} deployments.\n`);
 };
@@ -133,7 +133,13 @@ const release = (argv) => {
             console.log('Please wait...');
         })
         .then(() => createNewRelease(siteName, deployKey, domainName, authParams))
-        .then(() => console.log('Release successfully created.'))
+        .then(response => console.log(`
+Release successfully created. Make sure to update your DNS settings:
+
+   ${domainName}.\tCNAME\t${response.domain_name}.
+
+in order to use your new release.
+`))
         .catch(err => error(err));
 };
 
