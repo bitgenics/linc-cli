@@ -32,7 +32,7 @@ const askReleaseInfo = () => new Promise((resolve, reject) => {
             deploy_key: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-f0-9]+$/,
-                description: colors.green('Deploy key for release:'),
+                description: colors.green('Deployment key for release:'),
                 required: true
             },
             domain_name: {
