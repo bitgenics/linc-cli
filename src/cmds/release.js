@@ -138,11 +138,19 @@ Release successfully created. Make sure to update your DNS settings:
 
    ${domainName}.\tCNAME\t${response.domain_name}.
 
-in order to use your new release.
+in order to use your new release. 
+
+We are in the process of requesting an SSL Certificate for your site. 
+An email will be sent shortly to an administrator of your (top level) 
+domain. The email will be sent to: 
+admin, administrator, hostmaster, postmaster, and webmaster. 
+You'll need to validate the request for a certificate to prove you own 
+the site. Once that's done, we'll update your settings as soon as 
+possible, so you can access your site using HTTPS. You can already 
+access your site using HTTP. 
 `))
         .catch(err => error(err));
 };
-
 
 exports.command = 'release';
 exports.desc = 'Release a site';
