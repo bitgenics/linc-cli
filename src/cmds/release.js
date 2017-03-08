@@ -92,7 +92,7 @@ const showAvailableDeployments = (results) => {
 
 const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new Promise((resolve, reject) => {
     const options = {
-        method: 'PUT',
+        method: 'POST',
         url: `${LINC_API_SITES_ENDPOINT}/${site_name}/releases`,
         headers: {
             'Content-Type': 'application/json',
