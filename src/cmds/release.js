@@ -93,12 +93,12 @@ const showAvailableDeployments = (results) => {
 const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'PUT',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/deployments/${deploy_key}/releases`,
+        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/releases`,
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authInfo.jwtToken}`
         },
-        body: `{ "domainName": "${domain_name}" }`
+        body: `{ "domainName": "${domain_name}", "deployKey": "${deploy_key}" }`
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
