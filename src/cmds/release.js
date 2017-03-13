@@ -34,16 +34,29 @@ const askReleaseInfo = () => new Promise((resolve, reject) => {
                 pattern: /^[a-f0-9]+$/,
                 description: colors.green('Deployment key for release:'),
                 required: true
-            },
+            }
+        }
+    };
+    prompt.message = colors.magenta('(linc) ');
+    prompt.delimiter = '';
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const askReleaseDomain = () => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
             domain_name: {
-                // Fairly good regex for domain name.
-                pattern: /^([a-z0-9-]{1,63}\.)*[a-z0-9-]{1,63}\.[a-z0-9-]{2,63}$/,
+                // This is the pattern AWS uses for domain names
+                pattern: /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/,
                 description: colors.green('Domain name for release:'),
                 required: true
             }
         }
     };
-
     prompt.message = colors.magenta('(linc) ');
     prompt.delimiter = '';
     prompt.start();
@@ -68,10 +81,37 @@ const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, r
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
+        if (json.deployments.length === 0) return reject('No deployments available. Deploy your site using \'linc deploy\'.')
 
         return resolve(json);
     });
 });
+
+const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, reject) => {
+    console.log('Please wait...');
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/domains`,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authInfo.jwtToken}`
+        }
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (json.error) return reject(json.error);
+        if (json.domains.length === 0) return reject('No domains available. Add a domain first using \'linc domain add\'.');
+
+        return resolve(json);
+    });
+});
+
+const showAvailableDomains = (results) => {
+    const domains = results.domains;
+
+};
 
 const showAvailableDeployments = (results) => {
     const deployments = results.deployments;
@@ -111,7 +151,7 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
 });
 
 const error = (err) => {
-    console.log('\nOops! Something went wrong, and your site could not be created. Here\'s what we know:');
+    console.log('\nOops! Something went wrong, and your release could not be created. Here\'s what we know:');
     console.log(err);
 };
 
@@ -127,11 +167,11 @@ const release = (argv) => {
         .then(() => getAvailableDeployments(siteName, authParams))
         .then(result => showAvailableDeployments(result))
         .then(() => askReleaseInfo(true))
-        .then(result => {
-            deployKey = result.deploy_key;
-            domainName = result.domain_name;
-            console.log('Please wait...');
-        })
+        .then(result => deployKey = result.deploy_key)
+        .then(() => getAvailableDomains(siteName, authParams))
+        .then(result => showAvailableDomains(result))
+        .then(() => askReleaseDomain())
+        .then(result => domainName = result.domain_name)
         .then(() => createNewRelease(siteName, deployKey, domainName, authParams))
         .then(response => console.log('Release successfully created.'))
         .catch(err => error(err));
