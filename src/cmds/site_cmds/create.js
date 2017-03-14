@@ -70,6 +70,11 @@ exports.handler = (argv) => {
         })
         .then(() => auth(argv.accessKey, argv.secretKey))
         .then(auth_params => createNewSite(siteName, auth_params))
-        .then(() => console.log('Site successfully created.'))
+        .then(response => {
+            console.log('Site successfully created.');
+            if (response.cloudfront_dns !== undefined) {
+                console.log(`The domain name for your site is ${response.cloudfront_dns}.`);
+            }
+        })
         .catch(err => error(err));
 };

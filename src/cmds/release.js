@@ -173,7 +173,12 @@ const release = (argv) => {
         .then(() => askReleaseDomain())
         .then(result => domainName = result.domain_name)
         .then(() => createNewRelease(siteName, deployKey, domainName, authParams))
-        .then(response => console.log('Release successfully created.'))
+        .then(response => {
+            console.log('Release successfully created.');
+            if (response.cloudfront_dns !== undefined) {
+                console.log(`The domain name for your site is ${response.cloudfront_dns}.`);
+            }
+        })
         .catch(err => error(err));
 };
 
