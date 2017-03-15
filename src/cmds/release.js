@@ -114,7 +114,8 @@ const showAvailableDomains = (results) => {
 
     console.log(`Here are the most recent domains for ${site_name}:`);
     domains.forEach(d => {
-        console.log(`  +- ${d.domain_name},  created at ${d.created_at}`);
+        console.log(`  +- ${d.domain_name}`);
+        console.log(`        +- Created at ${d.created_at}`);
     });
     console.log('');
 };
@@ -125,12 +126,12 @@ const showAvailableDeployments = (results) => {
 
     console.log(`Here are the most recent deployments for ${site_name}:`);
     deployments.forEach(d => {
-        console.log(`  +- Deployment created at ${d.created_at}:`);
+        console.log(`  +- Deployment key: ${d.deploy_key}`);
         if (d.description !== undefined) {
             console.log(`        +- Description: ${d.description}`);
         }
         console.log(`        +- Code ID: ${d.code_id}`);
-        console.log(`        +- Deployment key: ${d.deploy_key}`);
+        console.log(`        +- Created at ${d.created_at}`);
     });
 };
 
