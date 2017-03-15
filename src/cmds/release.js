@@ -110,12 +110,17 @@ const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, rejec
 
 const showAvailableDomains = (results) => {
     const domains = results.domains;
+    const site_name = results.site_name;
 
+    console.log(`Here are the most recent domains for ${site_name}:`);
+    domains.forEach(d => {
+        console.log(`  +- ${d.domain_name},  created at ${d.created_at}`);
+    });
+    console.log('');
 };
 
 const showAvailableDeployments = (results) => {
     const deployments = results.deployments;
-    const count = deployments.length;
     const site_name = results.site_name;
 
     console.log(`Here are the most recent deployments for ${site_name}:`);
@@ -127,7 +132,6 @@ const showAvailableDeployments = (results) => {
         console.log(`        +- Code ID: ${d.code_id}`);
         console.log(`        +- Deployment key: ${d.deploy_key}`);
     });
-    console.log(`Found ${count} deployments.\n`);
 };
 
 const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new Promise((resolve, reject) => {
