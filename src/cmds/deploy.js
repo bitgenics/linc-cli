@@ -120,7 +120,7 @@ const deploy = (argv) => {
         .then(settings => {
             settings_id = settingsId(settings);
             deploy_key = deployKey(code_id, settings_id);
-            saveSettings(tempDir, settings);
+            return saveSettings(tempDir, settings);
         })
         .then(() => createZipfile(tmpDir, '/', site_name, {cwd: tempDir}))
         .then(zipfile => uploadZipfile(code_id, authParams, argv.site, zipfile))
