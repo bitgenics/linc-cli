@@ -16,11 +16,13 @@ const getOptions = () => {
 const serve = (argv) => {
     const express = require('express');
     const ssr = require('@bitgenics/linc-simple-express');
+    const compression = require('compression');
 
     const app = express();
 
     const libDir = path.resolve(process.cwd(), 'dist/lib/');
     const options = getOptions();
+    app.use(compression());
     app.use('/_assets', express.static(path.resolve(process.cwd(), 'dist/_assets')));
     app.use('/', ssr(libDir, options));
 
