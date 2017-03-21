@@ -27,7 +27,7 @@ const getSiteName = (message) => new Promise((resolve, reject) => {
     })
 });
 
-const deleteSite = (site, authInfo) => new Promise((resolve, reject) => {
+const deleteSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'DELETE',
         url: LINC_API_SITES_ENDPOINT,
@@ -35,14 +35,14 @@ const deleteSite = (site, authInfo) => new Promise((resolve, reject) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authInfo.jwtToken}`
         },
-        body: `{"site_name":"${site.site_name}"}`
+        body: `{"site_name":"${siteName}"}`
     };
-
+    console.log(options);
     request(options, (err, response, body) => {
         if (err) return reject(err);
 
         const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
+        if (json.error) return reject(new Error(json.error));
 
         return resolve(json);
     });
@@ -50,17 +50,25 @@ const deleteSite = (site, authInfo) => new Promise((resolve, reject) => {
 
 const error = (err) => {
     console.log('\nOops! Something went wrong, and your site could not be deleted. Here\'s what we know:');
-    console.log(err);
+    console.log(err.message ? err.message : 'absolutely nothing (a.k.a. and unknown error occurred).');
 };
 
 exports.command = 'delete';
 exports.desc = 'Delete a site';
 exports.handler = (argv) => {
     let siteName = null;
+    console.log(`Deleting a site is a destructive operation that CANNOT be undone. 
+The operation will remove all resources associated with your site, 
+and it will no longer be accessible/available to you.`);
     getSiteName('Name of site to delete:')
-        .then(name => {
-            siteName = name;
-            console.log('Please wait...');
+        .then(x => {
+            siteName = x.site_name;
+            return getSiteName('Please type the name of the site again:')
+                .then(y => {
+                    if (siteName !== y.site_name) throw new Error('Error: the names don\'t match.');
+
+                    console.log('Please wait...');
+                })
         })
         .then(() => auth(argv.accessKey, argv.secretKey))
         .then(auth_params => deleteSite(siteName, auth_params))
