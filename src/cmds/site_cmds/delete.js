@@ -37,7 +37,6 @@ const deleteSite = (siteName, authInfo) => new Promise((resolve, reject) => {
         },
         body: `{"site_name":"${siteName}"}`
     };
-    console.log(options);
     request(options, (err, response, body) => {
         if (err) return reject(err);
 
