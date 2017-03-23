@@ -180,8 +180,8 @@ const release = (argv) => {
         .then(() => createNewRelease(siteName, deployKey, domainName, authParams))
         .then(response => {
             console.log('Release successfully created.');
-            if (response.cloudfront_dns !== undefined) {
-                console.log(`The domain name for your site is ${response.cloudfront_dns}.`);
+            if (response.endpoint !== undefined) {
+                console.log(`The domain name for your site is ${response.endpoint}.`);
             }
         })
         .catch(err => error(err));
