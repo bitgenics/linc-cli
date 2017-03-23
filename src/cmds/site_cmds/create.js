@@ -72,7 +72,7 @@ exports.handler = (argv) => {
         .then(auth_params => createNewSite(siteName, auth_params))
         .then(response => {
             console.log('Site successfully created.');
-            if (response.cloudfront_dns !== undefined) {
+            if (response.endpoint !== undefined) {
                 console.log(`The LINC endpoint for your site is ${response.endpoint}.`);
             }
         })
