@@ -73,7 +73,7 @@ exports.handler = (argv) => {
         .then(response => {
             console.log('Site successfully created.');
             if (response.cloudfront_dns !== undefined) {
-                console.log(`The domain name for your site is ${response.cloudfront_dns}.`);
+                console.log(`The LINC endpoint for your site is ${response.endpoint}.`);
             }
         })
         .catch(err => error(err));
