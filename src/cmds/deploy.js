@@ -19,12 +19,9 @@ const sha1 = (s) => {
     return crypto.createHash('sha1').update(s).digest('hex');
 };
 
-const settingsId = (settings) => {
-    return sha1(JSON.stringify(settings, null, 0));
-};
-
-const deployKey = (code_id, settings_id) => {
-    return sha1(`${code_id}.${settings_id}`).substr(0, 8);
+const deployKey = (code_id, site_name, settings) => {
+    const settings_id = sha1(JSON.stringify(settings));
+    return sha1(`${code_id}.${site_name}.${settings_id}`).substr(0, 8);
 };
 
 const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((resolve, reject) => {
@@ -103,7 +100,6 @@ const deploy = (argv) => {
     const source_dir = 'dist';
     const code_id = sha1Dir(source_dir);
 
-    let settings_id = null;
     let deploy_key = null;
     let authParams = null;
     let tempDir = null;
@@ -118,8 +114,7 @@ const deploy = (argv) => {
         })
         .then(() => getSiteSettings())
         .then(settings => {
-            settings_id = settingsId(settings);
-            deploy_key = deployKey(code_id, settings_id);
+            deploy_key = deployKey(code_id, site_name, settings);
             return saveSettings(tempDir, settings);
         })
         .then(() => createZipfile(tmpDir, '/', site_name, {cwd: tempDir}))
