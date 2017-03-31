@@ -1,13 +1,13 @@
 'use strict';
 const path = require('path');
 const crypto = require('crypto');
-const aws = require('aws-sdk');
+const AWS = require('aws-sdk');
 const zip = require('deterministic-zip');
 const sha1Sync = require('deterministic-sha1');
 const fs = require('fs-promise');
 const auth = require('../auth');
 
-const BUCKET_NAME = 'linc-deployables-dev';
+const BUCKET_NAME = 'linc-sites-deployable-dev';
 
 const tmpDir = '/tmp/';
 
@@ -47,8 +47,12 @@ const createKey = (user_id, sha1, site_name) => {
 };
 
 const uploadZipfile = (sha1, auth, site, zipfile) => new Promise((resolve, reject) => {
-    aws.config = new aws.Config({credentials: auth.aws.credentials});
-    const s3 = new aws.S3();
+    AWS.config = new AWS.Config({
+        credentials: auth.aws.credentials,
+        signatureVersion: 'v4',
+        region: 'eu-central-1'
+    });
+    const s3 = new AWS.S3();
 
     fs.readFile(zipfile)
         .then(data => {
