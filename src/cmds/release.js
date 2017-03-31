@@ -78,10 +78,11 @@ const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, r
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
+        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (json.deployments.length === 0) return reject('No deployments available. Deploy your site using \'linc deploy\'.')
+        if (json.deployments.length === 0) return reject('No deployments available. Deploy your site using \'linc deploy\'.');
 
         return resolve(json);
     });
@@ -102,7 +103,7 @@ const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, rejec
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (json.domains.length === 0) return reject('No domains available. Add a domain first using \'linc domain add\'.');
+        if (!json.domain || json.domains.length === 0) return reject('No domains available. Add a domain first using \'linc domain add\'.');
 
         return resolve(json);
     });

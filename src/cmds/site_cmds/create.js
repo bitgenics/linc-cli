@@ -43,9 +43,9 @@ const createNewSite = (site, authInfo) => new Promise((resolve, reject) => {
         },
         body: `{ "site_name": "${site.site_name}", "description": "${site.description}" }`
     };
-
     request(options, (err, response, body) => {
         if (err) return reject(err);
+        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);

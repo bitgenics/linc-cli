@@ -38,10 +38,11 @@ const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, rejec
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
+        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (json.domains.length === 0) return reject('No domains available. Add a domain first using \'linc domain add\'.');
+        if (!json.domains || json.domains.length === 0) return reject('No domains available.\nAdd a domain first using \'linc domain add\'.');
 
         return resolve(json);
     });
@@ -67,7 +68,7 @@ const list = (argv) => {
                 .then(auth_params => getAvailableDomains(siteName, auth_params))
         })
         .then(result => showAvailableDomains(result))
-        .catch(err => console.log(`Oops, something went wrong: ${err}.`));
+        .catch(err => console.log(`Oops, something went wrong:\n${err}.`));
 };
 
 exports.command = 'list';
