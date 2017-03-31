@@ -4,7 +4,7 @@ const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
 
-const LINC_API_SITES_ENDPOINT = 'https://aduppa8es1.execute-api.us-west-2.amazonaws.com/v0/sites';
+const LINC_API_SITES_ENDPOINT = "https://api.bitgenicstest.com/dev/sites";
 
 const askSiteName = () => new Promise((resolve, reject) => {
     let schema = {

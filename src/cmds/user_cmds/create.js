@@ -4,7 +4,7 @@ const prompt = require('prompt');
 const request = require('request');
 const cred = require('../../cred');
 
-const LINC_API_USERS_ENDPOINT = 'https://aduppa8es1.execute-api.us-west-2.amazonaws.com/v0/users';
+const LINC_API_USERS_ENDPOINT = "https://api.bitgenicstest.com/dev/users";
 
 const getUserEmail = () => new Promise((resolve, reject) => {
 
