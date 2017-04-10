@@ -12,7 +12,7 @@ const askSiteName = () => new Promise((resolve, reject) => {
             site_name: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
-                description: colors.green('Name of site to release:'),
+                description: colors.green('Name of site:'),
                 required: true
             }
         }
