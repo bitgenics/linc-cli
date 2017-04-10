@@ -64,7 +64,7 @@ We have stored your login information in ~/.linc/credentials which will be used
 to log you in automatically in the future.
 !!! Important notice !!!
 Please also store these credentials in a safe place. We do not store them on our
-servers, so it's impossible for us to retrieve them should you lose them.`
+servers, so it's impossible for us to retrieve them should you lose them.`;
 
     console.log(msg);
 };
