@@ -51,7 +51,7 @@ const deleteSite = (siteName, authInfo) => new Promise((resolve, reject) => {
 
 const error = (err) => {
     console.log('\nOops! Something went wrong, and your site could not be deleted. Here\'s what we know:');
-    console.log(err.message ? err.message : 'absolutely nothing (a.k.a. and unknown error occurred).');
+    console.log(err.message ? err.message : 'absolutely nothing (an unknown error occurred).');
 };
 
 exports.command = 'delete';
