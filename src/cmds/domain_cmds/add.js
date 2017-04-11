@@ -3,8 +3,9 @@ const colors = require('colors/safe');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
+const config = require('../../config.json');
 
-const LINC_API_SITES_ENDPOINT = 'https://aduppa8es1.execute-api.us-west-2.amazonaws.com/v0/sites';
+const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 const askSiteName = () => new Promise((resolve, reject) => {
     let schema = {
