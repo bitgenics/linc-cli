@@ -1,0 +1,5 @@
+{
+    "Api": {
+        "LincBaseEndpoint": "https://old-api.bitgenicstest.com/v0"
+    }
+}

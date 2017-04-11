@@ -3,8 +3,9 @@ const colors = require('colors/safe');
 const prompt = require('prompt');
 const request = require('request');
 const cred = require('../../cred');
+const config = require('../../config.json');
 
-const LINC_API_USERS_ENDPOINT = "https://api.bitgenicstest.com/dev/users";
+const LINC_API_USERS_ENDPOINT = config.Api.LincBaseEndpoint + '/users';
 
 const getUserEmail = () => new Promise((resolve, reject) => {
 
@@ -60,8 +61,10 @@ you can actually log in. (Don't forget to look in your spam folder, just in case
 Here are your credentials that you need to log in:
   + Access Key: ${accessKey}
   + Secret Key: ${secretKey}
+  
 We have stored your login information in ~/.linc/credentials which will be used 
 to log you in automatically in the future.
+
 !!! Important notice !!!
 Please also store these credentials in a safe place. We do not store them on our
 servers, so it's impossible for us to retrieve them should you lose them.`;

@@ -3,8 +3,9 @@ const colors = require('colors/safe');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
+const config = require('../../config.json');
 
-const LINC_API_SITES_ENDPOINT = "https://api.bitgenicstest.com/dev/sites";
+const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 const askSiteInfo = () => new Promise((resolve, reject) => {
     let schema = {
@@ -43,6 +44,7 @@ const createNewSite = (site, authInfo) => new Promise((resolve, reject) => {
         },
         body: `{ "site_name": "${site.site_name}", "description": "${site.description}" }`
     };
+
     request(options, (err, response, body) => {
         if (err) return reject(err);
         if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
