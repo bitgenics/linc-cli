@@ -14,6 +14,7 @@ const askSiteName = () => new Promise((resolve, reject) => {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
                 description: colors.green('Name of site to release:'),
+                message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
                 required: true
             }
         }
@@ -31,9 +32,10 @@ const askReleaseInfo = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             deploy_key: {
-                // Only a-z, 0-9 and - are allowed. Must start with a-z.
+                // Only a-z, 0-9 are allowed. Must start with a-z.
                 pattern: /^[a-f0-9]+$/,
                 description: colors.green('Deployment key for release:'),
+                message: 'Only a-z, 0-9 are allowed. Must start with a-z.',
                 required: true
             }
         }
@@ -54,6 +56,7 @@ const askReleaseDomain = () => new Promise((resolve, reject) => {
                 // This is the pattern AWS uses for domain names
                 pattern: /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/,
                 description: colors.green('Domain name for release:'),
+                message: 'Must be a valid domain name.',
                 required: true
             }
         }

@@ -14,6 +14,7 @@ const askSiteInfo = () => new Promise((resolve, reject) => {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
                 description: colors.green('Name of site to create:'),
+                message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
                 required: true
             },
             description: {

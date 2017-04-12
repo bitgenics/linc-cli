@@ -14,6 +14,7 @@ const askSiteName = () => new Promise((resolve, reject) => {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
                 description: colors.green('Name of site:'),
+                message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
                 required: true
             }
         }
@@ -34,6 +35,7 @@ const askDomainName = () => new Promise((resolve, reject) => {
                 // This is the pattern AWS uses for domain names
                 pattern: /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/,
                 description: colors.green('Domain name to add:'),
+                message: 'Must be a valid domain name.',
                 required: true
             }
         }

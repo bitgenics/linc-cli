@@ -15,6 +15,7 @@ const getUserEmail = () => new Promise((resolve, reject) => {
                 // Fairly good pattern for email addresses
                 pattern: /[a-zA-Z0-9%-.+_]+\@[a-zA-Z0-9%-.+_]+\.[a-zA-Z]{2,}/,
                 description: colors.green('Your email address:'),
+                message: 'Please enter a valid email address.',
                 required: true
             }
         }
