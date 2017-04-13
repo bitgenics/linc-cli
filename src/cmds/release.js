@@ -7,27 +7,6 @@ const config = require('../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
-const askSiteName = () => new Promise((resolve, reject) => {
-    let schema = {
-        properties: {
-            site_name: {
-                // Only a-z, 0-9 and - are allowed. Must start with a-z.
-                pattern: /^[a-z]+[a-z0-9-]*$/,
-                description: colors.green('Name of site to release:'),
-                message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
-                required: true
-            }
-        }
-    };
-    prompt.message = colors.magenta('(linc) ');
-    prompt.delimiter = '';
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    })
-});
-
 const askReleaseInfo = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -71,7 +50,6 @@ const askReleaseDomain = () => new Promise((resolve, reject) => {
 });
 
 const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, reject) => {
-    console.log('Please wait...');
     const options = {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${site_name}/deployments`,
@@ -162,28 +140,35 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
 });
 
 const error = (err) => {
-    console.log('\nOops! Something went wrong, and your release could not be created. Here\'s what we know:');
+    console.log('Oops! Something went wrong:');
     console.log(err);
 };
 
 const release = (argv) => {
+    if (argv.siteName === undefined) {
+        console.log('This project is not initialised. Did you forget to \'linc init\'?');
+        process.exit(255);
+    }
+
+    console.log('Please wait...');
+
     let authParams = null;
-    let siteName = null;
+    let siteName = argv.siteName;
     let deployKey = null;
-    let domainName = null;
-    askSiteName()
-        .then(result => siteName = result.site_name.trim())
-        .then(() => auth(argv.accessKey, argv.secretKey))
-        .then(auth_params => authParams = auth_params)
-        .then(() => getAvailableDeployments(siteName, authParams))
+    auth(argv.accessKey, argv.secretKey)
+        .then(auth_params => {
+            authParams = auth_params;
+            return getAvailableDeployments(siteName, authParams);
+        })
         .then(result => showAvailableDeployments(result))
         .then(() => askReleaseInfo(true))
-        .then(result => deployKey = result.deploy_key)
-        .then(() => getAvailableDomains(siteName, authParams))
+        .then(result => {
+            deployKey = result.deploy_key;
+            return getAvailableDomains(siteName, authParams);
+        })
         .then(result => showAvailableDomains(result))
         .then(() => askReleaseDomain())
-        .then(result => domainName = result.domain_name)
-        .then(() => createNewRelease(siteName, deployKey, domainName, authParams))
+        .then(result => createNewRelease(siteName, deployKey, result.domain_name, authParams))
         .then(response => {
             console.log('Release successfully created.');
             if (response.endpoint !== undefined) {

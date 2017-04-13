@@ -1,4 +1,6 @@
 'use strict';
+const fs = require('fs');
+const packageJson = require('../package-json');
 
 /**
  *
@@ -22,6 +24,10 @@
  *
  */
 const initialise = (argv) => {
+    if (argv.siteName !== undefined) {
+        console.log('This project is already initialised.');
+        process.exit(255);
+    }
 
 };
 

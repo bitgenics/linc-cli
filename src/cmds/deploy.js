@@ -98,9 +98,14 @@ const createTempDir = () => new Promise((resolve, reject) => {
 });
 
 const deploy = (argv) => {
+    if (argv.siteName === undefined) {
+        console.log('This project is not initialised. Did you forget to \'linc init\'?');
+        process.exit(255);
+    }
+
     console.log('Starting. Please wait...');
 
-    const site_name = argv.site.name;
+    const siteName = argv.siteName;
     const source_dir = 'dist';
     const code_id = sha1Dir(source_dir);
 
@@ -114,14 +119,14 @@ const deploy = (argv) => {
         })
         .then(temp_dir => {
             tempDir = temp_dir;
-            return createZipfile(temp_dir, source_dir, site_name)
+            return createZipfile(temp_dir, source_dir, siteName)
         })
         .then(() => getSiteSettings())
         .then(settings => {
-            deploy_key = deployKey(code_id, site_name, settings);
+            deploy_key = deployKey(code_id, siteName, settings);
             return saveSettings(tempDir, settings);
         })
-        .then(() => createZipfile(tmpDir, '/', site_name, {cwd: tempDir}))
+        .then(() => createZipfile(tmpDir, '/', siteName, {cwd: tempDir}))
         .then(zipfile => uploadZipfile(code_id, authParams, argv.site, zipfile))
         .then(() => console.log(`
 Your site has been deployed with the deployment key ${deploy_key}. Your site can
