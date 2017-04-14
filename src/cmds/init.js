@@ -205,41 +205,41 @@ const initialise = (argv) => {
         process.exit(255);
     }
 
-    let siteName;
-    let siteDescription;
-    let sourceDir;
+    let linc = {};
+
     let profile;
     let protocol;
-    let domains;
 
     f('LINC')
         .then(() => askSiteInfo())
         .then(info => {
-            siteName = info.site_name;
-            siteDescription = info.description;
+            linc.siteName = info.site_name;
+            linc.siteDescription = info.description;
             return askSourceDir();
         })
         .then(result => {
-            sourceDir = result.source_dir;
+            linc.sourceDir = result.source_dir;
             return askProfile();
         })
         .then(result => {
             profile = result.profile;
+            linc.buildProfile = lincProfiles[profile].pkg;
             return askViewerProtocol();
         })
         .then(result => {
             protocol = result.protocol;
+            linc.viewerProtocol = viewerProtocols[protocol].policy;
             return askDomainNames();
         })
         .then(result => {
-            domains = result;
+            linc.domains = result;
             let domainStr = '';
-            domains.forEach(x => domainStr += '\n  - ' + x);
+            linc.domains.forEach(x => domainStr += '\n  - ' + x);
             console.log(`
 Summary:
-+ Site name: ${siteName}
-+ Description: ${siteDescription}
-+ Source directory: ${sourceDir}
++ Site name: ${linc.siteName}
++ Description: ${linc.siteDescription}
++ Source directory: ${linc.sourceDir}
 + Site profile: ${lincProfiles[profile].name}
 + Viewer protocol: ${viewerProtocols[protocol].name}
 + Domains: ${domainStr}
@@ -260,15 +260,7 @@ Summary:
         .then(() => readPkg())
         .then(pkg => {
             console.log('Updating package.json.\nPlease wait...');
-            pkg.linc = {
-                siteName: siteName,
-                description: siteDescription,
-                buildProfile: lincProfiles[profile].pkg,
-                viewerProtocol: viewerProtocols[protocol].policy,
-                sourceDir: sourceDir,
-                domains: domains
-            };
-            console.log(JSON.stringify(pkg, null, 3));
+            pkg.linc = linc;
             return writePkg(pkg);
         })
         .then(() => console.log('Done.'))
