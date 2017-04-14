@@ -3,6 +3,8 @@ const npm = require('npm');
 const fs = require('fs');
 const prompt = require('prompt');
 const figlet = require('figlet');
+const lincProfiles = require('../linc-profiles');
+const viewerProtocols = require('../viewer-protocols');
 const exec = require('child_process').exec;
 
 prompt.colors = false;
@@ -32,14 +34,10 @@ const askSiteInfo = () => new Promise((resolve, reject) => {
     })
 });
 
-const profiles = {
-    'A': 'Generic React Redux Routerv3'
-};
-
 const askProfile = () => new Promise((resolve, reject) => {
     console.log(`
 Please choose a profile:
-     A) ${profiles['A']} (default)`);
+     A) ${lincProfiles['A'].name} (default)`);
 
     let schema = {
         properties: {
@@ -58,12 +56,6 @@ Please choose a profile:
         else return resolve(result);
     })
 });
-
-const viewerProtocols = {
-    'A': 'Redirect HTTP to HTTPS',
-    'B': 'HTTP and HTTPS',
-    'C': 'HTTPS only'
-};
 
 const askViewerProtocol = () => new Promise((resolve, reject) => {
     console.log(`
@@ -215,7 +207,7 @@ const initialise = (argv) => {
 Summary:
 + Site name: ${siteName}
 + Description: ${siteDescription}
-+ Profile: ${profiles[profile]}
++ Profile: ${lincProfiles[profile].name}
 + Protocol: ${viewerProtocols[protocol]}
 + Domains: ${domainStr}
 `);
@@ -229,10 +221,8 @@ Summary:
         })
         .then(() => {
             console.log('\nInstalling profile package.\nPlease wait...');
-            const profilePackage = '@bitgenics/linc-profile-generic-react-redux-routerv3';
-            const child = exec(`npm i ${profilePackage} -D`, {cwd: process.cwd()}, (err, stdout, stderr) => {
-                console.log('Done!');
-            });
+            const profilePackage = `@bitgenics/linc-profile-${lincProfiles[profile].pkg}`;
+            exec(`npm i ${profilePackage} -D`, {cwd: process.cwd()}, () => console.log('Done!'));
         })
         .catch(err => error(err));
 };
