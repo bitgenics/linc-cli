@@ -31,10 +31,14 @@ const askSiteInfo = () => new Promise((resolve, reject) => {
     })
 });
 
+const profiles = {
+    'A': 'Generic React Redux Routerv3'
+};
+
 const askProfile = () => new Promise((resolve, reject) => {
     console.log(`
 Please choose a profile:
-     A) Generic React Redux Routerv3 profile (default)`);
+     A) ${profiles['A']} (default)`);
 
     let schema = {
         properties: {
@@ -56,12 +60,18 @@ Please choose a profile:
     })
 });
 
+const viewerProtocols = {
+    'A': 'Redirect HTTP to HTTPS',
+    'B': 'HTTP and HTTPS',
+    'C': 'HTTPS only'
+};
+
 const askViewerProtocol = () => new Promise((resolve, reject) => {
     console.log(`
 Please choose the viewer protocol to use:
-     A) Redirect HTTP to HTTPS (default)
-     B) HTTP and HTTPS         
-     C) HTTPS only`);
+     A) ${viewerProtocols['A']} (default)
+     B) ${viewerProtocols['B']}
+     C) ${viewerProtocols['C']}`);
 
     let schema = {
         properties: {
@@ -114,14 +124,32 @@ Please enter domain names separated by a comma:`);
 
         if (result.domains === '') return resolve([]);
 
-        let domains = result.domains.split(',');
-        domains = domains.map(x => x.trim());
-        const validated_domains = domains.filter(validateDomainName);
+        const domains = result.domains.split(',');
+        const validated_domains = domains.map(x => x.trim()).filter(validateDomainName);
         if (domains.length !== validated_domains.length) {
             console.log('ERROR: One or more domain names are invalid and have been removed from the list.');
         }
         return resolve(validated_domains);
     })
+});
+
+const askIsThisOk = () => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
+            ok: {
+                description: "Is this OK?",
+                default: 'Y',
+                type: 'string'
+            }
+        }
+    };
+    prompt.message = '';
+    prompt.delimiter = '';
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    });
 });
 
 const error = (err) => {
@@ -188,16 +216,26 @@ const initialise = (argv) => {
         })
         .then(result => {
             domains = result;
-
-            console.log(siteName);
-            console.log(siteDescription);
-            console.log(profile);
-            console.log(protocol);
-            console.log(JSON.stringify(domains, null, 3));
+            let domainStr = '';
+            domains.forEach(x => domainStr += '\n  - ' + x);
+            console.log(`
+Summary:
++ Site name: ${siteName}
++ Description: ${siteDescription}
++ Profile: ${profiles[profile]}
++ Protocol: ${viewerProtocols[protocol]}
++ Domains: ${domainStr}
+`);
+        })
+        .then(() => askIsThisOk())
+        .then(result => {
+            if (result.ok.charAt(0).toLowerCase() !== 'y') {
+                console.log('Aborted by user.');
+                return process.exit(255);
+            }
         })
         .catch(err => error(err));
 };
-
 
 exports.command = 'init';
 exports.desc = 'Initialise a LINC site';
