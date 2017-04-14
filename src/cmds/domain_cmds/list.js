@@ -20,7 +20,7 @@ const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, rejec
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (!json.domains || json.domains.length === 0) return reject('No domains available.\nAdd a domain first using \'linc domain add\'.');
+        if (!json.domains || json.domains.length === 0) return reject('No domains available. Add domain names using \'linc domain add\'.');
 
         return resolve(json);
     });
