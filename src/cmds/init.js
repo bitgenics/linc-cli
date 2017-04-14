@@ -182,21 +182,21 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
  *
  * @param argv
  *
- * Check existence of package.json (mandatory) OK
- * Ask user for site name OK
- * Ask user for HTTP[S] options OK
- * Ask user for profile (e.g., react) OK
- * Ask user for domain names (zero or more) OK
+ * Check existence of package.json (mandatory) - OK
+ * Ask user for site name - OK
+ * Ask user for HTTP[S] options - OK
+ * Ask user for profile (e.g., react) - OK
+ * Ask user for domain names (zero or more) - OK
  *
- * Add profile package to package.json (for installing) OK
- * Add src-dir to linc section in package.json
+ * Add profile package to package.json (for installing) - OK
+ * Add src-dir to linc section in package.json - OK
  *
  * Install (npm / yarn)
  *
- * Create site
+ * Create site (actual API call)
  * Create error pages (placeholders)
  *
- * Write sample linc[.server].config.js
+ * Write sample linc[.server].config.js files
  *
  */
 const initialise = (argv) => {
@@ -231,8 +231,8 @@ const initialise = (argv) => {
             linc.viewerProtocol = viewerProtocols[protocol].policy;
             return askDomainNames();
         })
-        .then(result => {
-            linc.domains = result;
+        .then(results => {
+            linc.domains = results;
             let domainStr = '';
             linc.domains.forEach(x => domainStr += '\n  - ' + x);
             console.log(`
@@ -244,8 +244,8 @@ Summary:
 + Viewer protocol: ${viewerProtocols[protocol].name}
 + Domains: ${domainStr}
 `);
+            return askIsThisOk();
         })
-        .then(() => askIsThisOk())
         .then(result => {
             if (result.ok.charAt(0).toLowerCase() !== 'y') {
                 console.log('Aborted by user.');
@@ -258,10 +258,10 @@ Summary:
             return installProfilePkg(profilePackage);
         })
         .then(() => readPkg())
-        .then(pkg => {
+        .then(packageJson => {
             console.log('Updating package.json.\nPlease wait...');
-            pkg.linc = linc;
-            return writePkg(pkg);
+            packageJson.linc = linc;
+            return writePkg(packageJson);
         })
         .then(() => console.log('Done.'))
         .catch(err => error(err));
