@@ -1,9 +1,13 @@
 'use strict';
+const npm = require('npm');
 const fs = require('fs');
 const prompt = require('prompt');
 const figlet = require('figlet');
+const exec = require('child_process').exec;
 
 prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
 
 const askSiteInfo = () => new Promise((resolve, reject) => {
     let schema = {
@@ -21,9 +25,6 @@ const askSiteInfo = () => new Promise((resolve, reject) => {
             }
         }
     };
-
-    prompt.message = '';
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
@@ -51,8 +52,6 @@ Please choose a profile:
             }
         }
     };
-    prompt.message = '';
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
@@ -84,8 +83,6 @@ Please choose the viewer protocol to use:
             }
         }
     };
-    prompt.message = '';
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
@@ -116,8 +113,6 @@ Please enter domain names separated by a comma:`);
             }
         }
     };
-    prompt.message = '';
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
@@ -143,8 +138,6 @@ const askIsThisOk = () => new Promise((resolve, reject) => {
             }
         }
     };
-    prompt.message = '';
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
@@ -176,7 +169,7 @@ const f = (msg) => new Promise((resolve, reject) => {
  * Ask user for profile (e.g., react) OK
  * Ask user for domain names (zero or more) OK
  *
- * Add profile package to package.json (for installing)
+ * Add profile package to package.json (for installing) OK
  * Add src-dir to linc section in package.json
  *
  * Install (npm / yarn)
@@ -233,6 +226,13 @@ Summary:
                 console.log('Aborted by user.');
                 return process.exit(255);
             }
+        })
+        .then(() => {
+            console.log('\nInstalling profile package.\nPlease wait...');
+            const profilePackage = '@bitgenics/linc-profile-generic-react-redux-routerv3';
+            const child = exec(`npm i ${profilePackage} -D`, {cwd: process.cwd()}, (err, stdout, stderr) => {
+                console.log('Done!');
+            });
         })
         .catch(err => error(err));
 };
