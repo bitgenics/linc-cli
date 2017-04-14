@@ -58,7 +58,7 @@ const createNewSite = (site, authInfo) => new Promise((resolve, reject) => {
 });
 
 const error = (err) => {
-    console.log('\nOops! Something went wrong, and your site could not be created. Here\'s what we know:');
+    console.log('Oops! Something went wrong:');
     console.log(err);
 };
 
