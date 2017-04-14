@@ -1,5 +1,4 @@
 'use strict';
-const colors = require('colors/safe');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../auth');
@@ -7,20 +6,22 @@ const config = require('../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
+
 const askReleaseInfo = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             deploy_key: {
                 // Only a-z, 0-9 are allowed. Must start with a-z.
                 pattern: /^[a-f0-9]+$/,
-                description: colors.green('Deployment key for release:'),
+                description: 'Deployment key for release:',
                 message: 'Only a-z, 0-9 are allowed. Must start with a-z.',
                 required: true
             }
         }
     };
-    prompt.message = colors.magenta('(linc) ');
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);

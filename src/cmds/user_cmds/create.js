@@ -7,6 +7,10 @@ const config = require('../../config.json');
 
 const LINC_API_USERS_ENDPOINT = config.Api.LincBaseEndpoint + '/users';
 
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
+
 const getUserEmail = () => new Promise((resolve, reject) => {
 
     const schema = {

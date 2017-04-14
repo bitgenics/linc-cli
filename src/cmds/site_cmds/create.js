@@ -1,5 +1,4 @@
 'use strict';
-const colors = require('colors/safe');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
@@ -7,25 +6,26 @@ const config = require('../../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
+
 const askSiteInfo = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             site_name: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
-                description: colors.green('Name of site to create:'),
+                description: 'Name of site to create:',
                 message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
                 required: true
             },
             description: {
-                description: colors.green('Description (optional):'),
+                description: 'Description (optional):',
                 required: false    
             }
         }
     };
-
-    prompt.message = colors.magenta('(linc) ');
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);

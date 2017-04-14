@@ -4,6 +4,10 @@ const prompt = require('prompt');
 const cred = require('../../cred');
 const auth = require('../../auth');
 
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
+
 const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 
     const schema = {

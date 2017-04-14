@@ -1,6 +1,4 @@
 'use strict';
-const colors = require('colors/safe');
-const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
 const config = require('../../config.json');

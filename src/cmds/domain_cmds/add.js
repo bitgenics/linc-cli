@@ -1,5 +1,4 @@
 'use strict';
-const colors = require('colors/safe');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
@@ -7,20 +6,22 @@ const config = require('../../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
+
 const askDomainName = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             domain_name: {
                 // This is the pattern AWS uses for domain names
                 pattern: /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/,
-                description: colors.green('Domain name to add:'),
+                description: 'Domain name to add:',
                 message: 'Must be a valid domain name.',
                 required: true
             }
         }
     };
-    prompt.message = colors.magenta('(linc) ');
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);

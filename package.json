@@ -10,7 +10,6 @@
     "@bitgenics/linc-build-ssr": "^1.1.2",
     "@bitgenics/linc-simple-express": "^2.0.0",
     "auth0-js": "^8.5.0",
-    "colors": "^1.1.2",
     "compression": "^1.6.2",
     "crypto": "0.0.3",
     "deterministic-sha1": "0.0.2",
