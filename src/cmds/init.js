@@ -3,6 +3,8 @@ const npm = require('npm');
 const fs = require('fs');
 const prompt = require('prompt');
 const figlet = require('figlet');
+const readPkg = require('read-pkg');
+const writePkg = require('write-pkg');
 const lincProfiles = require('../linc-profiles');
 const viewerProtocols = require('../viewer-protocols');
 const exec = require('child_process').exec;
@@ -34,6 +36,24 @@ const askSiteInfo = () => new Promise((resolve, reject) => {
     })
 });
 
+const askSourceDir = () => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
+            source_dir: {
+                description: 'Site source directory:',
+                required: true,
+                type: 'string',
+                default: 'src'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
 const askProfile = () => new Promise((resolve, reject) => {
     console.log(`
 Please choose a profile:
@@ -43,7 +63,7 @@ Please choose a profile:
         properties: {
             profile: {
                 pattern: /^(?:A|a)?$/,
-                description: 'Profile to use:',
+                description: 'Profile to use for this site:',
                 message: 'Please enter a valid option',
                 type: 'string',
                 default: 'A'
@@ -60,9 +80,9 @@ Please choose a profile:
 const askViewerProtocol = () => new Promise((resolve, reject) => {
     console.log(`
 Please choose the viewer protocol to use:
-     A) ${viewerProtocols['A']} (default)
-     B) ${viewerProtocols['B']}
-     C) ${viewerProtocols['C']}`);
+     A) ${viewerProtocols['A'].name} (default)
+     B) ${viewerProtocols['B'].name}
+     C) ${viewerProtocols['C'].name}`);
 
     let schema = {
         properties: {
@@ -151,6 +171,13 @@ const f = (msg) => new Promise((resolve, reject) => {
     });
 });
 
+const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
+    exec(`npm i ${pkgName} -D`, {cwd: process.cwd()}, () => {
+        console.log('Done.');
+        return resolve();
+    });
+});
+
 /**
  *
  * @param argv
@@ -180,6 +207,7 @@ const initialise = (argv) => {
 
     let siteName;
     let siteDescription;
+    let sourceDir;
     let profile;
     let protocol;
     let domains;
@@ -189,6 +217,10 @@ const initialise = (argv) => {
         .then(info => {
             siteName = info.site_name;
             siteDescription = info.description;
+            return askSourceDir();
+        })
+        .then(result => {
+            sourceDir = result.source_dir;
             return askProfile();
         })
         .then(result => {
@@ -207,8 +239,9 @@ const initialise = (argv) => {
 Summary:
 + Site name: ${siteName}
 + Description: ${siteDescription}
-+ Profile: ${lincProfiles[profile].name}
-+ Protocol: ${viewerProtocols[protocol]}
++ Source directory: ${sourceDir}
++ Site profile: ${lincProfiles[profile].name}
++ Viewer protocol: ${viewerProtocols[protocol].name}
 + Domains: ${domainStr}
 `);
         })
@@ -222,8 +255,23 @@ Summary:
         .then(() => {
             console.log('\nInstalling profile package.\nPlease wait...');
             const profilePackage = `@bitgenics/linc-profile-${lincProfiles[profile].pkg}`;
-            exec(`npm i ${profilePackage} -D`, {cwd: process.cwd()}, () => console.log('Done!'));
+            return installProfilePkg(profilePackage);
         })
+        .then(() => readPkg())
+        .then(pkg => {
+            console.log('Updating package.json.\nPlease wait...');
+            pkg.linc = {
+                siteName: siteName,
+                description: siteDescription,
+                buildProfile: lincProfiles[profile].pkg,
+                viewerProtocol: viewerProtocols[protocol].policy,
+                sourceDir: sourceDir,
+                domains: domains
+            };
+            console.log(JSON.stringify(pkg, null, 3));
+            return writePkg(pkg);
+        })
+        .then(() => console.log('Done.'))
         .catch(err => error(err));
 };
 
