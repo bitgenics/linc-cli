@@ -8,6 +8,11 @@ const writePkg = require('write-pkg');
 const lincProfiles = require('../linc-profiles');
 const viewerProtocols = require('../viewer-protocols');
 const exec = require('child_process').exec;
+const request = require('request');
+const auth = require('../auth');
+const config = require('../config.json');
+
+const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 prompt.colors = false;
 prompt.message = '';
@@ -178,6 +183,35 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
     });
 });
 
+const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
+    if (linc.siteDescription.length === 0) linc.siteDescription = "[No description]";
+
+    const body = {
+        site: linc.siteName,
+        description: linc.siteDescription,
+        viewer_protocol: viewerProtocols[linc.viewerProtocol].policy,
+        domains: linc.domains
+    };
+    const options = {
+        method: 'POST',
+        url: LINC_API_SITES_ENDPOINT,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${auth_params.jwtToken}`
+        },
+        body: JSON.stringify(body)
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+
+        const json = JSON.parse(body);
+        if (json.error) return reject(json.error);
+
+        return resolve(json);
+    });
+});
+
 /**
  *
  * @param argv
@@ -194,7 +228,9 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
  * Install (npm / yarn)
  *
  * Create site (actual API call)
- * Create error pages (placeholders)
+ * Create error pages (placeholders):
+ * 4xx: 400 403 404 405 414 416
+ * 5xx: 500 501 502 503 504
  *
  * Write sample linc[.server].config.js files
  *
@@ -209,12 +245,13 @@ const initialise = (argv) => {
 
     let profile;
     let protocol;
+    let endpoint = undefined;
 
     f('LINC')
         .then(() => askSiteInfo())
         .then(info => {
-            linc.siteName = info.site_name;
-            linc.siteDescription = info.description;
+            linc.siteName = info.site_name.trim();
+            linc.siteDescription = info.description.trim();
             return askSourceDir();
         })
         .then(result => {
@@ -252,7 +289,10 @@ Summary:
                 return process.exit(255);
             }
         })
-        .then(() => {
+        .then(() => auth(argv.accessKey, argv.secretKey))
+        .then(auth_params => createNewSite(linc, auth_params))
+        .then(response => {
+            endpoint = response && response.endpoint || undefined;
             console.log('\nInstalling profile package.\nPlease wait...');
             const profilePackage = `@bitgenics/linc-profile-${lincProfiles[profile].pkg}`;
             return installProfilePkg(profilePackage);
@@ -263,7 +303,16 @@ Summary:
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
-        .then(() => console.log('Done.'))
+        .then(() => {
+            console.log('Done.');
+            if (endpoint !== undefined) {
+                console.log(`
+The LINC endpoint for your site is ${endpoint}.
+You can use this endpoint to set up your domains.
+Just create a CNAME entry for your domains and
+make them point to ${endpoint}.`);
+            }
+        })
         .catch(err => error(err));
 };
 
