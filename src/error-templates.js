@@ -30,7 +30,7 @@ const errorTemplate = (code) =>
 `;
 
 const writeTemplate = (path, key) => new Promise((resolve, reject) => {
-    fs.writeFile(`${path}/${key}.html`, errorTemplate(key), { encoding: 'utf-8' }, err => {
+    return fs.writeFile(`${path}/${key}.html`, errorTemplate(key), { encoding: 'utf-8' }, err => {
         if (err) return reject(err);
         else return resolve();
     });
