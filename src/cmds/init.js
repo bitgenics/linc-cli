@@ -189,7 +189,7 @@ const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
     const body = {
         site: linc.siteName,
         description: linc.siteDescription,
-        viewer_protocol: viewerProtocols[linc.viewerProtocol].policy,
+        viewer_protocol: linc.viewerProtocol,
         domains: linc.domains
     };
     const options = {
