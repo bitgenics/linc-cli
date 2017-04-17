@@ -1,4 +1,7 @@
 'use strict';
+const fs = require('fs');
+
+const errorDir = '_errors';
 
 const htmlErrors = {
     "400": "Bad Request",
@@ -14,26 +17,36 @@ const htmlErrors = {
     "504": "Gateway Time-out"
 };
 
-const errorTemplate = (code) => {
-    return `
-<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+const errorTemplate = (code) =>
+`<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html>
-<head>
-  <title>${code} ${htmlErrors[code]}</title>
-</head>
-<body>
-  <h1>${htmlErrors[code]}</h1>
-</body>
+  <head>
+    <title>${code} ${htmlErrors[code]}</title>
+  </head>
+  <body>
+    <h1>${htmlErrors[code]}</h1>
+  </body>
 </html>
 `;
-};
 
-const writeTemplate = (path, key) => {
-    console.log(errorTemplate(key));
-};
+const writeTemplate = (path, key) => new Promise((resolve, reject) => {
+    fs.writeFile(`${path}/${key}.html`, errorTemplate(key), { encoding: 'utf-8' }, err => {
+        if (err) return reject(err);
+        else return resolve();
+    });
+});
 
-module.exports = (path) => {
-    for (let k in htmlErrors) {
-        writeTemplate(path, k);
+const createFiles = (path) => {
+    const errorPath = `${path}/${errorDir}`;
+    if (!fs.existsSync(errorPath)) {
+        fs.mkdirSync(errorPath);
     }
+
+    let promises = [];
+    for (let k in htmlErrors) {
+        promises.push(writeTemplate(errorPath, k));
+    }
+    return Promise.all(promises);
 };
+
+module.exports = createFiles;
