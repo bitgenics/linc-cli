@@ -187,7 +187,7 @@ const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
     if (linc.siteDescription.length === 0) linc.siteDescription = "[No description]";
 
     const body = {
-        site: linc.siteName,
+        name: linc.siteName,
         description: linc.siteDescription,
         viewer_protocol: linc.viewerProtocol,
         domains: linc.domains
