@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs');
+const path = require('path');
 const prompt = require('prompt');
 const figlet = require('figlet');
 const readPkg = require('read-pkg');
@@ -188,21 +189,26 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
 });
 
 const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) => {
-    const src_dir = process.cwd() + '/node_modules/@bitgenics' + pkgName + '/config_samples';
+    const src_dir = process.cwd() + '/node_modules/' + pkgName + '/config_samples';
     if (fs.existsSync(src_dir)) {
         console.log('Copying example config files...');
-        copyDir(src_dir, destDir, err => {
+        const filter = (stat, filepath, filename) => (stat === 'file' && path.extname(filepath) === '.js');
+        copyDir(src_dir, destDir, filter, err => {
             if (err) return reject(err);
 
             let fileList = [];
-            fs.readdir(destDir, (err, files) => {
-                files.forEach(file => fileList.push(file));
+            fs.readdir(src_dir, (err, files) => {
+                files.forEach(file => {
+                    if (/^.*.js$/.test(file)) {
+                        fileList.push(file);
+                    }
+                });
+                if (fileList.length > 0) {
+                    console.log(`The following files were copied into ${destDir}/:`);
+                    fileList.forEach(file => console.log(`+ ${file}`));
+                }
+                return resolve();
             });
-            if (fileList.length > 0) {
-                console.log('The following files were copied into your ${destDir} directory:');
-                fileList.forEach(file => console.log(file));
-            }
-            return resolve();
         });
     } else {
         return resolve();
@@ -315,7 +321,7 @@ Summary:
             }
         })
         .then(() => auth(argv.accessKey, argv.secretKey))
-        .then(auth_params => createNewSite(linc, auth_params))
+        // .then(auth_params => createNewSite(linc, auth_params))
         .then(response => {
             endpoint = response && response.endpoint || undefined;
             console.log('\nInstalling profile package. Please wait...');
@@ -330,7 +336,7 @@ Summary:
             return writePkg(packageJson);
         })
         .then(() => {
-            console.log('Creating error page templates.');
+            console.log('Creating the error page templates.');
             return createErrorTemplates(process.cwd());
         })
         .then(() => {

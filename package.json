@@ -26,6 +26,7 @@
     "fs-promise": "^2.0.2",
     "homedir": "^0.6.0",
     "js-yaml": "^3.8.2",
+    "path": "^0.12.7",
     "prompt": "^1.0.0",
     "read-pkg": "^2.0.0",
     "request": "^2.81.0",
