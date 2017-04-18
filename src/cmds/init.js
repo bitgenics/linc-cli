@@ -321,7 +321,7 @@ Summary:
             }
         })
         .then(() => auth(argv.accessKey, argv.secretKey))
-        // .then(auth_params => createNewSite(linc, auth_params))
+        .then(auth_params => createNewSite(linc, auth_params))
         .then(response => {
             endpoint = response && response.endpoint || undefined;
             console.log('\nInstalling profile package. Please wait...');
