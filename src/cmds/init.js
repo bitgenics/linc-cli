@@ -169,7 +169,7 @@ const error = (err) => {
     console.log(err);
 };
 
-const f = (msg) => new Promise((resolve, reject) => {
+const linclet = (msg) => new Promise((resolve, reject) => {
     figlet(msg, (err, data) => {
         if (err) return reject();
 
@@ -248,7 +248,7 @@ const initialise = (argv) => {
     let protocol;
     let endpoint = undefined;
 
-    f('LINC')
+    linclet('LINC')
         .then(() => askSiteInfo())
         .then(info => {
             linc.siteName = info.site_name.trim();
