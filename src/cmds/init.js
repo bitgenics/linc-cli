@@ -1,5 +1,4 @@
 'use strict';
-const npm = require('npm');
 const fs = require('fs');
 const prompt = require('prompt');
 const figlet = require('figlet');
@@ -10,6 +9,7 @@ const viewerProtocols = require('../lib/viewer-protocols');
 const createErrorTemplates = require('../lib/error-templates');
 const exec = require('child_process').exec;
 const request = require('request');
+const copyDir = require('copy-dir');
 const auth = require('../auth');
 const config = require('../config.json');
 
@@ -187,8 +187,26 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
     });
 });
 
-const copyConfigExamples = (pkgName, sourceDir) => new Promise((resolve, reject) => {
-    return resolve();
+const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) => {
+    const src_dir = process.cwd() + '/node_modules/@bitgenics' + pkgName + '/config_samples';
+    if (fs.existsSync(src_dir)) {
+        console.log('Copying example config files...');
+        copyDir(src_dir, destDir, err => {
+            if (err) return reject(err);
+
+            let fileList = [];
+            fs.readdir(destDir, (err, files) => {
+                files.forEach(file => fileList.push(file));
+            });
+            if (fileList.length > 0) {
+                console.log('The following files were copied into your ${destDir} directory:');
+                fileList.forEach(file => console.log(file));
+            }
+            return resolve();
+        });
+    } else {
+        return resolve();
+    }
 });
 
 const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {

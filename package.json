@@ -12,6 +12,7 @@
     "auth0-js": "^8.5.0",
     "child_process": "^1.0.2",
     "compression": "^1.6.2",
+    "copy-dir": "^0.3.0",
     "crypto": "0.0.3",
     "deterministic-sha1": "0.0.2",
     "deterministic-zip": "^1.0.5",
