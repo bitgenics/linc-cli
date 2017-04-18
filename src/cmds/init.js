@@ -7,7 +7,6 @@ const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const lincProfiles = require('../lib/linc-profiles');
 const viewerProtocols = require('../lib/viewer-protocols');
-const createConfigTemplates = require('../lib/config-templates');
 const createErrorTemplates = require('../lib/error-templates');
 const exec = require('child_process').exec;
 const request = require('request');
@@ -179,10 +178,17 @@ const linclet = (msg) => new Promise((resolve, reject) => {
 });
 
 const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
-    exec(`npm i ${pkgName} -D`, {cwd: process.cwd()}, () => {
-        console.log('Done.');
+    const command = fs.existsSync(process.cwd() + '/yarn.lock')
+        ? `yarn add ${pkgName}` : `npm i ${pkgName} -D`;
+
+    exec(command, {cwd: process.cwd()}, () => {
+        console.log('Finished installing profile package.');
         return resolve();
     });
+});
+
+const copyConfigExamples = (pkgName, sourceDir) => new Promise((resolve, reject) => {
+    return resolve();
 });
 
 const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
@@ -294,9 +300,10 @@ Summary:
         .then(auth_params => createNewSite(linc, auth_params))
         .then(response => {
             endpoint = response && response.endpoint || undefined;
-            console.log('\nInstalling profile package.\nPlease wait...');
+            console.log('\nInstalling profile package. Please wait...');
             const profilePackage = `@bitgenics/linc-profile-${lincProfiles[profile].pkg}`;
-            return installProfilePkg(profilePackage);
+            return installProfilePkg(profilePackage)
+                .then(() => copyConfigExamples(profilePackage, linc.sourceDir))
         })
         .then(() => readPkg())
         .then(packageJson => {
@@ -307,10 +314,6 @@ Summary:
         .then(() => {
             console.log('Creating error page templates.');
             return createErrorTemplates(process.cwd());
-        })
-        .then(() => {
-            console.log('Creating config file templates.');
-            return createConfigTemplates(process.cwd() + `/${linc.sourceDir}`);
         })
         .then(() => {
             console.log('Done.');
