@@ -5,8 +5,10 @@ const prompt = require('prompt');
 const figlet = require('figlet');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
-const lincProfiles = require('../linc-profiles');
-const viewerProtocols = require('../viewer-protocols');
+const lincProfiles = require('../lib/linc-profiles');
+const viewerProtocols = require('../lib/viewer-protocols');
+const createConfigTemplates = require('../lib/config-templates');
+const createErrorTemplates = require('../lib/error-templates');
 const exec = require('child_process').exec;
 const request = require('request');
 const auth = require('../auth');
@@ -298,9 +300,17 @@ Summary:
         })
         .then(() => readPkg())
         .then(packageJson => {
-            console.log('Updating package.json.\nPlease wait...');
+            console.log('Updating package.json.');
             packageJson.linc = linc;
             return writePkg(packageJson);
+        })
+        .then(() => {
+            console.log('Creating error page templates.');
+            return createErrorTemplates(process.cwd());
+        })
+        .then(() => {
+            console.log('Creating config file templates.');
+            return createConfigTemplates(process.cwd() + `/${linc.sourceDir}`);
         })
         .then(() => {
             console.log('Done.');
