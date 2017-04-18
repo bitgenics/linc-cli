@@ -1,4 +1,5 @@
 'use strict';
+const prompt = require('prompt');
 const path = require('path');
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
@@ -46,7 +47,7 @@ const createKey = (user_id, sha1, site_name) => {
     return `${user_id}/${site_name}-${sha1}.zip`;
 };
 
-const uploadZipfile = (sha1, auth, site, zipfile) => new Promise((resolve, reject) => {
+const uploadZipfile = (description, sha1, auth, site, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
         credentials: auth.aws.credentials,
         signatureVersion: 'v4',
@@ -60,7 +61,10 @@ const uploadZipfile = (sha1, auth, site, zipfile) => new Promise((resolve, rejec
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(user_id, sha1.substring(0, 8), site.name)
+                Key: createKey(user_id, sha1.substring(0, 8), site.name),
+                MetaData: {
+                    description: description
+                }
             }
         })
         .then(params => s3.putObject(params, (err, data) => {
@@ -97,6 +101,21 @@ const createTempDir = () => new Promise((resolve, reject) => {
     });
 });
 
+const askDescription = () => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
+            description: {
+                description: 'Description of this deployment:'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
 const deploy = (argv) => {
     if (argv.siteName === undefined) {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');
@@ -112,7 +131,14 @@ const deploy = (argv) => {
     let deploy_key = null;
     let authParams = null;
     let tempDir = null;
-    auth(argv.accessKey, argv.secretKey)
+    let description;
+    askDescription()
+        .then(result => {
+            description = result.description.trim();
+            if (description.length === 0) throw new Error('No description provided. Abort.');
+
+            return auth(argv.accessKey, argv.secretKey);
+        })
         .then(auth_params => {
             authParams = auth_params;
             return createTempDir()
@@ -127,13 +153,13 @@ const deploy = (argv) => {
             return saveSettings(tempDir, settings);
         })
         .then(() => createZipfile(tmpDir, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(code_id, authParams, argv.site, zipfile))
+        .then(zipfile => uploadZipfile(description, code_id, authParams, argv.site, zipfile))
         .then(() => console.log(`
 Your site has been deployed with the deployment key ${deploy_key}. Your site can
 be reached at the following URL: http://${deploy_key}.dk.bitgenicstest.com. 
 Please note that it may take a short while for this URL to become available.
 `))
-        .catch(err => console.log(err));
+        .catch(err => console.log(err.message));
 };
 
 exports.command = 'deploy';
