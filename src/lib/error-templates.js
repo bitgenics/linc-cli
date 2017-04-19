@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('fs');
 
-const errorDir = '_errors';
+const errorDir = 'errors';
 
 const htmlErrors = {
     "400": "Bad Request",
@@ -38,10 +38,12 @@ const writeTemplate = (path, key) => new Promise((resolve, reject) => {
 
 const createFiles = (path) => {
     const errorPath = `${path}/${errorDir}`;
-    if (!fs.existsSync(errorPath)) {
-        fs.mkdirSync(errorPath);
+    if (fs.existsSync(errorPath)) {
+        console.log(`Custom error pages directory ${errorDir} already exist. No templates have been copied.`);
+        return Promise.resolve();
     }
 
+    fs.mkdirSync(errorPath);
     let promises = [];
     for (let k in htmlErrors) {
         promises.push(writeTemplate(errorPath, k));

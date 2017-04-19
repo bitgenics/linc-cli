@@ -44,6 +44,10 @@ const askSiteInfo = () => new Promise((resolve, reject) => {
 });
 
 const askSourceDir = () => new Promise((resolve, reject) => {
+    console.log(`
+Please provide the directory containing your source code.
+We assume the default directory for your source code is 'src'.`);
+
     let schema = {
         properties: {
             source_dir: {
@@ -51,6 +55,30 @@ const askSourceDir = () => new Promise((resolve, reject) => {
                 required: true,
                 type: 'string',
                 default: 'src'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const askErrorPagesDir = () => new Promise((resolve, reject) => {
+    console.log(`
+Please provide a directory containing custom error pages (HTML).
+If such a directory doesn't yet exist, we will create one for you
+and populate it with example error page templates. The default 
+directory for custom error pages is 'errors'.`);
+
+    let schema = {
+        properties: {
+            error_dir: {
+                description: 'Error pages directory:',
+                required: true,
+                type: 'string',
+                default: 'errors'
             }
         }
     };
@@ -287,6 +315,10 @@ const initialise = (argv) => {
         })
         .then(result => {
             linc.sourceDir = result.source_dir;
+            return askErrorPagesDir();
+        })
+        .then(result => {
+            linc.errorDir = result.error_dir;
             return askProfile();
         })
         .then(result => {
@@ -308,6 +340,7 @@ Summary:
 + Site name: ${linc.siteName}
 + Description: ${linc.siteDescription}
 + Source directory: ${linc.sourceDir}
++ Error pages directory: ${linc.errorDir}
 + Site profile: ${lincProfiles[profile].name}
 + Viewer protocol: ${viewerProtocols[protocol].name}
 + Domains: ${domainStr}
