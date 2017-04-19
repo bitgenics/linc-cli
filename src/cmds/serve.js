@@ -20,10 +20,10 @@ const serve = (argv) => {
 
     const app = express();
 
-    const libDir = path.resolve(process.cwd(), 'dist/lib/');
+    const libDir = path.resolve(process.cwd(), 'dist', 'lib/');
     const options = getOptions();
     app.use(compression());
-    app.use('/_assets', express.static(path.resolve(process.cwd(), 'dist/_assets')));
+    app.use('/_assets', express.static(path.resolve(process.cwd(), 'dist', 'static', '_assets')));
     app.use('/', ssr(libDir, options));
 
     app.listen(3000, (err) => {
