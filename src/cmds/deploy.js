@@ -47,7 +47,7 @@ const createKey = (user_id, sha1, site_name) => {
     return `${user_id}/${site_name}-${sha1}.zip`;
 };
 
-const uploadZipfile = (description, sha1, auth, site, zipfile) => new Promise((resolve, reject) => {
+const uploadZipfile = (description, sha1, auth, site_name, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
         credentials: auth.aws.credentials,
         signatureVersion: 'v4',
@@ -61,8 +61,8 @@ const uploadZipfile = (description, sha1, auth, site, zipfile) => new Promise((r
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(user_id, sha1.substring(0, 8), site.name),
-                MetaData: {
+                Key: createKey(user_id, sha1.substring(0, 8), site_name),
+                Metadata: {
                     description: description
                 }
             }
@@ -122,8 +122,6 @@ const deploy = (argv) => {
         process.exit(255);
     }
 
-    console.log('Starting. Please wait...');
-
     const siteName = argv.siteName;
     const source_dir = 'dist';
     const code_id = sha1Dir(source_dir);
@@ -136,6 +134,8 @@ const deploy = (argv) => {
         .then(result => {
             description = result.description.trim();
             if (description.length === 0) throw new Error('No description provided. Abort.');
+
+            console.log('Please wait...');
 
             return auth(argv.accessKey, argv.secretKey);
         })
@@ -153,7 +153,7 @@ const deploy = (argv) => {
             return saveSettings(tempDir, settings);
         })
         .then(() => createZipfile(tmpDir, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(description, code_id, authParams, argv.site, zipfile))
+        .then(zipfile => uploadZipfile(description, code_id, authParams, siteName, zipfile))
         .then(() => console.log(`
 Your site has been deployed with the deployment key ${deploy_key}. Your site can
 be reached at the following URL: http://${deploy_key}.dk.bitgenicstest.com. 
