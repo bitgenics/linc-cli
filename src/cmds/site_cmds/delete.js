@@ -42,18 +42,16 @@ const deleteSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
 
         const json = JSON.parse(body);
         if (json.error) return reject(new Error(json.error));
-
-        return resolve(json);
+        else if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        else return resolve(json);
     });
 });
 
 const error = (err) => {
-    console.log('\nOops! Something went wrong, and your site could not be deleted. Here\'s what we know:');
-    console.log(err.message ? err.message : 'absolutely nothing (an unknown error occurred).');
+    console.log(`\nOops! Something went wrong: ${err.message}`);
 };
 
 exports.command = 'delete';
