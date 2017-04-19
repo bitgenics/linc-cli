@@ -2,9 +2,11 @@
 # yarn lockfile v1
 
 
-"@bitgenics/linc-build-ssr@^1.1.2":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@bitgenics/linc-build-ssr/-/linc-build-ssr-1.1.2.tgz#0e7e352eef16cbaf80bcb26ce9d71254ed9456b3"
+"@bitgenics/linc-build-ssr@^1.2.2":
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/@bitgenics/linc-build-ssr/-/linc-build-ssr-1.2.2.tgz#c281b84ee714845da2d262827318fd4e383052a5"
+  dependencies:
+    fs-extra "^2.1.2"
 
 "@bitgenics/linc-simple-express@^2.0.0":
   version "2.0.0"
@@ -966,6 +968,13 @@ fresh@0.5.0:
 fs-extra@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-2.0.0.tgz#337352bded4a0b714f3eb84de8cea765e9d37600"
+  dependencies:
+    graceful-fs "^4.1.2"
+    jsonfile "^2.1.0"
+
+fs-extra@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/fs-extra/-/fs-extra-2.1.2.tgz#046c70163cef9aad46b0e4a7fa467fb22d71de35"
   dependencies:
     graceful-fs "^4.1.2"
     jsonfile "^2.1.0"

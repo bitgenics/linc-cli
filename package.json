@@ -7,7 +7,7 @@
     "linc": "src/cli.js"
   },
   "dependencies": {
-    "@bitgenics/linc-build-ssr": "^1.1.2",
+    "@bitgenics/linc-build-ssr": "^1.2.2",
     "@bitgenics/linc-simple-express": "^2.0.0",
     "auth0-js": "^8.5.0",
     "child_process": "^1.0.2",
