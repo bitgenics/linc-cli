@@ -20,12 +20,13 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
-const askSiteInfo = () => new Promise((resolve, reject) => {
+const askSiteInfo = (name) => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             site_name: {
                 // Only a-z, 0-9 and - are allowed. Must start with a-z.
                 pattern: /^[a-z]+[a-z0-9-]*$/,
+                default: name,
                 description: 'Name of site to create:',
                 message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
                 required: true
@@ -307,7 +308,8 @@ const initialise = (argv) => {
     let endpoint = undefined;
 
     linclet('LINC')
-        .then(() => askSiteInfo())
+        .then(() => readPkg())
+        .then(pkg => askSiteInfo(pkg.name))
         .then(info => {
             linc.siteName = info.site_name.trim();
             linc.siteDescription = info.description.trim();
