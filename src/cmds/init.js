@@ -194,8 +194,8 @@ const askIsThisOk = () => new Promise((resolve, reject) => {
 });
 
 const error = (err) => {
-    console.log('Oops! Something went wrong:');
-    console.log(err);
+    console.log('Something went wrong:');
+    console.log(err.message);
 };
 
 const linclet = (msg) => new Promise((resolve, reject) => {
@@ -272,6 +272,25 @@ const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
     });
 });
 
+const checkSiteName = (siteName) => new Promise((resolve, reject) => {
+    console.log('Checking availability of name. Please wait...');
+
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (response.statusCode === 200) return resolve(json.exists);
+        else return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+    });
+});
+
 /**
  *
  * @param argv
@@ -313,8 +332,12 @@ const initialise = (argv) => {
         .then(info => {
             linc.siteName = info.site_name.trim();
             linc.siteDescription = info.description.trim();
-            return askSourceDir();
+            return checkSiteName(linc.siteName)
+                .then(result => {
+                    if (result) throw new Error('The site name you provided is not available.');
+                })
         })
+        .then(() => askSourceDir())
         .then(result => {
             linc.sourceDir = result.source_dir;
             return askErrorPagesDir();
