@@ -10,14 +10,12 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
-const askReleaseInfo = () => new Promise((resolve, reject) => {
+const askDeploymentKey = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
-            deploy_key: {
-                // Only a-z, 0-9 are allowed. Must start with a-z.
-                pattern: /^[a-f0-9]+$/,
+            deploy_key_index: {
                 description: 'Deployment key for release:',
-                message: 'Only a-z, 0-9 are allowed. Must start with a-z.',
+                default: 'A',
                 required: true
             }
         }
@@ -32,17 +30,13 @@ const askReleaseInfo = () => new Promise((resolve, reject) => {
 const askReleaseDomain = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
-            domain_name: {
-                // This is the pattern AWS uses for domain names
-                pattern: /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/,
-                description: colors.green('Domain name for release:'),
-                message: 'Must be a valid domain name.',
+            domain_name_index: {
+                description: 'Domain name for release:',
+                default: 'A',
                 required: true
             }
         }
     };
-    prompt.message = colors.magenta('(linc) ');
-    prompt.delimiter = '';
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
@@ -61,18 +55,16 @@ const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, r
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (json.deployments.length === 0) return reject('No deployments available. Deploy your site using \'linc deploy\'.');
-
-        return resolve(json);
+        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        else if (json.deployments.length === 0) return reject(new Error('No deployments available. Deploy your site using \'linc deploy\'.'));
+        else return resolve(json);
     });
 });
 
 const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, reject) => {
-    console.log('Please wait...');
     const options = {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${site_name}/domains`,
@@ -83,13 +75,12 @@ const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, rejec
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (!json.domains || json.domains.length === 0) return reject('No domains available. Add a domain first using \'linc domain add\'.');
-
-        return resolve(json);
+        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        else if (!json.domains || json.domains.length === 0) return reject(new Error('No domains available. Add a domain first using \'linc domain add\'.'));
+        else return resolve(json);
     });
 });
 
@@ -98,26 +89,19 @@ const showAvailableDomains = (results) => {
     const site_name = results.site_name;
 
     console.log(`Here are the most recent domains for ${site_name}:`);
-    domains.forEach(d => {
-        console.log(`  +- ${d.domain_name}`);
-        console.log(`        +- Created at ${d.created_at}`);
-    });
-    console.log('');
+
+    let code = 65; /* 'A' */
+    domains.forEach(d => console.log(`     ${String.fromCharCode(code++)}) ${d.domain_name}`));
 };
 
 const showAvailableDeployments = (results) => {
     const deployments = results.deployments;
     const site_name = results.site_name;
 
-    console.log(`Here are the most recent deployments for ${site_name}:`);
-    deployments.forEach(d => {
-        console.log(`  +- Deployment key: ${d.deploy_key}`);
-        if (d.description !== undefined) {
-            console.log(`        +- Description: ${d.description}`);
-        }
-        console.log(`        +- Code ID: ${d.code_id}`);
-        console.log(`        +- Created at ${d.created_at}`);
-    });
+    console.log(`\nHere are the most recent deployments for ${site_name}:`);
+
+    let code = 65; /* 'A' */
+    deployments.forEach(d => console.log(`     ${String.fromCharCode(code++)}) ${d.deploy_key}  (${d.description || ''})`));
 };
 
 const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new Promise((resolve, reject) => {
@@ -142,7 +126,7 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
 
 const error = (err) => {
     console.log('Oops! Something went wrong:');
-    console.log(err);
+    console.log(err.message);
 };
 
 const release = (argv) => {
@@ -153,27 +137,43 @@ const release = (argv) => {
 
     console.log('Please wait...');
 
-    let authParams = null;
     let siteName = argv.siteName;
+    let authParams = null;
+    let domainName = null;
     let deployKey = null;
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
             authParams = auth_params;
-            return getAvailableDeployments(siteName, authParams);
-        })
-        .then(result => showAvailableDeployments(result))
-        .then(() => askReleaseInfo(true))
-        .then(result => {
-            deployKey = result.deploy_key;
             return getAvailableDomains(siteName, authParams);
         })
-        .then(result => showAvailableDomains(result))
-        .then(() => askReleaseDomain())
-        .then(result => createNewRelease(siteName, deployKey, result.domain_name, authParams))
+        .then(result => {
+            showAvailableDomains(result);
+            return askReleaseDomain()
+                .then(answer => {
+                    let index = answer.domain_name_index.substr(0, 1).charCodeAt(0) - 65;
+                    if (index > result.domains.length-1) {
+                        throw new Error('Invalid response. Aborted by user.');
+                    }
+                    domainName = result.domains[index].domain_name;
+                })
+        })
+        .then(() => getAvailableDeployments(siteName, authParams))
+        .then(result => {
+            showAvailableDeployments(result);
+            return askDeploymentKey(true)
+                .then(answer => {
+                    let index = answer.deploy_key_index.substr(0, 1).charCodeAt(0) - 65;
+                    if (index > answer.deploy_key_index-1) {
+                        throw new Error('Invalid response. Aborted by user.');
+                    }
+                    deployKey = result.deployments[index].deploy_key;
+                })
+        })
+        .then(() => createNewRelease(siteName, deployKey, domainName, authParams))
         .then(response => {
             console.log('Release successfully created.');
             if (response.endpoint !== undefined) {
-                console.log(`The domain name for your site is ${response.endpoint}.`);
+                console.log(`Please be reminded the domain name for your site is:\n     ${response.endpoint}.`);
             }
         })
         .catch(err => error(err));
