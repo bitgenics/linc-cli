@@ -23,6 +23,7 @@
     "eslint-plugin-react": "^6.10.3",
     "express": "^4.15.2",
     "figlet": "^1.2.0",
+    "fs-extra": "^2.1.2",
     "fs-promise": "^2.0.2",
     "homedir": "^0.6.0",
     "js-yaml": "^3.8.2",
