@@ -335,6 +335,7 @@ const initialise = (argv) => {
             return checkSiteName(linc.siteName)
                 .then(result => {
                     if (result) throw new Error('The site name you provided is not available.');
+                    else console.log('OK! This site name is available.');
                 })
         })
         .then(() => askSourceDir())
