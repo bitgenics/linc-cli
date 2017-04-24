@@ -1,5 +1,6 @@
 'use strict';
 const prompt = require('prompt');
+const request = require('request');
 const path = require('path');
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
@@ -7,10 +8,13 @@ const zip = require('deterministic-zip');
 const sha1Sync = require('deterministic-sha1');
 const fs = require('fs-promise');
 const auth = require('../auth');
+const config = require('../config.json');
 
 const BUCKET_NAME = 'linc-sites-deployable-dev';
 
 const tmpDir = '/tmp/';
+
+const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 const sha1Dir = (source_dir) => {
     return sha1Sync(path.join(process.cwd(), source_dir)).substring(0, 8);
@@ -116,6 +120,22 @@ const askDescription = () => new Promise((resolve, reject) => {
     })
 });
 
+const checkSite = (siteName, authInfo) => new Promise((resolve, reject) => {
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authInfo.jwtToken}`
+        }
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+        if (response.statusCode !== 200) return reject(new Error('Invalid site to deploy. Please check your package.json.'));
+        else return resolve();
+    });
+});
+
 const deploy = (argv) => {
     if (argv.siteName === undefined) {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');
@@ -135,13 +155,17 @@ const deploy = (argv) => {
             description = result.description.trim();
             if (description.length === 0) throw new Error('No description provided. Abort.');
 
-            console.log('Please wait...');
+            console.log('Checking site ownership. Please wait...');
 
-            return auth(argv.accessKey, argv.secretKey);
+            return auth(argv.accessKey, argv.secretKey)
+                .then(auth_params => {
+                    authParams = auth_params;
+                    return checkSite(siteName, authParams);
+                })
         })
-        .then(auth_params => {
-            authParams = auth_params;
-            return createTempDir()
+        .then(() => {
+            console.log('OK');
+            return createTempDir();
         })
         .then(temp_dir => {
             tempDir = temp_dir;
@@ -153,8 +177,13 @@ const deploy = (argv) => {
             return saveSettings(tempDir, settings);
         })
         .then(() => createZipfile(tmpDir, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(description, code_id, authParams, siteName, zipfile))
+        .then(zipfile => {
+            console.log('Upload started. Please wait...');
+            return uploadZipfile(description, code_id, authParams, siteName, zipfile);
+        })
         .then(() => console.log(`
+Done.
+
 Your site has been deployed with the deployment key ${deploy_key}. Your site can
 be reached at the following URL: http://${deploy_key}.dk.bitgenicstest.com. 
 Please note that it may take a short while for this URL to become available.
