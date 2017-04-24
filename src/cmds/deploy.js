@@ -10,11 +10,10 @@ const fs = require('fs-promise');
 const auth = require('../auth');
 const config = require('../config.json');
 
-const BUCKET_NAME = 'linc-sites-deployable-dev';
-
 const tmpDir = '/tmp/';
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const BUCKET_NAME = config.S3.deployBucket;
 
 const sha1Dir = (source_dir) => {
     return sha1Sync(path.join(process.cwd(), source_dir)).substring(0, 8);
@@ -185,7 +184,8 @@ const deploy = (argv) => {
 Done.
 
 Your site has been deployed with the deployment key ${deploy_key}. Your site can
-be reached at the following URL: http://${deploy_key}.dk.bitgenicstest.com. 
+be reached at the following URL: 
+    http://${deploy_key}-${siteName}.dk.bitgenicstest.com. 
 Please note that it may take a short while for this URL to become available.
 `))
         .catch(err => console.log(err.message));
