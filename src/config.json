@@ -1,8 +1,8 @@
 {
     "Api": {
-        "LincBaseEndpoint": "https://api.bitgenicstest.com/dev"
+        "LincBaseEndpoint": "https://api.linc.sh/v1"
     },
     "S3": {
-        "deployBucket": "linc-sites-deployable-dev"
+        "deployBucket": "linc-deployables-prod"
     }
 }
