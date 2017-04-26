@@ -1,11 +1,14 @@
 "use strict";
 const request = require('request');
+const config = require('./config.json');
+
+const ClientId = config.Auth.ClientId;
 
 const login = (accessKey, secretKey) => new Promise((resolve, reject) => {
     const params = {
         url: 'https://bitgenics.auth0.com/oauth/ro',
         json: {
-            client_id: 'ET6YJD3Yt0RkHXyPUMbMmD0x3Rg3Sl77',
+            client_id: ClientId,
             username: accessKey,
             password: secretKey,
             connection: 'Username-Password-Authentication',
@@ -15,11 +18,8 @@ const login = (accessKey, secretKey) => new Promise((resolve, reject) => {
     };
 
     request.post(params, (err, res, body) => {
-        if (err) {
-            reject(err);
-        } else {
-            resolve(body);
-        }
+        if (err) return reject(err);
+        else return resolve(body);
     })
 });
 
@@ -27,20 +27,17 @@ const getAWSCredentials = (id_token) => new Promise((resolve, reject) => {
     const params = {
         url: 'https://bitgenics.auth0.com/delegation',
         json: {
-            client_id: 'ET6YJD3Yt0RkHXyPUMbMmD0x3Rg3Sl77',
+            client_id: ClientId,
             grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
             id_token: id_token,
-            target: 'ET6YJD3Yt0RkHXyPUMbMmD0x3Rg3Sl77',
+            target: ClientId,
             api_type: 'aws'
         }
     };
 
     request.post(params, (err, res, body) => {
-        if (err) {
-            return reject(err)
-        } else {
-            return resolve(body);
-        }
+        if (err) return reject(err);
+        else return resolve(body);
     });
 });
 
@@ -53,11 +50,8 @@ const getUserProfile = (id_token) => new Promise((resolve, reject) => {
     };
 
     request.post(params, (err, res, body) => {
-        if (err) {
-            return reject(err);
-        } else {
-            return resolve(body);
-        }
+        if (err) return reject(err);
+        else return resolve(body);
     })
 });
 
@@ -81,7 +75,7 @@ module.exports = (accessKey, secretKey) => new Promise((resolve, reject) =>  {
                             secretAccessKey: r[0].Credentials.SecretAccessKey,
                             sessionToken: r[0].Credentials.SessionToken
                         }};
-                    authParams.auth0 = { profile: r[1]};
+                    authParams.auth0 = { profile: r[1] };
                     return resolve(authParams);
                 })
                 .catch(err => reject(err))

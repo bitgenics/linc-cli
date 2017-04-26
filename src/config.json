@@ -2,6 +2,9 @@
     "Api": {
         "LincBaseEndpoint": "https://api.linc.sh/v1"
     },
+    "Auth": {
+        "ClientId": "NhV8ND5vg8GWEmsgUyy7aLOz5G05n9cU"
+    },
     "S3": {
         "deployBucket": "linc-deployables"
     }
