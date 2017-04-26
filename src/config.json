@@ -3,6 +3,6 @@
         "LincBaseEndpoint": "https://api.linc.sh/v1"
     },
     "S3": {
-        "deployBucket": "linc-deployables-prod"
+        "deployBucket": "linc-deployables"
     }
 }
