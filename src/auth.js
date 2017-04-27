@@ -4,19 +4,18 @@ const config = require('./config.json');
 
 const ClientId = config.Auth.ClientId;
 
-const login = (accessKey, secretKey) => new Promise((resolve, reject) => {
+const login = (username, password) => new Promise((resolve, reject) => {
     const params = {
         url: 'https://bitgenics.auth0.com/oauth/ro',
         json: {
             client_id: ClientId,
-            username: accessKey,
-            password: secretKey,
+            username: username,
+            password: password,
             connection: 'Username-Password-Authentication',
             grant_type: 'password',
             scope: 'openid'
         }
     };
-
     request.post(params, (err, res, body) => {
         if (err) return reject(err);
         else return resolve(body);
@@ -34,7 +33,6 @@ const getAWSCredentials = (id_token) => new Promise((resolve, reject) => {
             api_type: 'aws'
         }
     };
-
     request.post(params, (err, res, body) => {
         if (err) return reject(err);
         else return resolve(body);
@@ -48,7 +46,6 @@ const getUserProfile = (id_token) => new Promise((resolve, reject) => {
             id_token: id_token
         }
     };
-
     request.post(params, (err, res, body) => {
         if (err) return reject(err);
         else return resolve(body);
