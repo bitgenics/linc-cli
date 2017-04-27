@@ -20,7 +20,7 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
-const askSiteInfo = (name) => new Promise((resolve, reject) => {
+const askSiteName = (name) => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             site_name: {
@@ -30,9 +30,22 @@ const askSiteInfo = (name) => new Promise((resolve, reject) => {
                 description: 'Name of site to create:',
                 message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
                 required: true
-            },
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const askDescription = (descr) => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
             description: {
-                description: 'Description (optional):',
+                description: 'Description:',
+                default: descr,
                 required: false
             }
         }
@@ -328,17 +341,22 @@ const initialise = (argv) => {
 
     linclet('LINC')
         .then(() => readPkg())
-        .then(pkg => askSiteInfo(pkg.name))
-        .then(info => {
-            linc.siteName = info.site_name.trim();
-            linc.siteDescription = info.description.trim();
-            return checkSiteName(linc.siteName)
+        .then(pkg => {
+            return askSiteName(pkg.name)
+                .then(info => {
+                    linc.siteName = info.site_name.trim();
+                    return checkSiteName(linc.siteName)
+                })
                 .then(result => {
                     if (result) throw new Error('The site name you provided is not available.');
                     else console.log('OK! This site name is available.');
                 })
+                .then(() => askDescription(pkg.description))
         })
-        .then(() => askSourceDir())
+        .then(info => {
+            linc.siteDescription = info.description.trim();
+            return askSourceDir();
+        })
         .then(result => {
             linc.sourceDir = result.source_dir;
             return askErrorPagesDir();
@@ -362,14 +380,8 @@ const initialise = (argv) => {
             let domainStr = '';
             linc.domains.forEach(x => domainStr += '\n  - ' + x);
             console.log(`
-Summary:
-+ Site name: ${linc.siteName}
-+ Description: ${linc.siteDescription}
-+ Source directory: ${linc.sourceDir}
-+ Error pages directory: ${linc.errorDir}
-+ Site profile: ${lincProfiles[profile].name}
-+ Viewer protocol: ${viewerProtocols[protocol].name}
-+ Domains: ${domainStr}
+The following section will be added to package.json:
+${JSON.stringify({linc: linc}, null, 3)}
 `);
             return askIsThisOk();
         })
