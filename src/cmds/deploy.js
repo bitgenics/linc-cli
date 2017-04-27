@@ -154,7 +154,7 @@ const deploy = (argv) => {
             description = result.description.trim();
             if (description.length === 0) throw new Error('No description provided. Abort.');
 
-            console.log('Checking site ownership. Please wait...');
+            console.log('Checking authorisation. Please wait...');
 
             return auth(argv.accessKey, argv.secretKey)
                 .then(auth_params => {
