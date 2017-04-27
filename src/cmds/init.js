@@ -266,8 +266,8 @@ const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
         if (err) return reject(err);
 
         const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
-        else if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        if (json.error) return reject(new Error(json.error));
+        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
         else return resolve(json);
     });
 });
@@ -287,7 +287,7 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
 
         const json = JSON.parse(body);
         if (response.statusCode === 200) return resolve(json.exists);
-        else return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        else return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
     });
 });
 
