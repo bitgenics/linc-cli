@@ -1,11 +1,14 @@
 {
     "Api": {
-        "LincBaseEndpoint": "https://api.linc.sh/v1"
+        "LincBaseEndpoint": "https://api.linc.sh/v1",
+        "LincBaseEndpointDev": "https://api.bitgenicstest.com/dev"
     },
     "Auth": {
-        "ClientId": "NhV8ND5vg8GWEmsgUyy7aLOz5G05n9cU"
+        "ClientId": "PTEkzI2wamLXZpyMhdtunD2jMNNvWLKC",
+        "ClientIdDev": "OOVi8QEkqLLDrSbxi0C9H8FJtKN8InMu"
     },
     "S3": {
-        "deployBucket": "linc-deployables"
+        "deployBucket": "linc-deployables",
+        "deployBucketDev": "linc-deployables-dev"
     }
 }
