@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const prompt = require('prompt');
 const figlet = require('figlet');
+const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const lincProfiles = require('../lib/linc-profiles');
@@ -342,6 +343,7 @@ const initialise = (argv) => {
     linclet('LINC')
         .then(() => readPkg())
         .then(pkg => {
+            notice();
             return askSiteName(pkg.name)
                 .then(info => {
                     linc.siteName = info.site_name.trim();

@@ -8,6 +8,7 @@ const zip = require('deterministic-zip');
 const sha1Sync = require('deterministic-sha1');
 const fs = require('fs-promise');
 const auth = require('../auth');
+const notice = require('../lib/notice');
 const config = require('../config.json');
 
 const tmpDir = '/tmp/';
@@ -194,5 +195,7 @@ Please note that it may take a short while for this URL to become available.
 exports.command = 'deploy';
 exports.desc = 'Deploy a web site by uploading it to LINC';
 exports.handler = (argv) => {
+    notice();
+
     deploy(argv);
 };

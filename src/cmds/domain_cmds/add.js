@@ -2,6 +2,7 @@
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
+const notice = require('../../lib/notice');
 const config = require('../../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
@@ -62,10 +63,11 @@ exports.handler = (argv) => {
         process.exit(255);
     }
 
-    console.log('Please wait...');
+    notice();
 
     askDomainName()
         .then(y => {
+            console.log('Please wait...');
             return auth(argv.accessKey, argv.secretKey)
                 .then(authParams => addDomainName(y.domain_name, argv.siteName, authParams))
         })

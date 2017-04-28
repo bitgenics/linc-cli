@@ -2,6 +2,7 @@
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
+const notice = require('../../lib/notice');
 const config = require('../../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
@@ -58,6 +59,9 @@ exports.command = 'delete';
 exports.desc = 'Delete a site';
 exports.handler = (argv) => {
     let siteName = null;
+
+    notice();
+
     console.log(`Deleting a site is a destructive operation that CANNOT be undone. 
 The operation will remove all resources associated with your site, 
 and it will no longer be accessible/available to you.`);

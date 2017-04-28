@@ -3,6 +3,7 @@ const colors = require('colors/safe');
 const prompt = require('prompt');
 const cred = require('../../cred');
 const auth = require('../../auth');
+const notice = require('../../lib/notice');
 
 prompt.colors = false;
 prompt.message = '';
@@ -47,6 +48,8 @@ let login = (argv) => new Promise((resolve, reject) => {
         }
         return resolve(t);
     };
+
+    notice();
 
     credentialsFromPrompt()
     	.then(z => auth(z.access_key_id, z.secret_access_key))

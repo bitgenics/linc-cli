@@ -1,6 +1,7 @@
 'use strict';
 const request = require('request');
 const auth = require('../../auth');
+const notice = require('../../lib/notice');
 const config = require('../../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
@@ -43,6 +44,10 @@ const list = (argv) => {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');
         process.exit(255);
     }
+
+    notice();
+
+    console.log('Please wait...');
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => getAvailableDomains(argv.siteName, auth_params))

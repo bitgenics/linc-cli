@@ -1,6 +1,7 @@
 'use strict';
 const path = require('path');
 const fs = require('fs');
+const notice = require('../lib/notice');
 
 const getOptions = () => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
@@ -38,5 +39,7 @@ const serve = (argv) => {
 exports.command = 'serve';
 exports.desc = 'Run a Linc server locally';
 exports.handler = (argv) => {
+    notice();
+
     serve(argv);
 };

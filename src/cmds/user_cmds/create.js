@@ -3,6 +3,7 @@ const colors = require('colors/safe');
 const prompt = require('prompt');
 const request = require('request');
 const cred = require('../../cred');
+const notice = require('../../lib/notice');
 const config = require('../../config.json');
 
 const LINC_API_USERS_ENDPOINT = config.Api.LincBaseEndpoint + '/users';
@@ -80,6 +81,8 @@ servers, so it's impossible for us to retrieve them should you lose them.`;
 exports.command = 'create';
 exports.desc = 'Create an account';
 exports.handler = (argv) => {
+    notice();
+
     getUserEmail()
         .then(email => createNewUser(email))
         .then(apiResponse => {

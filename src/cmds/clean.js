@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs-extra');
+const notice = require('../lib/notice');
 
 const clean = (argv) => {
     const distDir = process.cwd() + '/dist';
@@ -12,5 +13,7 @@ const clean = (argv) => {
 exports.command = 'clean';
 exports.desc = 'Clean project directory';
 exports.handler = (argv) => {
+    notice();
+
     clean(argv);
 };

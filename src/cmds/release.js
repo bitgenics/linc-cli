@@ -2,6 +2,7 @@
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../auth');
+const notice = require('../lib/notice');
 const config = require('../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
@@ -195,5 +196,7 @@ const release = (argv) => {
 exports.command = 'release';
 exports.desc = 'Release a site';
 exports.handler = (argv) => {
+    notice();
+
     release(argv);
 };
