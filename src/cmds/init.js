@@ -398,7 +398,7 @@ ${JSON.stringify({linc: linc}, null, 3)}
         .then(response => {
             endpoint = response && response.endpoint || undefined;
             console.log('\nInstalling profile package. Please wait...');
-            const profilePackage = `@bitgenics/linc-profile-${lincProfiles[profile].pkg}`;
+            const profilePackage = `${lincProfiles[profile].pkg}`;
             return installProfilePkg(profilePackage)
                 .then(() => copyConfigExamples(profilePackage, linc.sourceDir))
         })
