@@ -44,7 +44,10 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 let login = (argv) => new Promise((resolve, reject) => {
     const success = (t) => {
         if (! argv.silent) {
-            console.log('You have successfully logged in');
+            console.log(
+`You have successfully logged in. As a next step, you can build and deploy
+a new site using the commands 'linc build' and 'linc deploy'.
+`);
         }
         return resolve(t);
     };

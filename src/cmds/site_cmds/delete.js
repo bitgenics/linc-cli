@@ -77,6 +77,10 @@ and it will no longer be accessible/available to you.`);
         })
         .then(() => auth(argv.accessKey, argv.secretKey))
         .then(auth_params => deleteSite(siteName, auth_params))
-        .then(() => console.log('Site successfully deleted.'))
+        .then(() => console.log(
+`Site successfully deleted. You can no longer access this site. Please be
+advised that it takes a while for the process to finish on our servers, 
+during which time you can't create a new site with the same name.
+`))
         .catch(err => error(err));
 };

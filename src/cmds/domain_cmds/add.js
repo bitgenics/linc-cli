@@ -71,6 +71,10 @@ exports.handler = (argv) => {
             return auth(argv.accessKey, argv.secretKey)
                 .then(authParams => addDomainName(y.domain_name, argv.siteName, authParams))
         })
-        .then(() => console.log('Domain name successfully added.'))
+        .then(() => console.log(
+`Domain name successfully added. As a next step, you can create a 
+release by running the command 'linc release' and following the
+prompts.
+`))
         .catch(err => error(err));
 };

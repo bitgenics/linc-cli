@@ -34,7 +34,6 @@ const showAvailableDomains = (results) => {
     console.log(`Here are the most recent domains for ${site_name}:`);
     domains.forEach(d => {
         console.log(`  +- ${d.domain_name}`);
-        console.log(`        +- Created at ${d.created_at}`);
     });
     console.log('');
 };
@@ -53,8 +52,6 @@ const list = (argv) => {
         .then(auth_params => getAvailableDomains(argv.siteName, auth_params))
         .then(result => showAvailableDomains(result))
         .catch(err => console.log(`Oops, something went wrong:\n${err}.`));
-
-    console.log('Please wait...');
 };
 
 exports.command = 'list';

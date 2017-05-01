@@ -188,6 +188,7 @@ Your site has been deployed with the deployment key ${deploy_key}. Your site can
 be reached at the following URL: 
     http://${deploy_key}-${siteName}.dk.bitgenicstest.com. 
 Please note that it may take a short while for this URL to become available.
+As a next step, you can use your new deployment to create a new release.
 `))
         .catch(err => console.log(err.message));
 };

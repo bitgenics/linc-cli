@@ -73,7 +73,10 @@ to log you in automatically in the future.
 
 !!! Important notice !!!
 Please also store these credentials in a safe place. We do not store them on our
-servers, so it's impossible for us to retrieve them should you lose them.`;
+servers, so it's impossible for us to retrieve them should you lose them.
+
+As a next step, you can create a new site using the command 'linc init'. If you
+create a site from scratch, please run 'npm init' first, then 'linc init'.`;
 
     console.log(msg);
 };
