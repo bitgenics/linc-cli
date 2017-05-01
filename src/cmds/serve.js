@@ -31,7 +31,7 @@ const serve = (argv) => {
         if (err) {
             console.log(err);
         } else {
-            console.log('Listing on port: 3000');
+            console.log('Listing on http://localhost:3000');
         }
     });
 };
