@@ -46,12 +46,11 @@ const createNewUser = (email) => new Promise((resolve, reject) => {
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-
-        return resolve(json);
+        else if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        else return resolve(json);
     });
 });
 
