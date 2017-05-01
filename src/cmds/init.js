@@ -426,17 +426,23 @@ ${JSON.stringify({linc: linc}, null, 3)}
             console.log('Done.');
             if (endpoint !== undefined) {
                 console.log(`
-The LINC endpoint for your site is ${endpoint}.
-You can use this endpoint to set up your domains. Just create a CNAME 
-entry for your domains and make them point to ${endpoint}.
-`);
+Now that your site has been initialised, you can perform your
+first deployment. After doing this, you can access your site at
+${linc.siteName}.linc-app.co.`);
+
                 if (linc.domains.length > 0) {
                     console.log(`
-Since you have added one or more domains names, you will shortly be 
-receiving emails asking you to approve an SSL certificate. You may 
-receive multiple emails for several domains, so make sure you approve 
-all domains. You only have to approve each domain once, even though 
-you may receive multiple emails for the same domain.
+The LINC endpoint for your site is ${endpoint}.
+
+Since you have added one or more domains names, you must use this 
+endpoint to set them up. Just create a CNAME entry for your domains 
+and make them point to ${endpoint}.
+
+Also, you will shortly receive some emails asking you to approve SSL 
+certificates. You may receive multiple emails for several domains, 
+so make sure you approve all domains. You only have to approve each 
+domain once, even though you may receive multiple emails for the same 
+domain.
 `);
                 }
             }
