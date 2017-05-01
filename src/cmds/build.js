@@ -1,4 +1,5 @@
 'use strict';
+const assertPkg = require('../lib/package-json').assert;
 const notice = require('../lib/notice');
 
 const build = () => {
@@ -18,6 +19,8 @@ You can also try your new version locally by running 'linc serve'.
 exports.command = 'build';
 exports.desc = 'Build & package a site for deployment';
 exports.handler = (argv) => {
+    assertPkg();
+
     notice();
 
     console.log('Building. Please wait...');

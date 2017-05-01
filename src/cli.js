@@ -2,7 +2,6 @@
 'use strict';
 const fs = require('fs');
 const yargs = require('yargs');
-require('./lib/package-json').assert();
 
 const argv = yargs
     .commandDir('cmds')

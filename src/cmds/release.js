@@ -4,6 +4,7 @@ const request = require('request');
 const auth = require('../auth');
 const notice = require('../lib/notice');
 const config = require('../config.json');
+const assertPkg = require('../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
@@ -196,6 +197,8 @@ const release = (argv) => {
 exports.command = 'release';
 exports.desc = 'Release a site';
 exports.handler = (argv) => {
+    assertPkg();
+
     notice();
 
     release(argv);

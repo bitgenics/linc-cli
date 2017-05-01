@@ -4,6 +4,7 @@ const request = require('request');
 const auth = require('../../auth');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
+const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
@@ -59,6 +60,8 @@ exports.command = 'delete';
 exports.desc = 'Delete a site';
 exports.handler = (argv) => {
     let siteName = null;
+
+    assertPkg();
 
     notice();
 

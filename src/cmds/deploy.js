@@ -10,6 +10,7 @@ const fs = require('fs-promise');
 const auth = require('../auth');
 const notice = require('../lib/notice');
 const config = require('../config.json');
+const assertPkg = require('../lib/package-json').assert;
 
 const tmpDir = '/tmp/';
 
@@ -196,6 +197,8 @@ As a next step, you can use your new deployment to create a new release.
 exports.command = 'deploy';
 exports.desc = 'Deploy a web site by uploading it to LINC';
 exports.handler = (argv) => {
+    assertPkg();
+
     notice();
 
     deploy(argv);

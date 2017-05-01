@@ -4,6 +4,7 @@ const request = require('request');
 const auth = require('../../auth');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
+const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
@@ -62,6 +63,8 @@ exports.handler = (argv) => {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');
         process.exit(255);
     }
+
+    assertPkg();
 
     notice();
 

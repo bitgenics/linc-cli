@@ -14,6 +14,7 @@ const request = require('request');
 const copyDir = require('copy-dir');
 const auth = require('../auth');
 const config = require('../config.json');
+const assertPkg = require('../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
@@ -446,5 +447,9 @@ you may receive multiple emails for the same domain.
 exports.command = 'init';
 exports.desc = 'Initialise a LINC site';
 exports.handler = (argv) => {
+    assertPkg();
+
+    notice();
+
     initialise(argv);
 };

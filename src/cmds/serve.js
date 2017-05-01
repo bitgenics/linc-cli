@@ -2,6 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const notice = require('../lib/notice');
+const assertPkg = require('../lib/package-json').assert;
 
 const getOptions = () => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
@@ -39,6 +40,8 @@ const serve = (argv) => {
 exports.command = 'serve';
 exports.desc = 'Run a Linc server locally';
 exports.handler = (argv) => {
+    assertPkg();
+
     notice();
 
     serve(argv);

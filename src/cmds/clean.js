@@ -1,5 +1,6 @@
 'use strict';
 const fs = require('fs-extra');
+const assertPkg = require('../lib/package-json').assert;
 const notice = require('../lib/notice');
 
 const clean = (argv) => {
@@ -13,6 +14,8 @@ const clean = (argv) => {
 exports.command = 'clean';
 exports.desc = 'Clean project directory (removes \'dist\').';
 exports.handler = (argv) => {
+    assertPkg();
+
     notice();
 
     clean(argv);
