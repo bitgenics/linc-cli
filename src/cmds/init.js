@@ -351,7 +351,7 @@ const initialise = (argv) => {
                 })
                 .then(result => {
                     if (result) throw new Error('The site name you provided is not available.');
-                    else console.log('OK! This site name is available.');
+                    else console.log('OK! This site name is available.\n');
                 })
                 .then(() => askDescription(pkg.description))
         })

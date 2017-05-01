@@ -10,7 +10,8 @@ const build = () => {
     	if (err) console.log(err);
 
         console.log(`Done! The new build can be found in the folder 'dist'.
-You can also try your new version locally by running 'linc serve'.`);
+You can also try your new version locally by running 'linc serve'.
+`);
     });
 };
 
