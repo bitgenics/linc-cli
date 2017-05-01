@@ -417,9 +417,18 @@ ${JSON.stringify({linc: linc}, null, 3)}
             if (endpoint !== undefined) {
                 console.log(`
 The LINC endpoint for your site is ${endpoint}.
-You can use this endpoint to set up your domains.
-Just create a CNAME entry for your domains and
-make them point to ${endpoint}.`);
+You can use this endpoint to set up your domains. Just create a CNAME 
+entry for your domains and make them point to ${endpoint}.
+`);
+                if (linc.domains.length > 0) {
+                    console.log(`
+Since you have added one or more domains names, you will shortly be 
+receiving emails asking you to approve an SSL certificate. You may 
+receive multiple emails for several domains, so make sure you approve 
+all domains. You only have to approve each domain once, even though 
+you may receive multiple emails for the same domain.
+`);
+                }
             }
         })
         .catch(err => error(err));

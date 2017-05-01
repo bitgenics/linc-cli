@@ -72,7 +72,13 @@ exports.handler = (argv) => {
                 .then(authParams => addDomainName(y.domain_name, argv.siteName, authParams))
         })
         .then(() => console.log(
-`Domain name successfully added. As a next step, you can create a 
+`Domain name successfully added. Shortly, you will be receiving 
+emails asking you to approve an SSL certificate. You may receive
+multiple emails for several domains, so make sure you approve 
+all domains. You only have to approve each domain once, even
+though you may receive multiple emails for the same (sub)domain.
+
+As a next step, you can create a 
 release by running the command 'linc release' and following the
 prompts.
 `))
