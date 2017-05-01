@@ -64,7 +64,8 @@ exports.handler = (argv) => {
 
     console.log(`Deleting a site is a destructive operation that CANNOT be undone. 
 The operation will remove all resources associated with your site, 
-and it will no longer be accessible/available to you.`);
+and it will no longer be accessible/available to you.
+`);
     getSiteName('Name of site to delete:')
         .then(x => {
             siteName = x.site_name;
