@@ -340,8 +340,18 @@ const initialise = (argv) => {
     let protocol;
     let endpoint = undefined;
 
+    let authParams;
+
     linclet('LINC')
-        .then(() => readPkg())
+        .then(() => {
+            console.log('Authenticating. Please wait...');
+            return auth(argv.accessKey, argv.secretKey);
+        })
+        .then(auth_params => {
+            console.log('OK.\n');
+            authParams = auth_params;
+            return readPkg();
+        })
         .then(pkg => {
             notice();
             return askSiteName(pkg.name)
@@ -393,8 +403,7 @@ ${JSON.stringify({linc: linc}, null, 3)}
                 return process.exit(255);
             }
         })
-        .then(() => auth(argv.accessKey, argv.secretKey))
-        .then(auth_params => createNewSite(linc, auth_params))
+        .then(() => createNewSite(linc, authParams))
         .then(response => {
             endpoint = response && response.endpoint || undefined;
             console.log('\nInstalling profile package. Please wait...');
