@@ -116,3 +116,8 @@ deployment key.
 
 Please note that the latest deployment of your site can always be found at the special
 site url `https://<site-name>.linc-app.co`.
+
+## Feedback and help
+
+I you run into problems, or have other feedback to give us, feel free to drop us a line
+at `help@bitgenics.io`.
