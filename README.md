@@ -16,6 +16,8 @@ simply add -h to show the options for the subcommand, like so:
 
 `linc domain -h`
 
+![alt text](https://cloud.githubusercontent.com/assets/468748/25603031/121524c6-2f2b-11e7-8c73-f9bfbe1e5428.png "linc usage")
+
 ### First use
 
 If you're new to LINC, you first need to create an account. In order to do this, simply run
