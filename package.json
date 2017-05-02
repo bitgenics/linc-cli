@@ -1,14 +1,12 @@
 {
   "name": "linc-cli",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "LINC command line tools",
   "main": "bin/index.js",
   "bin": {
     "linc": "src/cli.js"
   },
   "dependencies": {
-    "linc-build-ssr": "^1.2.2",
-    "linc-simple-express": "^2.0.0",
     "child_process": "^1.0.2",
     "compression": "^1.6.2",
     "copy-dir": "^0.3.0",
@@ -26,6 +24,8 @@
     "fs-promise": "^2.0.2",
     "homedir": "^0.6.0",
     "js-yaml": "^3.8.2",
+    "linc-build-ssr": "^1.2.2",
+    "linc-simple-express": "^2.0.2",
     "path": "^0.12.7",
     "prompt": "^1.0.0",
     "read-pkg": "^2.0.0",
