@@ -39,15 +39,15 @@ instance, the name and description of your site. All questions have sensible def
 make sure to review before submitting. If you make a mistake, simply type Ctrl-C and the
 init process will abort immediately. 
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25604335/41db8f4c-2f35-11e7-9bb2-1288f4406013.png "linc init")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25604335/41db8f4c-2f35-11e7-9bb2-1288f4406013.png "linc init")
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25604336/41dba518-2f35-11e7-9c55-742315994882.png "linc init")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25604336/41dba518-2f35-11e7-9c55-742315994882.png "linc init")
 
 Once you've entered your sites information and settings, you will be shown the information
 that will be added to your `package.json`. If you're happy with the settings, simply press 
 enter (the default is to accept). Otherwise, type `N <enter>` or Ctrl-C and start over.
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25604377/907b1884-2f35-11e7-899c-0292a47ef9aa.png
+![alt text](https://cloud.githubusercontent.com/assets/468748/25604377/907b1884-2f35-11e7-899c-0292a47ef9aa.png
  "linc section in package.json")
 
 If you've answered Y, your site will be created in our back-end. This may take a few moments,
@@ -56,7 +56,7 @@ automatically, error pages are configured, and example configuration file(s) are
 your source directory. Finally, if you've added custom domains, your site's endpoint is shown
 that you need to set up the custom domains with (CNAME). 
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25604337/41edc13a-2f35-11e7-80c2-3d2a0c322947.png "linc init")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25604337/41edc13a-2f35-11e7-80c2-3d2a0c322947.png "linc init")
 
 ### Building your site
 
@@ -65,14 +65,14 @@ type `linc build`. It takes a few moments to finish the build, so please be pati
 result of the build is a directory called `dist`, which contains the information we need
 to ultimately deploy your site. 
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25605385/0a5c948c-2f3d-11e7-8636-271d066a9028.png "linc build")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25605385/0a5c948c-2f3d-11e7-8636-271d066a9028.png "linc build")
 
 ### Run your new site locally
 
 You can run your new build using the command `linc serve`. It will start a web server on
 your machine, listening on port 3000 (`http://localhost:3000`).
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25605400/26610d02-2f3d-11e7-95ec-862ea80043f7.png "linc serve")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25605400/26610d02-2f3d-11e7-95ec-862ea80043f7.png "linc serve")
 
 ### Deploying your site
 
@@ -85,7 +85,7 @@ based on your actual website code, the site name, and the settings that you choo
 use with your site. A deployment URL is shown, which you can use to access the site after
 deployment. It may take a few moments for your latest deployment to become available.
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25605419/3d311d7e-2f3d-11e7-8adb-b09d0e48b8d1.png "linc deploy")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25605419/3d311d7e-2f3d-11e7-8adb-b09d0e48b8d1.png "linc deploy")
 
 ### Custom domains
 
@@ -96,7 +96,7 @@ emails if you have multiple custom domains) to validate an SSL Certificate. Make
 validate the SSL Certificate in order to enable a secure connection with your site using
 custom domains. 
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25605433/53a1a33a-2f3d-11e7-945f-5f837eb3712a.png
+![alt text](https://cloud.githubusercontent.com/assets/468748/25605433/53a1a33a-2f3d-11e7-945f-5f837eb3712a.png
  "linc domain add")
 
 To see what domains are available for your site, run `linc domain list`.
@@ -107,7 +107,7 @@ Releasing a new version for your site, means coupling a certain deployment (base
 unique deployment ID) with a custom domain you've added. Simply run `linc release` and 
 answer a few questions: a) the domain(s) to release to and b) which deployment key to use.
 
-![alt text]https://cloud.githubusercontent.com/assets/468748/25605465/852d3a36-2f3d-11e7-908d-1408b22463ec.png
+![alt text](https://cloud.githubusercontent.com/assets/468748/25605465/852d3a36-2f3d-11e7-908d-1408b22463ec.png
  "linc release")
 
 Once you've released to a certain custom domain, you can use that domain for your site. 
