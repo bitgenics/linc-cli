@@ -65,10 +65,14 @@ type `linc build`. It takes a few moments to finish the build, so please be pati
 result of the build is a directory called `dist`, which contains the information we need
 to ultimately deploy your site. 
 
+![alt text]https://cloud.githubusercontent.com/assets/468748/25605385/0a5c948c-2f3d-11e7-8636-271d066a9028.png "linc build")
+
 ### Run your new site locally
 
 You can run your new build using the command `linc serve`. It will start a web server on
 your machine, listening on port 3000 (`http://localhost:3000`).
+
+![alt text]https://cloud.githubusercontent.com/assets/468748/25605400/26610d02-2f3d-11e7-95ec-862ea80043f7.png "linc serve")
 
 ### Deploying your site
 
@@ -81,6 +85,8 @@ based on your actual website code, the site name, and the settings that you choo
 use with your site. A deployment URL is shown, which you can use to access the site after
 deployment. It may take a few moments for your latest deployment to become available.
 
+![alt text]https://cloud.githubusercontent.com/assets/468748/25605419/3d311d7e-2f3d-11e7-8adb-b09d0e48b8d1.png "linc deploy")
+
 ### Custom domains
 
 You can add custom domains during initialisation or at a later time. If you haven't added
@@ -90,6 +96,9 @@ emails if you have multiple custom domains) to validate an SSL Certificate. Make
 validate the SSL Certificate in order to enable a secure connection with your site using
 custom domains. 
 
+![alt text]https://cloud.githubusercontent.com/assets/468748/25605433/53a1a33a-2f3d-11e7-945f-5f837eb3712a.png
+ "linc domain add")
+
 To see what domains are available for your site, run `linc domain list`.
 
 ### Release a version for your site
@@ -97,6 +106,9 @@ To see what domains are available for your site, run `linc domain list`.
 Releasing a new version for your site, means coupling a certain deployment (based on its
 unique deployment ID) with a custom domain you've added. Simply run `linc release` and 
 answer a few questions: a) the domain(s) to release to and b) which deployment key to use.
+
+![alt text]https://cloud.githubusercontent.com/assets/468748/25605465/852d3a36-2f3d-11e7-908d-1408b22463ec.png
+ "linc release")
 
 Once you've released to a certain custom domain, you can use that domain for your site. 
 If you want to release again, simply re-run `linc release`, and choose a different 
