@@ -182,14 +182,16 @@ const deploy = (argv) => {
             console.log('Upload started. Please wait...');
             return uploadZipfile(description, code_id, authParams, siteName, zipfile);
         })
-        .then(() => console.log(`
-Done.
+        .then(() => console.log(`Done.
 
 Your site has been deployed with the deployment key ${deploy_key}. Your site can
 be reached at the following URL: 
-    http://${deploy_key}-${siteName}.dk.bitgenicstest.com. 
+
+    https://${deploy_key}-${siteName}.dk.linc-app.co
+
 Please note that it may take a short while for this URL to become available.
-As a next step, you can use your new deployment to create a new release.
+As a next step, you can use your new deployment to create a new release with
+'linc release'.
 `))
         .catch(err => console.log(err.message));
 };
