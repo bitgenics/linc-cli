@@ -4,7 +4,7 @@ const notice = require('../lib/notice');
 
 const build = () => {
     const path = require('path');
-    const buildssr = require('@bitgenics/linc-build-ssr');
+    const buildssr = require('linc-build-ssr');
     const packageJson = require(path.resolve(process.cwd(), 'package.json'));
 
     buildssr({}, packageJson, (err, results) => {

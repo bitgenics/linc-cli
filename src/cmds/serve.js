@@ -17,7 +17,7 @@ const getOptions = () => {
 
 const serve = (argv) => {
     const express = require('express');
-    const ssr = require('@bitgenics/linc-simple-express');
+    const ssr = require('linc-simple-express');
     const compression = require('compression');
 
     const app = express();
