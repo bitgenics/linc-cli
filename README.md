@@ -11,21 +11,23 @@ to install it on your system. The `-g` flag installs it globally.
 
 ### Usage
 
-`linc -h` will show you the available commands. If a command has subcommands, like `linc domain`, 
+`linc -h` will show you the available commands. 
+
+![alt text](https://cloud.githubusercontent.com/assets/468748/25603031/121524c6-2f2b-11e7-8c73-f9bfbe1e5428.png "linc usage")
+
+If a command has subcommands, like `linc domain`, 
 simply add -h to show the options for the subcommand, like so: 
 
 `linc domain -h`
-
-![alt text](https://cloud.githubusercontent.com/assets/468748/25603031/121524c6-2f2b-11e7-8c73-f9bfbe1e5428.png "linc usage")
 
 ### First use
 
 If you're new to LINC, you first need to create an account. In order to do this, simply run
 `linc user create`. You will be asked to enter your email address. If you've already signed 
-up at some point, you will be shown an error message. Otherwise, you will be shown a welcome
-message and your credentials. These credentials are stored in `~/.linc/credentials`, but you
-should also store them in a secure location, as we cannot recover your credentials. (Should
-you ever run into trouble, just send and email to `help@bitgenics.io`.)
+up at some point, an error message will be shown. Otherwise, you will see a welcome message 
+and your credentials. These credentials are stored in `~/.linc/credentials`, but you should 
+also store them in a secure location, as we cannot recover your credentials. (Should you 
+ever run into trouble, just send and email to `help@bitgenics.io`.)
 
 Once we know who you are, you can start using LINC to deploy your website. 
 
@@ -33,27 +35,29 @@ Once we know who you are, you can start using LINC to deploy your website.
 
 Creating a site is easy too. Just run `linc init` in a directory that is set up as an npm
 package (meaning that at some point you've run `npm init` to create `package.json`). This
-command will run you through a couple of questions about your site (look at is as a project).
+command will run you through a couple of questions about your site (look at it as a project).
 If possible, it will suggest default values based on the values in `package.json`, for 
 instance, the name and description of your site. All questions have sensible defaults, but
-make sure to review before submitting. If you make a mistake, simply type Ctrl-C and the
-init process will abort immediately. 
+make sure to review them all before submitting. If you make a mistake, simply type Ctrl-C and 
+the init process will abort immediately. 
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25604335/41db8f4c-2f35-11e7-9bb2-1288f4406013.png "linc init")
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25604336/41dba518-2f35-11e7-9c55-742315994882.png "linc init")
 
 Once you've entered your sites information and settings, you will be shown the information
-that will be added to your `package.json`. If you're happy with the settings, simply press 
-enter (the default is to accept). Otherwise, type `N <enter>` or Ctrl-C and start over.
+that will be added to your `package.json`: 
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25604377/907b1884-2f35-11e7-899c-0292a47ef9aa.png
  "linc section in package.json")
 
+If you're happy with the settings, simply press  enter (the default is to accept). Otherwise, 
+type `N <enter>` or Ctrl-C and start over.
+
 If you've answered Y, your site will be created in our back-end. This may take a few moments,
 so be patient. Once this process has finished, some npm packages will be installed 
-automatically, error pages are configured, and example configuration file(s) are copied into
-your source directory. Finally, if you've added custom domains, your site's endpoint is shown
+automatically, error pages configured, and example configuration file(s) copied into your 
+source directory. Finally, if you've added custom domains, your site's endpoint is shown
 that you need to set up the custom domains with (CNAME). 
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25604337/41edc13a-2f35-11e7-80c2-3d2a0c322947.png "linc init")
@@ -77,11 +81,11 @@ your machine, listening on port 3000 (`http://localhost:3000`).
 ### Deploying your site
 
 In order to actually use your site, you'll need to deploy it. Deploying is as easy as
-running `linc deploy`. This will create a zip-file of your `dist` directory, and upload it
-to our servers. Depending on your internet connection, this may take a few moments. Once
-the upload has finished, you will be notified, and your deployment's main information 
-will be shown. Deployments are unique identified using a so-called deployment key, which is
-based on your actual website code, the site name, and the settings that you choose to
+running `linc deploy`. This will create a zip-file of your `dist` directory, and upload 
+it to our servers. Depending on your internet connection, this may take a few moments. 
+Once the upload has finished, you will be notified, and your deployment's main information 
+will be shown. Deployments are uniquely identified using a so-called deployment key, which 
+is based on your actual website code, the site name, and the settings that you choose to
 use with your site. A deployment URL is shown, which you can use to access the site after
 deployment. It may take a few moments for your latest deployment to become available.
 
