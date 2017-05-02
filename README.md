@@ -39,15 +39,24 @@ instance, the name and description of your site. All questions have sensible def
 make sure to review before submitting. If you make a mistake, simply type Ctrl-C and the
 init process will abort immediately. 
 
+![alt text]https://cloud.githubusercontent.com/assets/468748/25604335/41db8f4c-2f35-11e7-9bb2-1288f4406013.png "linc init")
+
+![alt text]https://cloud.githubusercontent.com/assets/468748/25604336/41dba518-2f35-11e7-9c55-742315994882.png "linc init")
+
 Once you've entered your sites information and settings, you will be shown the information
 that will be added to your `package.json`. If you're happy with the settings, simply press 
 enter (the default is to accept). Otherwise, type `N <enter>` or Ctrl-C and start over.
+
+![alt text]https://cloud.githubusercontent.com/assets/468748/25604377/907b1884-2f35-11e7-899c-0292a47ef9aa.png
+ "linc section in package.json")
 
 If you've answered Y, your site will be created in our back-end. This may take a few moments,
 so be patient. Once this process has finished, some npm packages will be installed 
 automatically, error pages are configured, and example configuration file(s) are copied into
 your source directory. Finally, if you've added custom domains, your site's endpoint is shown
 that you need to set up the custom domains with (CNAME). 
+
+![alt text]https://cloud.githubusercontent.com/assets/468748/25604337/41edc13a-2f35-11e7-80c2-3d2a0c322947.png "linc init")
 
 ### Building your site
 
