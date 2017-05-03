@@ -236,7 +236,7 @@ const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) =
     const src_dir = process.cwd() + '/node_modules/' + pkgName + '/config_samples';
     if (fs.existsSync(src_dir)) {
         console.log('Copying example config files...');
-        const filter = (stat, filepath, filename) => (stat === 'file' && path.extname(filepath) === '.js');
+        const filter = (stat, filepath, filename) => (stat === 'file' && path.extname(filepath) === '.js' && !fs.existsSync(path.resolve(destDir, filename)));
         copyDir(src_dir, destDir, filter, err => {
             if (err) return reject(err);
 
