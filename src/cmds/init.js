@@ -26,11 +26,11 @@ const askSiteName = (name) => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             site_name: {
-                // Only a-z, 0-9 and - are allowed. Must start with a-z.
-                pattern: /^[a-z]+[a-z0-9-]*$/,
+                // Pattern AWS uses for host names.
+                pattern: /^(?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9]$/,
                 default: name,
                 description: 'Name of site to create:',
-                message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
+                message: 'Only a-z, A-Z, 0-9 and - are allowed characters. Cannot start/end with -.',
                 required: true
             }
         }

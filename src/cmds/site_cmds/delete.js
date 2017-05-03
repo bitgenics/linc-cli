@@ -16,10 +16,10 @@ const getSiteName = (message) => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             site_name: {
-                // Only a-z, 0-9 and - are allowed. Must start with a-z.
-                pattern: /^[a-z]+[a-z0-9-]*$/,
+                // Only a-z, A-Z, 0-9 and - are allowed. Cannot start/end with -.
+                pattern: /^(?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9]$/,
                 description: message,
-                message: 'Only a-z, 0-9 and - are allowed. Must start with a-z.',
+                message: 'Only a-z, A-Z, 0-9 and - are allowed. Cannot start/end with -.',
                 required: true
             }
         }
