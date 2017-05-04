@@ -5,8 +5,8 @@ module.exports = (s) => {
         // Nothing to suggest
         ? ''
 
-        // Convert to string
-        : (s + "")
+        // Convert to lowercase string
+        : (s + "").toLowerCase()
 
             // trim whitespace around word
             .trim()
