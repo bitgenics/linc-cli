@@ -197,7 +197,7 @@ const askIsThisOk = () => new Promise((resolve, reject) => {
         properties: {
             ok: {
                 description: "Is this OK?",
-                default: 'Y',
+                default: 'Yes',
                 type: 'string'
             }
         }
@@ -308,27 +308,9 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
 });
 
 /**
+ * Initialise package.json with linc site
  *
  * @param argv
- *
- * Check existence of package.json (mandatory) - OK
- * Ask user for site name - OK
- * Ask user for HTTP[S] options - OK
- * Ask user for profile (e.g., react) - OK
- * Ask user for domain names (zero or more) - OK
- *
- * Add profile package to package.json (for installing) - OK
- * Add src-dir to linc section in package.json - OK
- *
- * Install (npm / yarn)
- *
- * Create site (actual API call)
- * Create error pages (placeholders):
- * 4xx: 400 403 404 405 414 416
- * 5xx: 500 501 502 503 504
- *
- * Write sample linc[.server].config.js files
- *
  */
 const initialise = (argv) => {
     if (argv.siteName !== undefined) {
@@ -339,33 +321,16 @@ const initialise = (argv) => {
     let linc = {};
 
     let profile;
-    let protocol;
-    let endpoint = undefined;
-
-    let authParams;
 
     linclet('LINC')
-        .then(() => {
-            console.log('Authenticating. Please wait...');
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth_params => {
-            console.log('OK.\n');
-            authParams = auth_params;
-            return readPkg();
-        })
+        .then(() => readPkg())
         .then(pkg => {
             notice();
             return askSiteName(domainify(pkg.name))
                 .then(info => {
                     linc.siteName = info.site_name.trim();
-                    return checkSiteName(linc.siteName)
-                })
-                .then(result => {
-                    if (result) throw new Error('The site name you provided is not available.');
-                    else console.log('OK! This site name is available.\n');
-                })
-                .then(() => askDescription(pkg.description))
+                    return askDescription(pkg.description);
+            })
         })
         .then(info => {
             linc.siteDescription = info.description.trim();
@@ -381,18 +346,6 @@ const initialise = (argv) => {
         })
         .then(result => {
             profile = result.profile;
-            linc.buildProfile = lincProfiles[profile].pkg;
-            return askViewerProtocol();
-        })
-        .then(result => {
-            protocol = result.protocol;
-            linc.viewerProtocol = viewerProtocols[protocol].policy;
-            return askDomainNames();
-        })
-        .then(results => {
-            linc.domains = results;
-            let domainStr = '';
-            linc.domains.forEach(x => domainStr += '\n  - ' + x);
             console.log(`
 The following section will be added to package.json:
 ${JSON.stringify({linc: linc}, null, 3)}
@@ -405,13 +358,11 @@ ${JSON.stringify({linc: linc}, null, 3)}
                 return process.exit(255);
             }
         })
-        .then(() => createNewSite(linc, authParams))
-        .then(response => {
-            endpoint = response && response.endpoint || undefined;
+        .then(() => {
             console.log('\nInstalling profile package. Please wait...');
             const profilePackage = `${lincProfiles[profile].pkg}`;
             return installProfilePkg(profilePackage)
-                .then(() => copyConfigExamples(profilePackage, linc.sourceDir))
+                .then(() => copyConfigExamples(profilePackage, linc.sourceDir));
         })
         .then(() => readPkg())
         .then(packageJson => {
@@ -423,31 +374,25 @@ ${JSON.stringify({linc: linc}, null, 3)}
             console.log('Creating the error page templates.');
             return createErrorTemplates(process.cwd());
         })
-        .then(() => {
-            console.log('Done.');
-            if (endpoint !== undefined) {
-                console.log(`
-Now that your site has been initialised, you can perform your
-first deployment. After doing this, you can access your site at
-${linc.siteName}.linc-app.co.`);
+        .then(() => console.log(`Done.
 
-                if (linc.domains.length > 0) {
-                    console.log(`
-The LINC endpoint for your site is ${endpoint}.
+As a next step, you can build and test your site locally. In order to 
+do so, simply run 'linc build', then 'linc serve'. Please make sure 
+you have updated the configuration file we copied into your source 
+folder first. It is called 'linc.config.js', and we need it to build 
+your site and ready it for deployment later on.
 
-Since you have added one or more domains names, you must use this 
-endpoint to set them up. Just create a CNAME entry for your domains 
-and make them point to ${endpoint}.
+Before fully deploying your site, you need to be logged into LINC. 
+Make sure to run 'linc user create' if you haven't signed up with LINC 
+yet, or 'linc login' if you have.
 
-Also, you will shortly receive some emails asking you to approve SSL 
-certificates. You may receive multiple emails for several domains, 
-so make sure you approve all domains. You only have to approve each 
-domain once, even though you may receive multiple emails for the same 
-domain.
-`);
-                }
-            }
-        })
+To finally deploy your site, run 'linc deploy'. It will ask a few more 
+questions regarding your site, after which the site package is uploaded 
+to the LINC servers and deployed within a few moments. 
+
+For more information, to provide feedback or to ask for help, please
+drop us a line at help@bitgenics.io. 
+`))
         .catch(err => error(err));
 };
 
@@ -455,8 +400,6 @@ exports.command = 'init';
 exports.desc = 'Initialise a LINC site';
 exports.handler = (argv) => {
     assertPkg();
-
-    notice();
 
     initialise(argv);
 };
