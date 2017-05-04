@@ -4,6 +4,7 @@ const request = require('request');
 const path = require('path');
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
+const readPkg = require('read-pkg');
 const zip = require('deterministic-zip');
 const sha1Sync = require('deterministic-sha1');
 const fs = require('fs-promise');
@@ -106,6 +107,25 @@ const createTempDir = () => new Promise((resolve, reject) => {
     });
 });
 
+const askCreateSite = () => new Promise((resolve, reject) => {
+    console.log('This site doesn\'t yet exist.');
+
+    let schema = {
+        properties: {
+            ok: {
+                description: "Do you want to create a new site?",
+                default: 'Y',
+                type: 'string'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    });
+});
+
 const askDescription = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -119,6 +139,53 @@ const askDescription = () => new Promise((resolve, reject) => {
         if (err) return reject(err);
         else return resolve(result);
     })
+});
+
+const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
+    if (linc.siteDescription.length === 0) linc.siteDescription = "[No description]";
+
+    const body = {
+        name: linc.siteName,
+        description: linc.siteDescription,
+        viewer_protocol: linc.viewerProtocol,
+        domains: linc.domains
+    };
+    const options = {
+        method: 'POST',
+        url: LINC_API_SITES_ENDPOINT,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${auth_params.jwtToken}`
+        },
+        body: JSON.stringify(body)
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (json.error) return reject(new Error(json.error));
+        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        else return resolve(json);
+    });
+});
+
+const checkSiteName = (siteName) => new Promise((resolve, reject) => {
+    // console.log('Checking availability of name. Please wait...');
+
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (response.statusCode === 200) return resolve(json.exists);
+        else return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+    });
 });
 
 const checkSite = (siteName, authInfo) => new Promise((resolve, reject) => {
@@ -150,13 +217,54 @@ const deploy = (argv) => {
     let deploy_key = null;
     let authParams = null;
     let tempDir = null;
+    let endpoint;
     let description;
-    askDescription()
+
+    console.log('Authorising user. Please wait...');
+
+    auth(argv.accessKey, argv.secretKey)
+        .then(auth_params => authParams = auth_params)
+        .catch(() => {
+            console.log(`
+Unauthorised operation. Please log in using 'linc login',
+or create a new user with 'linc user create' before trying
+to redeploy.`);
+            process.exit(255);
+        })
+        .then(() => checkSiteName(siteName))
+        .then(site_exists => {
+            console.log('OK\n');
+
+            if (!site_exists) {
+                return askCreateSite()
+                    .then(result => {
+                        if (result.ok.toLowerCase().substr(0, 1) !== 'y') {
+                            console.log('Aborted by user.');
+                            process.exit(255);
+                        }
+
+                        return readPkg()
+                            .then(pkg => createNewSite(pkg.linc, authParams))
+                            .then(result => {
+                                console.log(
+`Site successfully created. Your site's endpoint is:
+
+    ${result.endpoint}
+
+Use this endpoint to create the links to your custom domains
+by creating a CNAME records in your DNS settings.
+`)
+                            });
+                    })
+            }
+        })
+        .then(() => checkSite(siteName, authParams))
+        .then(() => askDescription())
         .then(result => {
             description = result.description.trim();
             if (description.length === 0) throw new Error('No description provided. Abort.');
 
-            console.log('Checking authorisation. Please wait...');
+            console.log('Authorising deployment. Please wait...');
 
             return auth(argv.accessKey, argv.secretKey)
                 .then(auth_params => {
@@ -165,7 +273,7 @@ const deploy = (argv) => {
                 })
         })
         .then(() => {
-            console.log('OK');
+            console.log('OK\n');
             return createTempDir();
         })
         .then(temp_dir => {
