@@ -7,6 +7,7 @@ const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const lincProfiles = require('../lib/linc-profiles');
+const viewerProtocols = require('../lib/viewer-protocols');
 const createErrorTemplates = require('../lib/error-templates');
 const exec = require('child_process').exec;
 const request = require('request');
@@ -15,6 +16,8 @@ const auth = require('../auth');
 const config = require('../config.json');
 const domainify = require('../lib/domainify');
 const assertPkg = require('../lib/package-json').assert;
+
+const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 prompt.colors = false;
 prompt.message = '';
@@ -126,12 +129,75 @@ Please choose a profile:
     })
 });
 
+const askViewerProtocol = () => new Promise((resolve, reject) => {
+    console.log(`
+Please choose the viewer protocol to use:
+     A) ${viewerProtocols['A'].name} (default)
+     B) ${viewerProtocols['B'].name}
+     C) ${viewerProtocols['C'].name}`);
+
+    let schema = {
+        properties: {
+            protocol: {
+                pattern: /^(?:A|B|C|a|b|c)?$/,
+                description: 'Protocol to use:',
+                message: 'Please enter a valid option',
+                type: 'string',
+                default: 'A'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const validateDomainName = (x) => {
+    const match = /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/.test(x);
+    if (! match) {
+        console.log(`ERROR: '${x}' is not a valid domain name.`);
+    }
+    return match;
+};
+
+const askDomainNames = () => new Promise((resolve, reject) => {
+    console.log(`
+If you want, you can already add domain names for your site.
+However, if you don't want to do that just yet, or if you
+don't know which domain names you're going to use, you can
+also add them later using the command 'linc domain add'.
+Please enter domain names separated by a comma:`);
+    let schema = {
+        properties: {
+            domains: {
+                description: "Domains to add:",
+                type: 'string'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        if (result.domains === '') return resolve([]);
+
+        const domains = result.domains.split(',');
+        const validated_domains = domains.map(x => x.trim()).filter(validateDomainName);
+        if (domains.length !== validated_domains.length) {
+            console.log('ERROR: One or more domain names are invalid and have been removed from the list.');
+        }
+        return resolve(validated_domains);
+    })
+});
+
 const askIsThisOk = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             ok: {
                 description: "Is this OK?",
-                default: 'Yes',
+                default: 'Y',
                 type: 'string'
             }
         }
@@ -171,7 +237,13 @@ const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) =
     const src_dir = process.cwd() + '/node_modules/' + pkgName + '/config_samples';
     if (fs.existsSync(src_dir)) {
         console.log('Copying example config files...');
-        const filter = (stat, filepath, filename) => (stat === 'file' && path.extname(filepath) === '.js' && !fs.existsSync(path.resolve(destDir, filename)));
+
+        const filter = (stat, filepath, filename) => {
+            return stat === 'file'
+                && path.extname(filepath) === '.js'
+                && !fs.existsSync(path.resolve(destDir, filename));
+        };
+
         copyDir(src_dir, destDir, filter, err => {
             if (err) return reject(err);
 
@@ -194,8 +266,27 @@ const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) =
     }
 });
 
+const checkSiteName = (siteName) => new Promise((resolve, reject) => {
+    console.log('Checking availability of name. Please wait...');
+
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (response.statusCode === 200) return resolve(json.exists);
+        else return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+    });
+});
+
 /**
- * Initialise package.json with linc site
+ * Initialise package.json with LINC information for site.
  *
  * @param argv
  */
@@ -216,8 +307,13 @@ const initialise = (argv) => {
             return askSiteName(domainify(pkg.name))
                 .then(info => {
                     linc.siteName = info.site_name.trim();
-                    return askDescription(pkg.description);
-            })
+                    return checkSiteName(linc.siteName)
+                })
+                .then(result => {
+                    if (result) throw new Error('The site name you provided is not available.');
+                    else console.log('OK! This site name is available.\n');
+                })
+                .then(() => askDescription(pkg.description))
         })
         .then(info => {
             linc.siteDescription = info.description.trim();
@@ -233,6 +329,18 @@ const initialise = (argv) => {
         })
         .then(result => {
             profile = result.profile;
+            linc.buildProfile = lincProfiles[profile].pkg;
+            return askViewerProtocol();
+        })
+        .then(result => {
+            const protocol = result.protocol;
+            linc.viewerProtocol = viewerProtocols[protocol].policy;
+            return askDomainNames();
+        })
+        .then(results => {
+            linc.domains = results;
+            let domainStr = '';
+            linc.domains.forEach(x => domainStr += '\n  - ' + x);
             console.log(`
 The following section will be added to package.json:
 ${JSON.stringify({linc: linc}, null, 3)}
@@ -249,11 +357,11 @@ ${JSON.stringify({linc: linc}, null, 3)}
             console.log('\nInstalling profile package. Please wait...');
             const profilePackage = `${lincProfiles[profile].pkg}`;
             return installProfilePkg(profilePackage)
-                .then(() => copyConfigExamples(profilePackage, linc.sourceDir));
+                .then(() => copyConfigExamples(profilePackage, linc.sourceDir))
         })
         .then(() => readPkg())
         .then(packageJson => {
-            console.log('Updating package.json.');
+            console.log('\nUpdating package.json.');
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
@@ -263,22 +371,11 @@ ${JSON.stringify({linc: linc}, null, 3)}
         })
         .then(() => console.log(`Done.
 
-As a next step, you can build and test your site locally. In order to 
-do so, simply run 'linc build', then 'linc serve'. Please make sure 
-you have updated the configuration file we copied into your source 
-folder first. It is called 'linc.config.js', and we need it to build 
-your site and ready it for deployment later on.
-
-Before fully deploying your site, you need to be logged into LINC. 
-Make sure to run 'linc user create' if you haven't signed up with LINC 
-yet, or 'linc login' if you have.
-
-To finally deploy your site, run 'linc deploy'. It will ask a few more 
-questions regarding your site, after which the site package is uploaded 
-to the LINC servers and deployed within a few moments. 
-
-For more information, to provide feedback or to ask for help, please
-drop us a line at help@bitgenics.io. 
+Please note we've copied a configuration file called 
+'linc.config.js' into your source directory. You 
+should change this file to reflect your needs. If you 
+need any help or guidance, please send an email to 
+'help@bitgenics.io'.
 `))
         .catch(err => error(err));
 };
@@ -287,6 +384,8 @@ exports.command = 'init';
 exports.desc = 'Initialise a LINC site';
 exports.handler = (argv) => {
     assertPkg();
+
+    notice();
 
     initialise(argv);
 };
