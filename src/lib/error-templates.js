@@ -39,7 +39,7 @@ const writeTemplate = (path, key) => new Promise((resolve, reject) => {
 const createFiles = (path) => {
     const errorPath = `${path}/${errorDir}`;
     if (fs.existsSync(errorPath)) {
-        console.log(`Custom error pages directory '${errorDir}' already exists. No templates have been copied.`);
+        console.log(`Custom error pages directory '${errorDir}' already exists.\nNo templates have been copied.`);
         return Promise.resolve();
     }
 
