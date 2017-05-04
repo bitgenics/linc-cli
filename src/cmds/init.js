@@ -14,6 +14,7 @@ const request = require('request');
 const copyDir = require('copy-dir');
 const auth = require('../auth');
 const config = require('../config.json');
+const domainify = require('../lib/domainify');
 const assertPkg = require('../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
@@ -355,7 +356,7 @@ const initialise = (argv) => {
         })
         .then(pkg => {
             notice();
-            return askSiteName(pkg.name)
+            return askSiteName(domainify(pkg.name))
                 .then(info => {
                     linc.siteName = info.site_name.trim();
                     return checkSiteName(linc.siteName)
