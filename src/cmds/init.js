@@ -371,10 +371,10 @@ ${JSON.stringify({linc: linc}, null, 3)}
         })
         .then(() => console.log(`Done.
 
-Please note we've copied a configuration file called 
-'linc.config.js' into your source directory. You 
-should change this file to reflect your needs. If you 
-need any help or guidance, please send an email to 
+Please note we've copied an example configuration file
+called 'linc.config.js' into your source directory.
+You should change this file to reflect your needs. If
+you need any help or guidance, please send an email to
 'help@bitgenics.io'.
 `))
         .catch(err => error(err));
