@@ -7,7 +7,6 @@ const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const lincProfiles = require('../lib/linc-profiles');
-const viewerProtocols = require('../lib/viewer-protocols');
 const createErrorTemplates = require('../lib/error-templates');
 const exec = require('child_process').exec;
 const request = require('request');
@@ -16,8 +15,6 @@ const auth = require('../auth');
 const config = require('../config.json');
 const domainify = require('../lib/domainify');
 const assertPkg = require('../lib/package-json').assert;
-
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 prompt.colors = false;
 prompt.message = '';
@@ -129,69 +126,6 @@ Please choose a profile:
     })
 });
 
-const askViewerProtocol = () => new Promise((resolve, reject) => {
-    console.log(`
-Please choose the viewer protocol to use:
-     A) ${viewerProtocols['A'].name} (default)
-     B) ${viewerProtocols['B'].name}
-     C) ${viewerProtocols['C'].name}`);
-
-    let schema = {
-        properties: {
-            protocol: {
-                pattern: /^(?:A|B|C|a|b|c)?$/,
-                description: 'Protocol to use:',
-                message: 'Please enter a valid option',
-                type: 'string',
-                default: 'A'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    })
-});
-
-const validateDomainName = (x) => {
-    const match = /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/.test(x);
-    if (! match) {
-        console.log(`ERROR: '${x}' is not a valid domain name.`);
-    }
-    return match;
-};
-
-const askDomainNames = () => new Promise((resolve, reject) => {
-    console.log(`
-If you want, you can already add domain names for your site. 
-However, if you don't want to do that just yet, or if you 
-don't know which domain names you're going to use, you can 
-also add them later using the command 'linc domain add'.
-Please enter domain names separated by a comma:`);
-    let schema = {
-        properties: {
-            domains: {
-                description: "Domains to add:",
-                type: 'string'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-
-        if (result.domains === '') return resolve([]);
-
-        const domains = result.domains.split(',');
-        const validated_domains = domains.map(x => x.trim()).filter(validateDomainName);
-        if (domains.length !== validated_domains.length) {
-            console.log('ERROR: One or more domain names are invalid and have been removed from the list.');
-        }
-        return resolve(validated_domains);
-    })
-});
-
 const askIsThisOk = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -258,53 +192,6 @@ const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) =
     } else {
         return resolve();
     }
-});
-
-const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
-    if (linc.siteDescription.length === 0) linc.siteDescription = "[No description]";
-
-    const body = {
-        name: linc.siteName,
-        description: linc.siteDescription,
-        viewer_protocol: linc.viewerProtocol,
-        domains: linc.domains
-    };
-    const options = {
-        method: 'POST',
-        url: LINC_API_SITES_ENDPOINT,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth_params.jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else return resolve(json);
-    });
-});
-
-const checkSiteName = (siteName) => new Promise((resolve, reject) => {
-    console.log('Checking availability of name. Please wait...');
-
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (response.statusCode === 200) return resolve(json.exists);
-        else return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-    });
 });
 
 /**
