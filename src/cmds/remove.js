@@ -1,10 +1,10 @@
 'use strict';
 const prompt = require('prompt');
 const request = require('request');
-const auth = require('../../auth');
-const notice = require('../../lib/notice');
-const config = require('../../config.json');
-const assertPkg = require('../../lib/package-json').assert;
+const auth = require('../auth');
+const notice = require('../lib/notice');
+const config = require('../config.json');
+const assertPkg = require('../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
@@ -56,20 +56,18 @@ const error = (err) => {
     console.log(`\nOops! Something went wrong: ${err.message}`);
 };
 
-exports.command = 'delete';
-exports.desc = 'Delete a site';
-exports.handler = (argv) => {
+const remove = (argv) => {
     let siteName = null;
 
     assertPkg();
 
     notice();
 
-    console.log(`Deleting a site is a destructive operation that CANNOT be undone. 
+    console.log(`Removing a site is a destructive operation that CANNOT be undone. 
 The operation will remove all resources associated with your site, 
 and it will no longer be accessible/available to you.
 `);
-    getSiteName('Name of site to delete:')
+    getSiteName('Name of site to remove:')
         .then(x => {
             siteName = x.site_name;
             return getSiteName('Please type the name of the site again:')
@@ -82,9 +80,19 @@ and it will no longer be accessible/available to you.
         .then(() => auth(argv.accessKey, argv.secretKey))
         .then(auth_params => deleteSite(siteName, auth_params))
         .then(() => console.log(
-`Site successfully deleted. You can no longer access this site. Please be
+`Site successfully removed. You can no longer access this site. Please be
 advised that it takes a while for the process to finish on our servers, 
 during which time you can't create a new site with the same name.
 `))
         .catch(err => error(err));
+};
+
+exports.command = 'remove';
+exports.desc = 'Remove a site';
+exports.handler = (argv) => {
+    assertPkg();
+
+    notice();
+
+    remove(argv);
 };
