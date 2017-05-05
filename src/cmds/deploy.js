@@ -409,15 +409,10 @@ by creating a CNAME records in your DNS settings.
 });
 
 const deploy = (argv) => {
-    if (!argv.buildProfile || !argv.sourceDir) {
-        console.log('This project is not initialised. Did you forget to \'linc init\'?');
-        process.exit(255);
-    }
-
-    console.log('Authorising user. Please wait...');
-
     let authParams;
     let packageJson;
+
+    console.log('Authorising user. Please wait...');
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => authParams = auth_params)
