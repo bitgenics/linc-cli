@@ -5,15 +5,20 @@ const path = require('path');
 const crypto = require('crypto');
 const AWS = require('aws-sdk');
 const readPkg = require('read-pkg');
+const writePkg = require('write-pkg');
 const zip = require('deterministic-zip');
 const sha1Sync = require('deterministic-sha1');
 const fs = require('fs-promise');
 const auth = require('../auth');
 const notice = require('../lib/notice');
 const config = require('../config.json');
+const viewerProtocols = require('../lib/viewer-protocols');
+const createErrorTemplates = require('../lib/error-templates');
+
 const assertPkg = require('../lib/package-json').assert;
 
-const tmpDir = '/tmp/';
+const TMP_DIR = '/tmp/';
+const DIST_DIR = 'dist';
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 const BUCKET_NAME = config.S3.deployBucket;
@@ -26,7 +31,7 @@ const sha1 = (s) => {
     return crypto.createHash('sha1').update(s).digest('hex');
 };
 
-const deployKey = (code_id, site_name, settings) => {
+const calculateDeployKey = (code_id, site_name, settings) => {
     const settings_id = sha1(JSON.stringify(settings));
     return sha1(`${code_id}.${site_name}.${settings_id}`).substr(0, 8);
 };
@@ -101,19 +106,141 @@ const saveSettings = (temp_dir, settings) => new Promise((resolve, reject) => {
 });
 
 const createTempDir = () => new Promise((resolve, reject) => {
-    fs.mkdtemp(`${tmpDir}linc-`, (err, folder) => {
+    fs.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
         if (err) return reject(err);
         else return resolve(folder);
     });
 });
 
-const askCreateSite = () => new Promise((resolve, reject) => {
-    console.log('This site doesn\'t yet exist.');
+const askSiteName = (name) => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
+            site_name: {
+                // Pattern AWS uses for host names.
+                pattern: /^(?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9]$/,
+                default: name,
+                description: 'Name of site to create:',
+                message: 'Only a-z, A-Z, 0-9 and - are allowed characters. Cannot start/end with -.',
+                required: true
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const askDescription = (descr) => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
+            description: {
+                description: 'Description:',
+                default: descr,
+                required: false
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const askErrorPagesDir = () => new Promise((resolve, reject) => {
+    console.log(`
+Please provide a directory containing custom error pages (HTML).
+If such a directory doesn't yet exist, we will create one for you
+and populate it with example error page templates. The default 
+directory for custom error pages is 'errors'.`);
 
     let schema = {
         properties: {
+            error_dir: {
+                description: 'Error pages directory:',
+                required: true,
+                type: 'string',
+                default: 'errors'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const askViewerProtocol = () => new Promise((resolve, reject) => {
+    console.log(`
+Please choose the viewer protocol to use:
+     A) ${viewerProtocols['A'].name} (default)
+     B) ${viewerProtocols['B'].name}
+     C) ${viewerProtocols['C'].name}`);
+
+    let schema = {
+        properties: {
+            protocol: {
+                pattern: /^(?:A|B|C|a|b|c)?$/,
+                description: 'Protocol to use:',
+                message: 'Please enter a valid option',
+                type: 'string',
+                default: 'A'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
+    })
+});
+
+const validateDomainName = (x) => {
+    const match = /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/.test(x);
+    if (! match) {
+        console.log(`ERROR: '${x}' is not a valid domain name.`);
+    }
+    return match;
+};
+
+const askDomainNames = () => new Promise((resolve, reject) => {
+    console.log(`
+If you want, you can already add domain names for your site.
+However, if you don't want to do that just yet, or if you
+don't know which domain names you're going to use, you can
+also add them later using the command 'linc domain add'.
+Please enter domain names separated by a comma:`);
+    let schema = {
+        properties: {
+            domains: {
+                description: "Domains to add:",
+                type: 'string'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        if (result.domains === '') return resolve([]);
+
+        const domains = result.domains.split(',');
+        const validated_domains = domains.map(x => x.trim()).filter(validateDomainName);
+        if (domains.length !== validated_domains.length) {
+            console.log('ERROR: One or more domain names are invalid and have been removed from the list.');
+        }
+        return resolve(validated_domains);
+    })
+});
+
+const askIsThisOk = () => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
             ok: {
-                description: "Do you want to create a new site?",
+                description: "Is this OK?",
                 default: 'Y',
                 type: 'string'
             }
@@ -124,21 +251,6 @@ const askCreateSite = () => new Promise((resolve, reject) => {
         if (err) return reject(err);
         else return resolve(result);
     });
-});
-
-const askDescription = () => new Promise((resolve, reject) => {
-    let schema = {
-        properties: {
-            description: {
-                description: 'Description of this deployment:'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    })
 });
 
 const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
@@ -170,7 +282,7 @@ const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
 });
 
 const checkSiteName = (siteName) => new Promise((resolve, reject) => {
-    // console.log('Checking availability of name. Please wait...');
+    console.log('Checking availability of name. Please wait...');
 
     const options = {
         method: 'GET',
@@ -188,7 +300,7 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
     });
 });
 
-const checkSite = (siteName, authInfo) => new Promise((resolve, reject) => {
+const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
@@ -199,28 +311,113 @@ const checkSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(new Error('Invalid site to deploy. Please check your package.json.'));
+        if (response.statusCode !== 200) return reject(new Error('Unauthorised access or invalid site.'));
         else return resolve();
     });
 });
 
+const deploySite = (siteName, description, authParams) => new Promise((resolve, reject) => {
+    const codeId = sha1Dir(DIST_DIR);
+
+    let tempDir;
+    let deployKey;
+
+    return createTempDir()
+        .then(temp_dir => {
+            tempDir = temp_dir;
+            return createZipfile(tempDir, DIST_DIR, siteName);
+        })
+        .then(() => getSiteSettings())
+        .then(settings => {
+            deployKey = calculateDeployKey(codeId, siteName, settings);
+            return saveSettings(tempDir, settings);
+        })
+        .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
+        .then(zipfile => {
+            console.log('Upload started. Please wait...');
+            return uploadZipfile(description, codeId, authParams, siteName, zipfile);
+        })
+        .then(() => resolve(deployKey))
+        .catch(err => reject(err));
+});
+
+const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
+    const linc = packageJson.linc;
+
+    askSiteName(packageJson.name)
+        .then(result => {
+            const siteName = result.site_name;
+            return checkSiteName(siteName)
+                .then(exists => {
+                    if (exists) {
+                        console.log('This site name already exists. Abort.');
+                        process.exit(255);
+                    } else {
+                        console.log('OK');
+                        linc.siteName = siteName;
+                        return askDescription(packageJson.description);
+                    }
+                });
+        })
+        .then(result => {
+            linc.siteDescription = result.description;
+            return askErrorPagesDir();
+        })
+        .then(result => {
+            linc.errorDir = result.error_dir;
+            return askViewerProtocol();
+        })
+        .then(result => {
+            linc.viewerProtocol = viewerProtocols[result.protocol].policy;
+            return askDomainNames();
+        })
+        .then(results => {
+            linc.domains = results;
+            let domainStr = '';
+            linc.domains.forEach(x => domainStr += '\n  - ' + x);
+            console.log(`
+The following section will be updated in package.json:
+${JSON.stringify({linc: linc}, null, 3)}
+`);
+            return askIsThisOk();
+        })
+        .then(result => {
+            if (result.ok.toLowerCase().substr(0, 1) !== 'y') {
+                console.log('Aborted by user.');
+                process.exit(255);
+            }
+
+            return createNewSite(linc, authParams)
+                .then(result => {
+                    console.log(
+                        `Site successfully created. Your site's endpoint is:
+
+    ${result.endpoint}
+
+Use this endpoint to create the links to your custom domains
+by creating a CNAME records in your DNS settings.
+`)
+                });
+        })
+        .then(() => {
+            console.log('Creating the error page templates.');
+            return createErrorTemplates(process.cwd());
+        })
+        .then(() => writePkg(packageJson))
+        .then(() => resolve())
+        .catch(err => reject(err));
+});
+
 const deploy = (argv) => {
-    if (argv.siteName === undefined) {
+    if (!argv.buildProfile || !argv.sourceDir) {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');
         process.exit(255);
     }
 
-    const siteName = argv.siteName;
-    const source_dir = 'dist';
-    const code_id = sha1Dir(source_dir);
-
-    let deploy_key = null;
-    let authParams = null;
-    let tempDir = null;
-    let endpoint;
-    let description;
-
     console.log('Authorising user. Please wait...');
+
+    let authParams;
+    let packageJson;
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => authParams = auth_params)
@@ -231,71 +428,23 @@ or create a new user with 'linc user create' before trying
 to redeploy.`);
             process.exit(255);
         })
-        .then(() => checkSiteName(siteName))
-        .then(site_exists => {
-            console.log('OK\n');
-
-            if (!site_exists) {
-                return askCreateSite()
-                    .then(result => {
-                        if (result.ok.toLowerCase().substr(0, 1) !== 'y') {
-                            console.log('Aborted by user.');
-                            process.exit(255);
-                        }
-
-                        return readPkg()
-                            .then(pkg => createNewSite(pkg.linc, authParams))
-                            .then(result => {
-                                console.log(
-`Site successfully created. Your site's endpoint is:
-
-    ${result.endpoint}
-
-Use this endpoint to create the links to your custom domains
-by creating a CNAME records in your DNS settings.
-`)
-                            });
-                    })
+        .then(() => readPkg())
+        .then(pkg => {
+            packageJson = pkg;
+            const linc = packageJson.linc;
+            if (!linc || !linc.buildProfile || !linc.sourceDir) {
+                throw new Error('This project is not initialised. Did you forget to \'linc init\'?');
             }
+            if (!linc.siteName) return initSite(packageJson, authParams);
         })
-        .then(() => checkSite(siteName, authParams))
-        .then(() => askDescription())
-        .then(result => {
-            description = result.description.trim();
-            if (description.length === 0) throw new Error('No description provided. Abort.');
+        .then(() => authoriseSite(packageJson.linc.siteName, authParams))
+        .then(() => deploySite(packageJson.linc.siteName, packageJson.linc.siteDescription, authParams))
+        .then(deployKey => console.log(`Done.
 
-            console.log('Authorising deployment. Please wait...');
-
-            return auth(argv.accessKey, argv.secretKey)
-                .then(auth_params => {
-                    authParams = auth_params;
-                    return checkSite(siteName, authParams);
-                })
-        })
-        .then(() => {
-            console.log('OK\n');
-            return createTempDir();
-        })
-        .then(temp_dir => {
-            tempDir = temp_dir;
-            return createZipfile(temp_dir, source_dir, siteName)
-        })
-        .then(() => getSiteSettings())
-        .then(settings => {
-            deploy_key = deployKey(code_id, siteName, settings);
-            return saveSettings(tempDir, settings);
-        })
-        .then(() => createZipfile(tmpDir, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => {
-            console.log('Upload started. Please wait...');
-            return uploadZipfile(description, code_id, authParams, siteName, zipfile);
-        })
-        .then(() => console.log(`Done.
-
-Your site has been deployed with the deployment key ${deploy_key}. Your site can
+Your site has been deployed with the deployment key ${deployKey}. Your site can
 be reached at the following URL: 
 
-    https://${deploy_key}-${siteName}.dk.linc-app.co
+    https://${deployKey}-${packageJson.linc.siteName}.dk.linc-app.co
 
 Please note that it may take a short while for this URL to become available.
 As a next step, you can use your new deployment to create a new release with
