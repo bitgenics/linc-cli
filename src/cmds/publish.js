@@ -316,7 +316,7 @@ const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     });
 });
 
-const deploySite = (siteName, description, authParams) => new Promise((resolve, reject) => {
+const publishSite = (siteName, description, authParams) => new Promise((resolve, reject) => {
     const codeId = sha1Dir(DIST_DIR);
 
     let tempDir;
@@ -408,7 +408,7 @@ by creating a CNAME records in your DNS settings.
         .catch(err => reject(err));
 });
 
-const deploy = (argv) => {
+const publish = (argv) => {
     let authParams;
     let packageJson;
 
@@ -433,27 +433,28 @@ to redeploy.`);
             if (!linc.siteName) return initSite(packageJson, authParams);
         })
         .then(() => authoriseSite(packageJson.linc.siteName, authParams))
-        .then(() => deploySite(packageJson.linc.siteName, packageJson.linc.siteDescription, authParams))
+        .then(() => publishSite(packageJson.linc.siteName, packageJson.linc.siteDescription, authParams))
         .then(deployKey => console.log(`Done.
 
-Your site has been deployed with the deployment key ${deployKey}. Your site can
-be reached at the following URL: 
+Your site has been published with the key ${deployKey} and can be reached 
+shortly at the following URL: 
 
     https://${deployKey}-${packageJson.linc.siteName}.dk.linc-app.co
 
 Please note that it may take a short while for this URL to become available.
-As a next step, you can use your new deployment to create a new release with
-'linc release'.
+
+As a next step, you can create a new release with 'linc release' and make it
+available from your custom domain(s).
 `))
         .catch(err => console.log(err.message));
 };
 
-exports.command = 'deploy';
-exports.desc = 'Deploy a web site by uploading it to LINC';
+exports.command = 'publish';
+exports.desc = 'Publish a web site by uploading it to LINC';
 exports.handler = (argv) => {
     assertPkg();
 
     notice();
 
-    deploy(argv);
+    publish(argv);
 };
