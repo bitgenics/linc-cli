@@ -316,13 +316,18 @@ const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     });
 });
 
-const publishSite = (siteName, description, authParams) => new Promise((resolve, reject) => {
+const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
     const codeId = sha1Dir(DIST_DIR);
 
     let tempDir;
     let deployKey;
+    let description;
 
-    return createTempDir()
+    return askDescription('')
+        .then(result => {
+            description = result.description;
+            return createTempDir();
+        })
         .then(temp_dir => {
             tempDir = temp_dir;
             return createZipfile(tempDir, DIST_DIR, siteName);
@@ -433,7 +438,7 @@ to redeploy.`);
             if (!linc.siteName) return initSite(packageJson, authParams);
         })
         .then(() => authoriseSite(packageJson.linc.siteName, authParams))
-        .then(() => publishSite(packageJson.linc.siteName, packageJson.linc.siteDescription, authParams))
+        .then(() => publishSite(packageJson.linc.siteName, authParams))
         .then(deployKey => console.log(`Done.
 
 Your site has been published with the key ${deployKey} and can be reached 
