@@ -31,6 +31,8 @@ ever run into trouble, just send and email to `help@bitgenics.io`.)
 
 Once we know who you are, you can start using LINC to deploy your website. 
 
+![alt text](https://cloud.githubusercontent.com/assets/468748/25796953/032889a2-340e-11e7-81c3-1d5fef8f0a9d.png "linc user create")
+
 ### Creating a site
 
 Creating a site is easy too. Just run `linc init` in a directory that is set up as an npm
