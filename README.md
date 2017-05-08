@@ -13,7 +13,7 @@ to install it on your system. The `-g` flag installs it globally.
 
 `linc -h` will show you the available commands. 
 
-![alt text](https://cloud.githubusercontent.com/assets/468748/25603031/121524c6-2f2b-11e7-8c73-f9bfbe1e5428.png "linc usage")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25794513/d32e6bd6-3403-11e7-9258-f371c546f15b.png "linc usage")
 
 If a command has subcommands, like `linc domain`, 
 simply add -h to show the options for the subcommand, like so: 
