@@ -127,12 +127,12 @@ you'll be given the URL to access your site, exactly as described before.
 
 ### Custom domains
 
-You can add custom domains during initialisation or at a later time. If you haven't added
-custom domains during initialisation yet, you can use `linc domain add` to add one. This 
-command will add a custom domain to your site. Also, it will trigger sending an email (or
-emails if you have multiple custom domains) to validate an SSL Certificate. Make sure to 
-validate the SSL Certificate in order to enable a secure connection with your site using
-custom domains. 
+You can add custom domains during setup (when you publish your site for the first time)
+or at a later time. If you hadn't added custom domains yet, you can use `linc domain add` 
+to add one. This command will add a custom domain to your site. Also, it will trigger 
+sending an email (or emails if you have multiple custom domains) to validate an SSL 
+Certificate. Make sure to validate the SSL Certificate in order to enable a secure 
+connection with your site using custom domains. 
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25605433/53a1a33a-2f3d-11e7-945f-5f837eb3712a.png
  "linc domain add")
