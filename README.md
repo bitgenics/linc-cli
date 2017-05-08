@@ -80,6 +80,34 @@ Should you ever run into trouble, just send and email to `help@bitgenics.io`.)
 In order to actually use your site, you'll need to publish it. Publishing is as easy as
 running `linc publish`. This will create a zip-file of your `dist` directory, and upload 
 it to our servers. Depending on your internet connection, this may take a few moments. 
+
+#### When this is the first time you publish
+
+The very first time you run this command, you'll be asked some more questions about your
+site. This information we need to set up your site on our servers. You'll be asked for
+a name, which should be unique (we check, don't worry), a description of your site,
+where the error pages are or should be stored, and the viewer protocol. If you wish to
+do so, you can also add custom domain names. 
+
+![alt text](https://cloud.githubusercontent.com/assets/468748/25799781/039b3758-3419-11e7-9c7d-b69fbe14920a.png "linc publish")
+
+LINC will now show you the changes that will be made to `package.json` and ask you if
+this looks okay. If not, press N, No, or Ctrl-C, and the command will terminate. Otherwise,
+type Y (or Enter). 
+
+![alt text](https://cloud.githubusercontent.com/assets/468748/25799787/0a6fb446-3419-11e7-86f4-47708be8cf5c.png "linc publish")
+
+LINC will contact our servers to set up your site. You'll get an error message if
+anything goes wrong, but otherwise will give you the information about your site that 
+you'll need in a later stage, like the site URL. (You'll use this URL to point custom 
+domains to.)
+
+Immediately after setting up your site, the site package will be uploaded. LINC will 
+tell you the location where you can access it (you don't need to use custom domains
+at this stage). 
+
+![alt text](https://cloud.githubusercontent.com/assets/468748/25799795/1066a21a-3419-11e7-80b2-d61a032e3268.png "linc publish")
+
 Once the upload has finished, you will be notified, and your deployment's main information 
 will be shown. Deployments are uniquely identified using a so-called deployment key, which 
 is based on your actual website code, the site name, and the settings that you choose to
@@ -88,6 +116,14 @@ it has been published. It may take a few moments for your latest deployment to b
 available.
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25605419/3d311d7e-2f3d-11e7-8adb-b09d0e48b8d1.png "linc deploy")
+
+#### When you've published before
+
+If you've published your site before, naturally we don't have to ask you any more questions.
+After authorisation, your site will be uploaded immediately. When the upload has finished,
+you'll be given the URL to access your site, exactly as described before. 
+
+![alt text](https://cloud.githubusercontent.com/assets/468748/25800491/274e94e4-341c-11e7-9bb6-9c7718a2e3c0.png "linc deploy")
 
 ### Custom domains
 
