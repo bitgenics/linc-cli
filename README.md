@@ -36,31 +36,25 @@ Once we know who you are, you can start using LINC to deploy your website.
 Creating a site is easy too. Just run `linc init` in a directory that is set up as an npm
 package (meaning that at some point you've run `npm init` to create `package.json`). This
 command will run you through a couple of questions about your site (look at it as a project).
-If possible, it will suggest default values based on the values in `package.json`, for 
-instance, the name and description of your site. All questions have sensible defaults, but
-make sure to review them all before submitting. If you make a mistake, simply type Ctrl-C and 
-the init process will abort immediately. 
+At this point, you will only need to provide information that is necessary to use LINC 
+locally. After initialising, you can build your site using `linc build`, and run it locally
+from your machine using `linc serve`. 
 
-![alt text](https://cloud.githubusercontent.com/assets/468748/25604335/41db8f4c-2f35-11e7-9bb2-1288f4406013.png "linc init")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25793768/9d298212-3400-11e7-9685-5872d3916338.png "linc init")
 
-![alt text](https://cloud.githubusercontent.com/assets/468748/25604336/41dba518-2f35-11e7-9c55-742315994882.png "linc init")
-
-Once you've entered your sites information and settings, you will be shown the information
+Once you've entered these settings, you will be shown the information
 that will be added to your `package.json`: 
 
-![alt text](https://cloud.githubusercontent.com/assets/468748/25604377/907b1884-2f35-11e7-899c-0292a47ef9aa.png
+![alt text](https://cloud.githubusercontent.com/assets/468748/25793968/7c1a669e-3401-11e7-8700-dfa1283c6f6e.png
  "linc section in package.json")
 
 If you're happy with the settings, simply press  enter (the default is to accept). Otherwise, 
 type `N <enter>` or Ctrl-C and start over.
 
-If you've answered Y, your site will be created in our back-end. This may take a few moments,
-so be patient. Once this process has finished, some npm packages will be installed 
-automatically, error pages configured, and example configuration file(s) copied into your 
-source directory. Finally, if you've added custom domains, your site's endpoint is shown
-that you need to set up the custom domains with (CNAME). 
+If you've answered Y, your `package.json` will be updated, and example configuration files
+will be copied into your source directory. 
 
-![alt text](https://cloud.githubusercontent.com/assets/468748/25604337/41edc13a-2f35-11e7-80c2-3d2a0c322947.png "linc init")
+![alt text](https://cloud.githubusercontent.com/assets/468748/25793773/a19e0ffc-3400-11e7-8139-54136a7be9d5.png "linc init")
 
 ### Building your site
 
@@ -78,16 +72,17 @@ your machine, listening on port 3000 (`http://localhost:3000`).
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25605400/26610d02-2f3d-11e7-95ec-862ea80043f7.png "linc serve")
 
-### Deploying your site
+### Publishing your site
 
-In order to actually use your site, you'll need to deploy it. Deploying is as easy as
-running `linc deploy`. This will create a zip-file of your `dist` directory, and upload 
+In order to actually use your site, you'll need to publish it. Publishing is as easy as
+running `linc publish`. This will create a zip-file of your `dist` directory, and upload 
 it to our servers. Depending on your internet connection, this may take a few moments. 
 Once the upload has finished, you will be notified, and your deployment's main information 
 will be shown. Deployments are uniquely identified using a so-called deployment key, which 
 is based on your actual website code, the site name, and the settings that you choose to
 use with your site. A deployment URL is shown, which you can use to access the site after
-deployment. It may take a few moments for your latest deployment to become available.
+it has been published. It may take a few moments for your latest deployment to become 
+available.
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25605419/3d311d7e-2f3d-11e7-8adb-b09d0e48b8d1.png "linc deploy")
 
