@@ -98,9 +98,9 @@ type Y (or Enter).
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25799787/0a6fb446-3419-11e7-86f4-47708be8cf5c.png "linc publish")
 
 LINC will contact our servers to set up your site. You'll get an error message if
-anything goes wrong, but otherwise will give you the information about your site that 
-you'll need in a later stage, like the site URL. (You'll use this URL to point custom 
-domains to.)
+anything goes wrong, but otherwise it will give you the information about your site 
+that you'll need in a later stage, like the site URL. (You'll use this URL to point 
+custom domains to.)
 
 Immediately after setting up your site, the site package will be uploaded. LINC will 
 tell you the location where you can access it (you don't need to use custom domains
