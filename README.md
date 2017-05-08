@@ -20,17 +20,6 @@ simply add -h to show the options for the subcommand, like so:
 
 `linc domain -h`
 
-### First use
-
-If you're new to LINC, you first need to create an account. In order to do this, simply run
-`linc user create`. You will be asked to enter your email address. If you've already signed 
-up at some point, an error message will be shown. Otherwise, you will see a welcome message 
-and your credentials. These credentials are stored in `~/.linc/credentials`, but you should 
-also store them in a secure location, as we cannot recover your credentials. (Should you 
-ever run into trouble, just send and email to `help@bitgenics.io`.)
-
-Once we know who you are, you can start using LINC to deploy your website. 
-
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25796953/032889a2-340e-11e7-81c3-1d5fef8f0a9d.png "linc user create")
 
 ### Creating a site
@@ -73,6 +62,20 @@ You can run your new build using the command `linc serve`. It will start a web s
 your machine, listening on port 3000 (`http://localhost:3000`).
 
 ![alt text](https://cloud.githubusercontent.com/assets/468748/25605400/26610d02-2f3d-11e7-95ec-862ea80043f7.png "linc serve")
+
+### Create a new user
+
+So far, you've been able to use LINC without "going on the internet". This is about to 
+change, since you'll want to publish your site. Before you can publish your site, you'll
+need to create a new user. Simply type the command `linc user create`. Next, you'll be
+asked for your email address. After registering your email address, you'll receive the
+credentials you need to use LINC online (these credentials are also saved in 
+`~/.linc/credentials`). Please save these credentials in a safe place, since we cannot
+retrieve them at any time. 
+
+![alt text](https://cloud.githubusercontent.com/assets/468748/25796953/032889a2-340e-11e7-81c3-1d5fef8f0a9d.png "linc user create")
+
+Should you ever run into trouble, just send and email to `help@bitgenics.io`.)
 
 ### Publishing your site
 
