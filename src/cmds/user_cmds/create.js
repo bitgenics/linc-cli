@@ -60,9 +60,12 @@ const showUserCredentials = (response) => {
     const secretKey = response.clientSecret;
     const msg = `
 Thank you for signing up. You used the following email address:
-  + ${email}.
+  ${email}
+  
+IMPORTANT:
+
 Please check your inbox for a verification email and click on the link to ensure
-you can actually log in. (Don't forget to look in your spam folder, just in case.)
+you can actually use LINC. (Don't forget to look in your spam folder, just in case.)
 Here are your credentials that you need to log in:
   + Access Key: ${accessKey}
   + Secret Key: ${secretKey}
