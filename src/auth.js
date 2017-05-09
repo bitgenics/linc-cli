@@ -60,12 +60,24 @@ module.exports = (accessKey, secretKey) => new Promise((resolve, reject) =>  {
     };
 
     login(accessKey, secretKey)
-        .then(json => !json.id_token ? reject('No token found') : authParams.jwtToken = json.id_token)
-        .then(token => {
+        .then(json => {
+            if (json.error && json.error_description) {
+                return reject(new Error(`Error (${json.error}): ${json.error_description}`));
+            } else if (!json.id_token) {
+                return reject(new Error('Error: no token found.'));
+            }
+            authParams.jwtToken = json.id_token;
+        })
+        .then(() => {
+            const token = authParams.jwtToken;
             let p1 = getAWSCredentials(token);
             let p2 = getUserProfile(token);
             Promise.all([p1, p2])
                 .then(r => {
+                    if (r[0].error && r[0].error_description) {
+                        return reject(new Error(`Error (${r[0].error}): ${r[0].error_description}`));
+                    }
+
                     authParams.aws = {
                         credentials: {
                             accessKeyId: r[0].Credentials.AccessKeyId,
