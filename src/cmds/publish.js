@@ -133,6 +133,9 @@ const askSiteName = (name) => new Promise((resolve, reject) => {
 });
 
 const askDescription = (descr) => new Promise((resolve, reject) => {
+    console.log(`
+It's benefial to provide a description for your deployment.`);
+
     let schema = {
         properties: {
             description: {
@@ -253,14 +256,9 @@ const askIsThisOk = () => new Promise((resolve, reject) => {
     });
 });
 
-const createNewSite = (linc, auth_params) => new Promise((resolve, reject) => {
-    if (linc.siteDescription.length === 0) linc.siteDescription = "[No description]";
-
+const createNewSite = (siteName, auth_params) => new Promise((resolve, reject) => {
     const body = {
-        name: linc.siteName,
-        description: linc.siteDescription,
-        viewer_protocol: linc.viewerProtocol,
-        domains: linc.domains
+        name: siteName
     };
     const options = {
         method: 'POST',
@@ -351,35 +349,14 @@ const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
 
     askSiteName(packageJson.name)
         .then(result => {
-            const siteName = result.site_name;
-            return checkSiteName(siteName)
-                .then(exists => {
-                    if (exists) {
-                        console.log('This site name already exists. Abort.');
-                        process.exit(255);
-                    } else {
-                        console.log('OK');
-                        linc.siteName = siteName;
-                        return askDescription(packageJson.description);
-                    }
-                });
+            linc.siteName = result.site_name;
+            return checkSiteName(linc.siteName)
         })
-        .then(result => {
-            linc.siteDescription = result.description;
-            return askErrorPagesDir();
-        })
-        .then(result => {
-            linc.errorDir = result.error_dir;
-            return askViewerProtocol();
-        })
-        .then(result => {
-            linc.viewerProtocol = viewerProtocols[result.protocol].policy;
-            return askDomainNames();
-        })
-        .then(results => {
-            linc.domains = results;
-            let domainStr = '';
-            linc.domains.forEach(x => domainStr += '\n  - ' + x);
+        .then(exists => {
+            if (exists) {
+                throw new Error('This site name already exists.');
+            }
+
             console.log(`
 The following section will be updated in package.json:
 ${JSON.stringify({linc: linc}, null, 3)}
@@ -392,21 +369,8 @@ ${JSON.stringify({linc: linc}, null, 3)}
                 process.exit(255);
             }
 
-            return createNewSite(linc, authParams)
-                .then(result => {
-                    console.log(
-                        `Site successfully created. Your site's endpoint is:
-
-    ${result.endpoint}
-
-Use this endpoint to create the links to your custom domains
-by creating a CNAME records in your DNS settings.
-`)
-                });
-        })
-        .then(() => {
-            console.log('Creating the error page templates.');
-            return createErrorTemplates(process.cwd());
+            return createNewSite(linc.siteName, authParams)
+                .then(result => console.log(`Site successfully created.`));
         })
         .then(() => writePkg(packageJson))
         .then(() => resolve())
@@ -421,11 +385,20 @@ const publish = (argv) => {
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => authParams = auth_params)
-        .catch(() => {
-            console.log(`
-Unauthorised operation. Please log in using 'linc login',
-or create a new user with 'linc user create' before trying
-to redeploy.`);
+        .catch(err => {
+                console.log(`
+${err.message}
+
+Please log in using 'linc login', or create a new user with 
+'linc user create' before trying to publish. 
+
+If you created a user earlier, make sure to verify your email 
+address. You cannot use LINC with an email address that is 
+unverified.
+
+If the error message doesn't make sense to you, please contact
+us using the email address 'help@bitgenics.io'. 
+`);
             process.exit(255);
         })
         .then(() => readPkg())
@@ -442,14 +415,11 @@ to redeploy.`);
         .then(deployKey => console.log(`Done.
 
 Your site has been published with the key ${deployKey} and can be reached 
-shortly at the following URL: 
+at the following URL: 
 
     https://${deployKey}-${packageJson.linc.siteName}.dk.linc-app.co
 
 Please note that it may take a short while for this URL to become available.
-
-As a next step, you can create a new release with 'linc release' and make it
-available from your custom domain(s).
 `))
         .catch(err => console.log(err.message));
 };
