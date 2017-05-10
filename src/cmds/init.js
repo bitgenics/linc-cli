@@ -215,10 +215,11 @@ Please note we've copied an example configuration file
 called 'linc.config.js' into your source directory.
 You should change this file to reflect your needs.
 
-In the root directory of your project, we've crated a file
-called 'site-settings.json', which contains the settings
-specific for your application, e.g., API endpoints that
-your application calls. Change this file as needed too.
+In the root directory of your project, we've created a 
+file called 'site-settings.json', which contains the 
+settings specific for your application, e.g., API 
+endpoints that your application calls. Change this file 
+as needed.
 
 If you need any help or guidance, please send an email to
 'help@bitgenics.io'.
