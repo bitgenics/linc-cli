@@ -374,7 +374,8 @@ ${JSON.stringify({linc: linc}, null, 3)}
             }
 
             return createNewSite(linc.siteName, authParams)
-                .then(result => console.log(`Site successfully created.`));
+                .then(result => console.log(`Site successfully created.
+Now let's publish your site.`));
         })
         .then(() => writePkg(packageJson))
         .then(() => resolve())
