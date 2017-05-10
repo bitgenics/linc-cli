@@ -347,6 +347,10 @@ const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
 const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
     const linc = packageJson.linc;
 
+    console.log(`
+It looks like you haven't provided a site name yet, so let's
+handle that now.
+`);
     askSiteName(packageJson.name)
         .then(result => {
             linc.siteName = result.site_name;
