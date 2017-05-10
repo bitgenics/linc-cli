@@ -142,6 +142,27 @@ const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) =
 });
 
 /**
+ * Create an application settings file, but only if it doesn't yet exists.
+ *
+ * @param destDir Directory to put application settings file in
+ */
+const createSiteSettings = (destDir) => new Promise((resolve, reject) => {
+    const settingsFile = 'site-settings.json';
+    const settingsFilePath = path.resolve(destDir, settingsFile);
+
+    if (fs.existsSync(settingsFilePath)) return resolve('File exists.');
+
+    const siteSettings = {
+        SettingsVariableName: "settings",
+        Settings: {}
+    };
+    fs.writeFile(settingsFilePath, `${JSON.stringify(siteSettings, null, 3)}\n`, 'utf-8', err => {
+        if (err) return reject(err);
+        else return  resolve();
+    })
+});
+
+/**
  * Initialise package.json with LINC information for site.
  *
  * @param argv
@@ -180,6 +201,7 @@ ${JSON.stringify({linc: linc}, null, 3)}
             const profilePackage = linc.buildProfile;
             return installProfilePkg(profilePackage)
                 .then(() => copyConfigExamples(profilePackage, linc.sourceDir))
+                .then(() => createSiteSettings(process.cwd()));
         })
         .then(() => readPkg())
         .then(packageJson => {
@@ -191,8 +213,14 @@ ${JSON.stringify({linc: linc}, null, 3)}
 
 Please note we've copied an example configuration file
 called 'linc.config.js' into your source directory.
-You should change this file to reflect your needs. If
-you need any help or guidance, please send an email to
+You should change this file to reflect your needs.
+
+In the root directory of your project, we've crated a file
+called 'site-settings.json', which contains the settings
+specific for your application, e.g., API endpoints that
+your application calls. Change this file as needed too.
+
+If you need any help or guidance, please send an email to
 'help@bitgenics.io'.
 `))
         .catch(err => error(err));
