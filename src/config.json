@@ -5,7 +5,7 @@
     },
     "Auth": {
         "ClientId": "PTEkzI2wamLXZpyMhdtunD2jMNNvWLKC",
-        "ClientIdDev": "OOVi8QEkqLLDrSbxi0C9H8FJtKN8InMu"
+        "ClientIdDev": "P9RaZD67538Y5nyFAbLXnpws5xBtorWP"
     },
     "S3": {
         "deployBucket": "linc-deployables",
