@@ -274,9 +274,24 @@ ${JSON.stringify(linc, null, 3)}
 
             const method = siteName ? 'UPDATE' : 'CREATE';
             return createNewSite(linc, authParams, method)
-                .then(result => console.log(`Site successfully created.`));
+                .then(result => {
+                    console.log('Site successfully created.');
+                    if (result.endpoint !== undefined) {
+                        console.log(`
+The endpoints for your site is:
+
+    ${result.endpoint}
+
+Use this endpoint to create CNAME entries for your custom domains
+in your DNS. 
+`);
+                    }
+                });
         })
-        .then(() => writePkg(packageJson))
+        .then(() => {
+            console.log('Updating your package.json.');
+            return writePkg(packageJson);
+        })
         .then(() => {
             console.log('Creating the error page templates.');
             return createErrorTemplates(process.cwd());
