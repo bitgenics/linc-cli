@@ -7,7 +7,6 @@ const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const lincProfiles = require('../lib/linc-profiles');
-const viewerProtocols = require('../lib/viewer-protocols');
 const exec = require('child_process').exec;
 const request = require('request');
 const copyDir = require('copy-dir');
@@ -15,8 +14,6 @@ const auth = require('../auth');
 const config = require('../config.json');
 const domainify = require('../lib/domainify');
 const assertPkg = require('../lib/package-json').assert;
-
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 prompt.colors = false;
 prompt.message = '';
