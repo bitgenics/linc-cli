@@ -149,11 +149,7 @@ const createSiteSettings = (destDir) => new Promise((resolve, reject) => {
 
     if (fs.existsSync(settingsFilePath)) return resolve('File exists.');
 
-    const siteSettings = {
-        SettingsVariableName: "settings",
-        Settings: {}
-    };
-    fs.writeFile(settingsFilePath, `${JSON.stringify(siteSettings, null, 3)}\n`, 'utf-8', err => {
+    fs.writeFile(settingsFilePath, `${JSON.stringify({}, null, 3)}\n`, 'utf-8', err => {
         if (err) return reject(err);
         else return  resolve();
     })
