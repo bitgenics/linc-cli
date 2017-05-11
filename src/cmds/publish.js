@@ -12,8 +12,6 @@ const fs = require('fs-promise');
 const auth = require('../auth');
 const notice = require('../lib/notice');
 const config = require('../config.json');
-const viewerProtocols = require('../lib/viewer-protocols');
-const createErrorTemplates = require('../lib/error-templates');
 
 const assertPkg = require('../lib/package-json').assert;
 
@@ -149,93 +147,6 @@ It's benefial to provide a description for your deployment.`);
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
         else return resolve(result);
-    })
-});
-
-const askErrorPagesDir = () => new Promise((resolve, reject) => {
-    console.log(`
-Please provide a directory containing custom error pages (HTML).
-If such a directory doesn't yet exist, we will create one for you
-and populate it with example error page templates. The default 
-directory for custom error pages is 'errors'.`);
-
-    let schema = {
-        properties: {
-            error_dir: {
-                description: 'Error pages directory:',
-                required: true,
-                type: 'string',
-                default: 'errors'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    })
-});
-
-const askViewerProtocol = () => new Promise((resolve, reject) => {
-    console.log(`
-Please choose the viewer protocol to use:
-     A) ${viewerProtocols['A'].name} (default)
-     B) ${viewerProtocols['B'].name}
-     C) ${viewerProtocols['C'].name}`);
-
-    let schema = {
-        properties: {
-            protocol: {
-                pattern: /^(?:A|B|C|a|b|c)?$/,
-                description: 'Protocol to use:',
-                message: 'Please enter a valid option',
-                type: 'string',
-                default: 'A'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    })
-});
-
-const validateDomainName = (x) => {
-    const match = /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/.test(x);
-    if (! match) {
-        console.log(`ERROR: '${x}' is not a valid domain name.`);
-    }
-    return match;
-};
-
-const askDomainNames = () => new Promise((resolve, reject) => {
-    console.log(`
-If you want, you can already add domain names for your site.
-However, if you don't want to do that just yet, or if you
-don't know which domain names you're going to use, you can
-also add them later using the command 'linc domain add'.
-Please enter domain names separated by a comma:`);
-    let schema = {
-        properties: {
-            domains: {
-                description: "Domains to add:",
-                type: 'string'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-
-        if (result.domains === '') return resolve([]);
-
-        const domains = result.domains.split(',');
-        const validated_domains = domains.map(x => x.trim()).filter(validateDomainName);
-        if (domains.length !== validated_domains.length) {
-            console.log('ERROR: One or more domain names are invalid and have been removed from the list.');
-        }
-        return resolve(validated_domains);
     })
 });
 
