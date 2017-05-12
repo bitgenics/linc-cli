@@ -19,13 +19,18 @@ const serve = (argv) => {
     const express = require('express');
     const ssr = require('linc-simple-express');
     const compression = require('compression');
+    const EventCollector = require('event-collector');
 
     const app = express();
 
     const renderer = path.resolve(process.cwd(), 'dist', 'lib', 'server-render.js');
     const options = getOptions();
+
     app.use(compression());
     app.use('/_assets', express.static(path.resolve(process.cwd(), 'dist', 'static', '_assets')));
+    app.use(EventCollector.express({}, (eventcollector) => {
+        console.log(JSON.stringify(eventcollector, null, 2));
+    }));
     app.use('/', ssr(renderer, options));
 
     app.listen(3000, (err) => {
