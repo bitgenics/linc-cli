@@ -22,7 +22,7 @@ const serve = (argv) => {
 
     const app = express();
 
-    const renderer = path.resolve(process.cwd(), 'dist', 'lib/', 'server-render.js');
+    const renderer = path.resolve(process.cwd(), 'dist', 'lib', 'server-render.js');
     const options = getOptions();
     app.use(compression());
     app.use('/_assets', express.static(path.resolve(process.cwd(), 'dist', 'static', '_assets')));
