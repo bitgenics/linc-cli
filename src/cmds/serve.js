@@ -6,22 +6,6 @@ const Libhoney = require('libhoney').default;
 const notice = require('../lib/notice');
 const assertPkg = require('../lib/package-json').assert;
 
-const hny = new Libhoney({
-    writeKey: process.env.HONEYCOMB_WRITE_KEY,
-    dataset: process.env.HONEYCOMB_DATASET || 'linc-local-serve',
-    disabled: !process.env.HONEYCOMB_WRITE_KEY
-});
-hny.add({
-    node_version: process.version,
-    os_cups_amount: os.cpus().length,
-    os_cpus_model: os.cpus()[0].model,
-    os_cpus_speed: os.cpus()[0].speed,
-    os_hostname: os.hostname()
-});
-hny.addDynamicField('os_freemem', os.freemem);
-hny.addDynamicField('os_loadavg', os.loadavg);
-hny.addDynamicField('os_totalmem', os.totalmem);
-
 const getOptions = () => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
     try {
@@ -38,6 +22,22 @@ const serve = (argv) => {
     const ssr = require('linc-simple-express');
     const compression = require('compression');
     const EventCollector = require('event-collector');
+
+    const hny = new Libhoney({
+        writeKey: process.env.HONEYCOMB_WRITE_KEY,
+        dataset: process.env.HONEYCOMB_DATASET || 'linc-local-serve',
+        disabled: !process.env.HONEYCOMB_WRITE_KEY
+    });
+    hny.add({
+        node_version: process.version,
+        os_cups_amount: os.cpus().length,
+        os_cpus_model: os.cpus()[0].model,
+        os_cpus_speed: os.cpus()[0].speed,
+        os_hostname: os.hostname()
+    });
+    hny.addDynamicField('os_freemem', os.freemem);
+    hny.addDynamicField('os_loadavg', os.loadavg);
+    hny.addDynamicField('os_totalmem', os.totalmem);
 
     const app = express();
 
