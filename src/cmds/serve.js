@@ -8,7 +8,7 @@ const assertPkg = require('../lib/package-json').assert;
 
 const hny = new Libhoney({
     writeKey: process.env.HONEYCOMB_WRITE_KEY,
-    dataset: 'linc-local-serve',
+    dataset: process.env.HONEYCOMB_DATASET || 'linc-local-serve',
     disabled: !process.env.HONEYCOMB_WRITE_KEY
 });
 hny.add({
