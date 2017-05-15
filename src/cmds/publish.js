@@ -52,11 +52,11 @@ const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((re
     });
 });
 
-const createKey = (user_id, sha1, site_name) => {
-    return `${user_id}/${site_name}-${sha1}.zip`;
+const createKey = (user_id, deployKey, sha1, site_name) => {
+    return `${user_id}/${deployKey}/${site_name}-${sha1}.zip`;
 };
 
-const uploadZipfile = (description, sha1, auth, site_name, zipfile) => new Promise((resolve, reject) => {
+const uploadZipfile = (description, deployKey, sha1, auth, site_name, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
         credentials: auth.aws.credentials,
         signatureVersion: 'v4',
@@ -70,7 +70,7 @@ const uploadZipfile = (description, sha1, auth, site_name, zipfile) => new Promi
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(user_id, sha1.substring(0, 8), site_name),
+                Key: createKey(user_id, deployKey, sha1.substring(0, 8), site_name),
                 Metadata: {
                     description: description
                 }
@@ -249,7 +249,7 @@ const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
         .then(zipfile => {
             console.log('Upload started. Please wait...');
-            return uploadZipfile(description, codeId, authParams, siteName, zipfile);
+            return uploadZipfile(description, deployKey, codeId, authParams, siteName, zipfile);
         })
         .then(() => resolve(deployKey))
         .catch(err => reject(err));
