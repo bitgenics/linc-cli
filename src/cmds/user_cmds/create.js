@@ -12,22 +12,46 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
-const getUserEmail = () => new Promise((resolve, reject) => {
+const getTCAcceptance = () => new Promise((resolve, reject) => {
+    console.log(`
+In order to use LINC, you'll need to accept the Terms and Conditions.
+You can find the Terms and Conditions here: https://bitgenics.io/link/legal
+`);
+    const schema = {
+        properties: {
+            accept: {
+                description: 'Do you accept the Terms and Conditions:',
+                default: 'Y',
+                required: true
+            }
+        }
+    };
+    prompt.start();
 
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result.accept.trim());
+    })
+});
+
+const getUserEmail = () => new Promise((resolve, reject) => {
+    console.log(`Thank you for accepting the Terms and Conditions.
+
+Please enter a valid email address. After signing up, you'll receive
+an email with a validation link. You'll need to validate your email
+address by clicking this link.
+`);
     const schema = {
         properties: {
             email: {
                 // Fairly good pattern for email addresses
                 pattern: /[a-zA-Z0-9%-.+_]+\@[a-zA-Z0-9%-.+_]+\.[a-zA-Z]{2,}/,
-                description: colors.green('Your email address:'),
+                description: 'Your email address:',
                 message: 'Please enter a valid email address.',
                 required: true
             }
         }
     };
-
-    prompt.message = colors.green('(linc) ');
-    prompt.delimiter = '';
 
     prompt.start();
 
@@ -88,11 +112,18 @@ exports.desc = 'Create an account';
 exports.handler = (argv) => {
     notice();
 
-    getUserEmail()
+    getTCAcceptance()
+        .then(accept => {
+            if (accept.substr(0, 1).toLowerCase() !== 'y') {
+                throw new Error('You must accept the Terms & Conditions to continue. Abort.');
+            }
+
+            return getUserEmail();
+        })
         .then(email => createNewUser(email))
         .then(apiResponse => {
             showUserCredentials(apiResponse);
             cred.save(apiResponse.clientId, apiResponse.clientSecret)
         })
-        .catch(err => console.log(err));
+        .catch(err => console.log(err.message));
 };
