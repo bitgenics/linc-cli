@@ -6,6 +6,7 @@ const notice = require('../../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const config = require('../../config.json');
+const domainify = require('../../lib/domainify');
 const viewerProtocols = require('../../lib/viewer-protocols');
 const createErrorTemplates = require('../../lib/error-templates');
 const assertPkg = require('../../lib/package-json').assert;
@@ -232,7 +233,7 @@ const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
         linc.siteName = siteName;
         p = Promise.resolve();
     } else {
-        p = askSiteName(packageJson.name.toLowerCase())
+        p = askSiteName(domainify(packageJson.name))
             .then(r => {
                 linc.siteName = r.site_name;
                 return checkSiteName(r.site_name);

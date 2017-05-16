@@ -10,6 +10,7 @@ const zip = require('deterministic-zip');
 const sha1Sync = require('deterministic-sha1');
 const fs = require('fs-promise');
 const auth = require('../auth');
+const domainify = require('../lib/domainify');
 const notice = require('../lib/notice');
 const config = require('../config.json');
 
@@ -262,7 +263,7 @@ const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
 It looks like you haven't provided a site name yet, so let's
 handle that now.
 `);
-    askSiteName(packageJson.name)
+    askSiteName(domainify(packageJson.name))
         .then(result => {
             linc.siteName = result.site_name;
             return checkSiteName(linc.siteName)

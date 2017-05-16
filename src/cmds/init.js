@@ -12,7 +12,6 @@ const request = require('request');
 const copyDir = require('copy-dir');
 const auth = require('../auth');
 const config = require('../config.json');
-const domainify = require('../lib/domainify');
 const assertPkg = require('../lib/package-json').assert;
 
 prompt.colors = false;
