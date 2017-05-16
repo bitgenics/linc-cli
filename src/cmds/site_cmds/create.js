@@ -106,7 +106,7 @@ Please choose the viewer protocol to use:
 });
 
 const validateDomainName = (x) => {
-    const match = /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/.test(x);
+    const match = /^(\*\.)?(((?!-)[a-z0-9-]{0,62}[a-z0-9])\.)+((?!-)[a-z0-9-]{1,62}[a-z0-9])$/.test(x);
     if (! match) {
         console.log(`ERROR: '${x}' is not a valid domain name.`);
     }

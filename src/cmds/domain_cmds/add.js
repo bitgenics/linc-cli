@@ -17,9 +17,9 @@ const askDomainName = () => new Promise((resolve, reject) => {
         properties: {
             domain_name: {
                 // This is the pattern AWS uses for domain names
-                pattern: /^(\*\.)?(((?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9])\.)+((?!-)[A-Za-z0-9-]{1,62}[A-Za-z0-9])$/,
+                pattern: /^(\*\.)?(((?!-)[a-z0-9-]{0,62}[a-z0-9])\.)+((?!-)[a-z0-9-]{1,62}[a-z0-9])$/,
                 description: 'Domain name to add:',
-                message: 'Must be a valid domain name.',
+                message: 'Must be a valid domain name (lowercase only).',
                 required: true
             }
         }
