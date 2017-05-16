@@ -30,14 +30,16 @@ const askDeploymentKey = () => new Promise((resolve, reject) => {
 });
 
 const askReleaseDomain = () => new Promise((resolve, reject) => {
-    console.log(`You can select one or more domains to release (using the same deployment key).
+    console.log(`
+You can select one or more domains to release (using the same deployment key).
 Simply type the letters associated with all the domains you want to release,
 like so: A B E. Simply press \<Enter\> if you want to release the most recently
-added domain name.`);
+added domain name.
+`);
     let schema = {
         properties: {
             domain_name_index: {
-                description: 'Domain name for release:',
+                description: 'Domain name(s) for release:',
                 default: 'A',
                 required: true
             }

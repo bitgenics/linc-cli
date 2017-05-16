@@ -21,10 +21,10 @@ const askSiteName = (name) => new Promise((resolve, reject) => {
         properties: {
             site_name: {
                 // Pattern AWS uses for host names.
-                pattern: /^(?!-)[A-Za-z0-9-]{0,62}[A-Za-z0-9]$/,
+                pattern: /^(?!-)[a-z0-9-]{0,62}[a-z0-9]$/,
                 default: name,
                 description: 'Name of site to create:',
-                message: 'Only a-z, A-Z, 0-9 and - are allowed characters. Cannot start/end with -.',
+                message: 'Only a-z, 0-9 and - are allowed characters. Cannot start/end with -.',
                 required: true
             }
         }
@@ -232,7 +232,7 @@ const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
         linc.siteName = siteName;
         p = Promise.resolve();
     } else {
-        p = askSiteName(packageJson.name)
+        p = askSiteName(packageJson.name.toLowerCase())
             .then(r => {
                 linc.siteName = r.site_name;
                 return checkSiteName(r.site_name);
