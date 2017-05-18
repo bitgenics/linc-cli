@@ -114,7 +114,9 @@ the Webhook "Payload URL" field in GitHub:
     
     ${webhook_url}
 
-and you're good to go!
+and you're good to go! You can find this field in your repository 
+Settings | Webhooks | Add Webhook. Please make sure to set the Content
+type to 'application/json', or your webhook calls will fail.
 `)
 };
 
