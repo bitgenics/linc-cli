@@ -183,7 +183,7 @@ const release = (argv) => {
             showAvailableDeployments(result);
             return askDeploymentKey(true)
                 .then(reply => {
-                    let index = reply.deploy_key_index.substr(0, 1).charCodeAt(0) - 65;
+                    let index = reply.deploy_key_index.substr(0, 1).toUpperCase().charCodeAt(0) - 65;
                     if (index > result.deployments.length - 1) {
                         throw new Error('Invalid response. Aborted by user.');
                     }
