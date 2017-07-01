@@ -18,9 +18,6 @@ const getOptions = () => {
 };
 
 const serve = (argv) => {
-    if (process.env.NODE_ENV !== 'production') {
-        require('@glimpse/glimpse').init();
-    }
     const express = require('express');
     const ssr = require('linc-simple-express');
     const compression = require('compression');
