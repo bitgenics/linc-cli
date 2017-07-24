@@ -28,6 +28,7 @@
     "libhoney": "^1.0.0-beta.10",
     "linc-build-ssr": "^1.3.5",
     "linc-simple-express": "^2.1.0",
+    "log-update": "^2.1.0",
     "path": "^0.12.7",
     "prompt": "^1.0.0",
     "read-pkg": "^2.0.0",

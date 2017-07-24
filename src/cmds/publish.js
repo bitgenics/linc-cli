@@ -1,4 +1,5 @@
 'use strict';
+const logUpdate = require('log-update');
 const prompt = require('prompt');
 const request = require('request');
 const path = require('path');
@@ -77,10 +78,17 @@ const uploadZipfile = (description, deployKey, sha1, auth, site_name, zipfile) =
                 }
             }
         })
-        .then(params => s3.putObject(params, (err, data) => {
-            if (err) return reject(err);
-            else return resolve(data);
-        }))
+        .then(params => {
+            return s3.putObject(params).on('httpUploadProgress', (progress => {
+                const loadedInKB = Math.floor(progress.loaded / 1024);
+                const totalInKB = Math.floor(progress.total / 1024);
+                const progressInPct = Math.floor((progress.loaded / progress.total * 100));
+                logUpdate(`Transfered ${loadedInKB} KB of ${totalInKB} KB  [${progressInPct}%]`);
+            })).send(() => {
+                logUpdate('Finalising. Please wait...');
+                return resolve();
+            });
+        })
         .catch(err => reject(err));
 });
 
