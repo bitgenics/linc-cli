@@ -279,7 +279,7 @@ ${JSON.stringify(linc, null, 3)}
                     console.log('Site successfully created.');
                     if (result.endpoint !== undefined) {
                         console.log(`
-The endpoints for your site is:
+The endpoint for your site is:
 
     ${result.endpoint}
 
