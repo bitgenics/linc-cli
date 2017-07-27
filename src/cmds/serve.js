@@ -30,7 +30,7 @@ const serve = (argv) => {
     });
     hny.add({
         node_version: process.version,
-        os_cups_amount: os.cpus().length,
+        os_cpus_amount: os.cpus().length,
         os_cpus_model: os.cpus()[0].model,
         os_cpus_speed: os.cpus()[0].speed,
         os_hostname: os.hostname()
@@ -47,10 +47,11 @@ const serve = (argv) => {
     app.use(compression());
     app.use('/_assets', express.static(path.resolve(process.cwd(), 'dist', 'static', '_assets')));
     app.use(EventCollector.express({}, (eventcollector) => {
-        console.log(JSON.stringify(eventcollector, null, 2));
-        const event = hny.newEvent().add(eventcollector);
-        event.timestamp = eventcollector.time_date
-        event.send();
+        const event = eventcollector.getEvent();
+        console.log(JSON.stringify(event, null, 2));
+        const hny_event = hny.newEvent().add(event );
+        hny_event.timestamp = event.time_date
+        hny_event.send();
     }));
     app.use('/', ssr(renderer, options));
 
