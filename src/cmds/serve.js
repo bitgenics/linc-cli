@@ -5,6 +5,7 @@ const os = require('os');
 const Libhoney = require('libhoney').default;
 const notice = require('../lib/notice');
 const assertPkg = require('../lib/package-json').assert;
+const vm = require('linc-vm');
 
 const getOptions = () => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
@@ -17,9 +18,25 @@ const getOptions = () => {
     }
 };
 
+function createRenderer(renderer_path, settings) {
+    if (!renderer_path) {
+        throw new TypeError('renderer_path required')
+    }
+
+    if (typeof renderer_path !== 'string') {
+        throw new TypeError('renderer_path must be a string')
+    }
+
+    const src = fs.readFileSync(renderer_path);
+    const renderer = vm.createReuseableRenderer(src, settings);
+
+    return function(req, res, next) {
+        renderer.renderGet(req, res, settings);
+    }
+}
+
 const serve = (argv) => {
     const express = require('express');
-    const ssr = require('linc-simple-express');
     const compression = require('compression');
     const EventCollector = require('event-collector');
 
@@ -53,7 +70,7 @@ const serve = (argv) => {
         hny_event.timestamp = event.time_date
         hny_event.send();
     }));
-    app.use('/', ssr(renderer, options));
+    app.use('/', createRenderer(renderer, options));
 
     app.listen(3000, (err) => {
         if (err) {
