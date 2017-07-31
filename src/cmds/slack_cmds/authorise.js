@@ -55,7 +55,7 @@ Please follow this link to integrate the LINC Slack app in your team Slack:
 ${uri}
 
 Either click on the link or copy the link into your browser's address bar.
-On Linux, you may need to press the Ctrl key, then click on the link.
+On Linux, you may need to press the Ctrl key and click on the link.
 `))
         .catch(err => console.log(`Oops, something went wrong:\n${err}.`));
 };
