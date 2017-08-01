@@ -4,6 +4,7 @@ const request = require('request');
 const auth = require('../../auth');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
+const openurl = require('openurl');
 const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
@@ -49,13 +50,16 @@ exports.handler = (argv) => {
 
     auth(argv.accessKey, argv.secretKey)
         .then(authParams => getAuthoriseUri(argv.siteName, authParams))
-        .then(uri => console.log(`
-Please follow this link to integrate the LINC Slack app in your team Slack:
+        .then(uri => {
+            console.log(`
+The following URL will open shortly in your browser:
 
 ${uri}
 
-Either click on the link or copy the link into your browser's address bar.
-On Linux, you may need to press the Ctrl key and click on the link.
-`))
+If your browser didn't open this URL, please click on the link or copy the link into your browser's address bar.
+On Linux, you need to press the Ctrl key and click on the link.
+`);
+            openurl.open(uri, () => {});
+        })
         .catch(err => console.log(`Oops, something went wrong:\n${err}.`));
 };
