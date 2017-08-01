@@ -76,18 +76,23 @@ exports.handler = (argv) => {
     auth(argv.accessKey, argv.secretKey)
         .then(authParams => getAuthoriseUri(argv.siteName, authParams))
         .then(response => {
-            if (!response.already_authorised) return Promise.resolve(response.authorise_uri);
+            if (!response.already_authorised) return response.authorise_uri;
 
+            return areYouSure()
+                .then(ok => {
+                    if (ok) return response.authorise_uri;
 
+                    console.log('Okay, not reauthenticating. Exiting.');
+                    process.exit(0);
+                })
         })
         .then(uri => {
             console.log(`
-The following URL will open shortly in your browser:
+The following URL will open in your browser shortly:
 
 ${uri}
 
-If your browser didn't open this URL, please click on the link or copy the link into your browser's address bar.
-On Linux, you need to press the Ctrl key and click on the link.
+If your browser didn't open this URL, please click on the link or copy the link into your browser's address bar. (On Linux, you need to press the Ctrl key and click on the link.)
 `);
             openurl.open(uri, () => {});
         })
