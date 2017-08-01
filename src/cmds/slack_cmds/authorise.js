@@ -9,6 +9,11 @@ const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
+/**
+ * Get URL to authorise with Slack
+ * @param site_name
+ * @param authInfo
+ */
 const getAuthoriseUri = (site_name, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
@@ -26,7 +31,27 @@ const getAuthoriseUri = (site_name, authInfo) => new Promise((resolve, reject) =
         if (json.error) return reject(json.error);
         if (!json.authorise_uri) return reject('No authorisation_uri in response.');
 
-        return resolve(json.authorise_uri);
+        return resolve(json);
+    });
+});
+
+/**
+ * Ask whether user is sure
+ */
+const areYouSure = () => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
+            ok: {
+                description: "You are already authenticated. Authenticate again?",
+                default: 'Y',
+                type: 'string'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+        else return resolve(result);
     });
 });
 
@@ -50,6 +75,11 @@ exports.handler = (argv) => {
 
     auth(argv.accessKey, argv.secretKey)
         .then(authParams => getAuthoriseUri(argv.siteName, authParams))
+        .then(response => {
+            if (!response.already_authorised) return Promise.resolve(response.authorise_uri);
+
+
+        })
         .then(uri => {
             console.log(`
 The following URL will open shortly in your browser:
