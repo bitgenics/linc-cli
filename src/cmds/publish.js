@@ -350,7 +350,7 @@ Please note that it may take a short while for this URL to become available.
 };
 
 exports.command = ['publish', 'deploy'];
-exports.desc = 'Publish your web site';
+exports.desc = 'Publish your site';
 exports.handler = (argv) => {
     assertPkg();
 

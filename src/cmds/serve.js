@@ -82,7 +82,7 @@ const serve = (argv) => {
 };
 
 exports.command = 'serve';
-exports.desc = 'Run a Linc server locally';
+exports.desc = 'Start local web server';
 exports.handler = (argv) => {
     assertPkg();
 

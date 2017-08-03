@@ -219,8 +219,8 @@ If you need any help or guidance, please send an email to
         .catch(err => error(err));
 };
 
-exports.command = 'init';
-exports.desc = 'Initialise a LINC site';
+exports.command = ['create', 'init'];
+exports.desc = 'Create a new site';
 exports.handler = (argv) => {
     assertPkg();
 

@@ -88,7 +88,7 @@ during which time you can't create a new site with the same name.
 };
 
 exports.command = 'remove';
-exports.desc = 'Remove a site';
+exports.desc = 'Remove your site';
 exports.handler = (argv) => {
     assertPkg();
 

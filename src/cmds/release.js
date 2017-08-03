@@ -197,7 +197,7 @@ const release = (argv) => {
 };
 
 exports.command = 'release';
-exports.desc = 'Release a site';
+exports.desc = 'Release your site';
 exports.handler = (argv) => {
     assertPkg();
 
