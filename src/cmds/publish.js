@@ -349,8 +349,8 @@ Please note that it may take a short while for this URL to become available.
         .catch(err => console.log(err.message));
 };
 
-exports.command = 'publish';
-exports.desc = 'Publish a web site by uploading it to LINC';
+exports.command = ['publish', 'deploy'];
+exports.desc = 'Publish your web site';
 exports.handler = (argv) => {
     assertPkg();
 
