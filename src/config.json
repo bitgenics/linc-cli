@@ -1,6 +1,7 @@
 {
     "Api": {
-        "LincBaseEndpoint": "https://api.linc.sh/v1"
+        "LincBaseEndpoint": "https://api.linc.sh/v1",
+        "OAuthEndpoint": "https://api.linc.sh/oauth"
     },
     "Auth": {
         "ClientId": "PTEkzI2wamLXZpyMhdtunD2jMNNvWLKC"
