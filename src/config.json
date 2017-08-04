@@ -1,12 +1,12 @@
 {
-    "Api": {
-        "LincBaseEndpoint": "https://api.linc.sh/v1",
-        "OAuthEndpoint": "https://api.linc.sh/oauth"
-    },
-    "Auth": {
-        "ClientId": "PTEkzI2wamLXZpyMhdtunD2jMNNvWLKC"
-    },
-    "S3": {
-        "deployBucket": "linc-deployables"
-    }
+  "Api": {
+    "LincBaseEndpoint": "https://api.linc.sh/v1",
+    "OAuthEndpoint": "https://api.linc.sh/oauth"
+  },
+  "Auth": {
+    "ClientId": "PTEkzI2wamLXZpyMhdtunD2jMNNvWLKC"
+  },
+  "S3": {
+    "deployBucket": "linc-deployables"
+  }
 }
