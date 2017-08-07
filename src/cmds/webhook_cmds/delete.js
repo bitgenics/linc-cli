@@ -57,6 +57,7 @@ const deleteWebhookInBackend = (jwtToken, site_name, service) => new Promise((re
         else return resolve(json);
     });
 });
+
 /**
  * Delete webhook
  * @param argv
