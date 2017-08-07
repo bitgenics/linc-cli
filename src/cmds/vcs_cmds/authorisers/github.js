@@ -1,11 +1,9 @@
 'use strict';
 const prompt = require('prompt');
 const request = require('request');
-const auth = require('../../auth');
-const notice = require('../../lib/notice');
-const config = require('../../config.json');
+const auth = require('../../../auth');
+const config = require('../../../config.json');
 const openurl = require('openurl');
-const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.OAuthEndpoint}/authorise_uri`;
 
@@ -55,22 +53,7 @@ const areYouSure = () => new Promise((resolve, reject) => {
     });
 });
 
-prompt.colors = false;
-prompt.message = '';
-prompt.delimiter = '';
-
-exports.command = 'authorise';
-exports.desc = 'Authorise LINC and install LINC app in your GitHub';
-exports.handler = (argv) => {
-    if (argv.siteName === undefined) {
-        console.log('This project is not initialised. Did you forget to \'linc init\'?');
-        process.exit(255);
-    }
-
-    assertPkg();
-
-    notice();
-
+module.exports.handler = (argv) => {
     console.log('Please wait...');
 
     auth(argv.accessKey, argv.secretKey)
