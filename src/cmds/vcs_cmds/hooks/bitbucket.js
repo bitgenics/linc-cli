@@ -114,7 +114,7 @@ const createHook = argv => {
                 console.log('Your webhook has been created.');
             }
         })
-        .catch(err => console.log(err));
+        .catch(err => console.log('Oops. Something seems to have gone wrong.'));
 };
 
 /**
