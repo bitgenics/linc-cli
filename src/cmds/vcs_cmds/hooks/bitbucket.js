@@ -1,7 +1,6 @@
 'use strict';
 const auth = require('../../../auth');
 const config = require('../../../config.json');
-const openurl = require('openurl');
 const prompt = require('prompt');
 const readPkg = require('read-pkg');
 const request = require('request');
