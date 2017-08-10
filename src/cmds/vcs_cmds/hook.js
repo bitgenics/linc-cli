@@ -10,7 +10,7 @@ prompt.message = '';
 prompt.delimiter = '';
 
 exports.command = 'hook <name> [command]';
-exports.desc = 'Create webhook for your VCS';
+exports.desc = 'Handle webhook for your VCS';
 exports.handler = (argv) => {
     if (!argv.siteName) {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');
