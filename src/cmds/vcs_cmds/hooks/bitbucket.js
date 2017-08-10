@@ -4,22 +4,13 @@ const config = require('../../../config.json');
 const prompt = require('prompt');
 const readPkg = require('read-pkg');
 const request = require('request');
+const usage = require('./usage');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
-
-const explanation = `By setting up a VCS webhook, you can automate part of your LINC
-experience. In stead of manually building and publishing your 
-site, we can actually start the build as soon as you've pushed 
-new code to your repository.
-
-All we need (after your authorised LINC to access your repository) 
-is the URL of the repository you want to set up for automatic 
-deploying.
-`;
 
 /**
  * Ask for a username
@@ -28,7 +19,7 @@ const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             repositoryUrl: {
-                pattern: /^(?:http|https|git)(?::\/\/|@)bitbucket\.org(?:\/|:)(.*)\/([^.\/]*)(?:.git)?$/,
+                pattern: /^[^\/@]+(?::\/\/|@)bitbucket\.org(?:\/|:)(.*)\/([^.\/]*)(?:.git)?$/,
                 default: suggestion,
                 description: 'Please enter your Bitbucket repository URL:',
                 message: 'Please enter a valid Bitbucket URL.',
@@ -78,7 +69,7 @@ const createWebhookInBackend = (jwtToken, siteName, body) => new Promise((resolv
  * @param argv
  */
 const createHook = argv => {
-    console.log(explanation);
+    console.log(usage);
 
     let siteName;
     const body = {};
@@ -86,7 +77,7 @@ const createHook = argv => {
         .then(pkg => {
             siteName = pkg.linc.siteName;
             if (!siteName) {
-                throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
+                throw new Error('No site name found in package.json.');
             }
 
             let repositoryUrl = '';
