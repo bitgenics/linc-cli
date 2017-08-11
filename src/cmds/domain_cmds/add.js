@@ -81,9 +81,8 @@ multiple emails for several domains, so make sure you approve
 all domains. You only have to approve each domain once, even
 though you may receive multiple emails for the same (sub)domain.
 
-As a next step, you can create a 
-release by running the command 'linc release' and following the
-prompts.
+As a next step, you can create a release by running the command 
+'linc release' and following the prompts.
 `))
         .catch(err => error(err));
 };
