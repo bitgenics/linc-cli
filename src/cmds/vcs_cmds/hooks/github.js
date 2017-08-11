@@ -43,7 +43,6 @@ const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
  */
 const createWebhookInBackend = (jwtToken, siteName, body) => new Promise((resolve, reject) => {
     const options = {
-        method: 'POST',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/github`,
         headers: {
             'Content-Type': 'application/json',
@@ -51,7 +50,32 @@ const createWebhookInBackend = (jwtToken, siteName, body) => new Promise((resolv
         },
         body: JSON.stringify(body)
     };
-    return request(options, (err, response, body) => {
+    return request.post(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (json.error) return reject(new Error(json.error));
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
+
+        return resolve(json);
+    });
+});
+
+/**
+ * Delete webhook in backend
+ * @param jwtToken
+ * @param siteName
+ */
+const deleteWebhookInBackend = (jwtToken, siteName) => new Promise((resolve, reject) => {
+    const options = {
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/github`,
+        headers: {
+            'Authorization': `Bearer ${jwtToken}`
+        },
+    };
+    return request.delete(options, (err, response, body) => {
         if (err) return reject(err);
 
         const json = JSON.parse(body);
@@ -112,7 +136,28 @@ const createHook = argv => {
  * @param argv
  */
 const deleteHook = argv => {
-
+    let siteName;
+    readPkg()
+        .then(pkg => {
+            siteName = pkg.linc.siteName;
+            if (!siteName) {
+                throw new Error('No site name found in package.json.');
+            }
+            console.log('Please wait...');
+            return auth(argv.accessKey, argv.secretKey);
+        })
+        .then(auth_params => {
+            const jwtToken = auth_params.jwtToken;
+            return deleteWebhookInBackend(jwtToken, siteName);
+        })
+        .then(response => {
+            if (response.errors) {
+                console.log(`Oops. Something went wrong:\n${response.errors}`);
+            } else {
+                console.log('Your webhook has been deleted.');
+            }
+        })
+        .catch(err => console.log('Oops. Something seems to have gone wrong.'));
 };
 
 /**
