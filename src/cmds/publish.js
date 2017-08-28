@@ -343,8 +343,13 @@ Your site has been published with the key ${deployKey} and can be reached
 at the following URL: 
 
     https://${deployKey}-${packageJson.linc.siteName}.dk.linc-app.co
-
+    
 Please note that it may take a short while for this URL to become available.
+The latest deployment can also be found via this URL:
+
+    https://${packageJson.linc.siteName}.linc-app.co
+
+This URL *always* provides the most recent deployment.
 `))
         .catch(err => console.log(err.message));
 };
