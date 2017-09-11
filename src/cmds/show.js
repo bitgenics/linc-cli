@@ -4,6 +4,7 @@ const assertPkg = require('../lib/package-json').assert;
 const auth = require('../auth');
 const domains = require('../lib/domains');
 const notice = require('../lib/notice');
+const releases = require('../lib/releases');
 
 const error = (err) => {
     console.log('Oops! Something went wrong:');
@@ -16,15 +17,15 @@ const show = (argv) => {
         process.exit(255);
     }
 
-    console.log(`The current site is: ${argv.siteName}`);
-    logUpdate('Please wait...');
+    console.log(`The current site is: '${argv.siteName}'\n`);
+    logUpdate('Authorising. Please wait...');
 
     let authParams = null;
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
             authParams = auth_params;
             logUpdate.clear();
-            logUpdate('Please wait...');
+            logUpdate('Retrieving domains. Please wait...');
             return domains.getAvailableDomains(argv.siteName, authParams);
         })
         .then(result => {
@@ -32,13 +33,13 @@ const show = (argv) => {
             return domains.showAvailableDomains(result);
         })
         .then(() => {
-            logUpdate('Please wait...');
-            return getAvailableReleases(argv.siteName, authParams);
+            logUpdate('Retrieving releases. Please wait...');
+            return releases.getAvailableReleases(argv.siteName, authParams);
         })
         .then(result => {
             logUpdate.clear();
 
-            return showAvailableReleases(result);
+            return releases.showAvailableReleases(result);
         })
         .catch(err => {
             logUpdate.clear();
