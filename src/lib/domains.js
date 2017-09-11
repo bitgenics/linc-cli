@@ -39,9 +39,7 @@ const showAvailableDomains = (results) => {
     const site_name = results.site_name;
 
     console.log(`Here are the available domains for ${site_name}:`);
-    domains.forEach(d => {
-        console.log(`   - ${d.domain_name}`);
-    });
+    domains.forEach(d => { console.log(`   - ${d.domain_name}`); });
     console.log('');
 };
 
