@@ -1,5 +1,5 @@
 'use strict';
-const logUpdate = require('log-update');
+const ora = require('ora');
 const assertPkg = require('../lib/package-json').assert;
 const auth = require('../auth');
 const domains = require('../lib/domains');
@@ -18,31 +18,29 @@ const show = (argv) => {
     }
 
     console.log(`The current site is: '${argv.siteName}'\n`);
-    logUpdate('Authorising. Please wait...');
+
+    const spinner = ora('Authorising. Please wait...').start();
 
     let authParams = null;
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
             authParams = auth_params;
-            logUpdate.clear();
-            logUpdate('Retrieving domains. Please wait...');
-            return domains.getAvailableDomains(argv.siteName, authParams);
-        })
-        .then(result => {
-            logUpdate.clear();
-            return domains.showAvailableDomains(result);
-        })
-        .then(() => {
-            logUpdate('Retrieving releases. Please wait...');
-            return releases.getAvailableReleases(argv.siteName, authParams);
-        })
-        .then(result => {
-            logUpdate.clear();
+            spinner.stop();
 
-            return releases.showAvailableReleases(result);
+            spinner.text = 'Retrieving data. Please wait...';
+            spinner.start();
+            return Promise.all([
+                domains.getAvailableDomains(argv.siteName, authParams),
+                releases.getAvailableReleases(argv.siteName, authParams),
+            ]);
+        })
+        .then(result => {
+            spinner.stop();
+            domains.showAvailableDomains(result[0]);
+            releases.showAvailableReleases(result[1]);
         })
         .catch(err => {
-            logUpdate.clear();
+            spinner.stop();
 
             error(err);
         });
