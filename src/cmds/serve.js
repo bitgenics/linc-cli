@@ -76,7 +76,7 @@ const serve = (argv) => {
         if (err) {
             console.log(err);
         } else {
-            console.log('Listing on http://localhost:3000');
+            console.log('Listening on http://localhost:3000');
         }
     });
 };
