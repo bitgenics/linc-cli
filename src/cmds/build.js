@@ -8,7 +8,6 @@ const clean = (argv) => {
 
     fs.emptyDirSync(distDir);
     fs.rmdirSync(distDir);
-    console.log('Done.');
 };
 
 
