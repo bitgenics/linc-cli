@@ -96,7 +96,7 @@ const linclet = (msg) => new Promise((resolve, reject) => {
 
 const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
     const command = fs.existsSync(process.cwd() + '/yarn.lock')
-        ? `yarn add ${pkgName}` : `npm i ${pkgName} -D`;
+        ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
     exec(command, {cwd: process.cwd()}, () => {
         console.log('Finished installing profile package.');
