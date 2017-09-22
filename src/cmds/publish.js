@@ -322,7 +322,7 @@ address. You cannot use LINC with an email address that is
 unverified.
 
 If the error message doesn't make sense to you, please contact
-us using the email address 'help@bitgenics.io'. 
+us using the email address shown above. 
 `);
             process.exit(255);
         })

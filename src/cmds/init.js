@@ -212,9 +212,6 @@ file called 'site-settings.json', which contains the
 settings specific for your application, e.g., API 
 endpoints that your application calls. Change this file 
 as needed.
-
-If you need any help or guidance, please send an email to
-'help@bitgenics.io'.
 `))
         .catch(err => error(err));
 };
