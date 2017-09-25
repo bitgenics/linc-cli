@@ -2,7 +2,7 @@
 
 module.exports = {
     'A': {
-        name: 'Generic React Redux RouterV3',
-        pkg: 'linc-profile-generic-react-redux-routerv3'
+        name: 'Generic React Profile',
+        pkg: 'linc-profile-generic-react'
     }
 };
