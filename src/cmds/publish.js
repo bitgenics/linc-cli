@@ -333,8 +333,6 @@ const publishSite = (packageJson, authParams) => new Promise((resolve, reject) =
             // Save the site settings into the temporary directory as JSON file
             return saveJSONFile(tempDir, settings, 'settings.json');
         })
-        // Also save the package.json into the temporary directory
-        .then(() => saveJSONFile(tempDir, packageJson, 'package.json'))
         // Create "meta" zip-file containing package.json, settings.json and <siteName>.zip
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
         .then(zipfile => {
