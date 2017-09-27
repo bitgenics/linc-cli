@@ -14,7 +14,6 @@ const auth = require('../auth');
 const domainify = require('../lib/domainify');
 const notice = require('../lib/notice');
 const config = require('../config.json');
-
 const assertPkg = require('../lib/package-json').assert;
 
 const TMP_DIR = '/tmp/';
@@ -105,8 +104,8 @@ const getSiteSettings = () => new Promise((resolve, reject) => {
     });
 });
 
-const saveSettings = (temp_dir, settings) => new Promise((resolve, reject) => {
-    fs.writeJson(path.join(temp_dir, 'settings.json'), settings, err => {
+const saveJSONFile = (temp_dir, settings, filename) => new Promise((resolve, reject) => {
+    fs.writeJson(path.join(temp_dir, filename), settings, err => {
         if (err) return reject(err);
         else return resolve();
     });
@@ -234,7 +233,8 @@ const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     });
 });
 
-const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
+const publishSite = (packageJson, authParams) => new Promise((resolve, reject) => {
+    const siteName = packageJson.linc.siteName;
     const codeId = sha1Dir(DIST_DIR);
 
     let tempDir;
@@ -248,13 +248,18 @@ const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
         })
         .then(temp_dir => {
             tempDir = temp_dir;
+            // Zip the dist directory
             return createZipfile(tempDir, DIST_DIR, siteName);
         })
         .then(() => getSiteSettings())
         .then(settings => {
             deployKey = calculateDeployKey(codeId, siteName, settings);
-            return saveSettings(tempDir, settings);
+            // Save the site settings into the temporary directory as JSON file
+            return saveJSONFile(tempDir, settings, 'settings.json');
         })
+        // Also save the package.json into the temporary directory
+        .then(() => saveJSONFile(tempDir, packageJson, 'package.json'))
+        // Create "meta" zip-file containing package.json, settings.json and <siteName>.zip
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
         .then(zipfile => {
             console.log('Upload started. Please wait...');
@@ -336,7 +341,7 @@ us using the email address shown above.
             if (!linc.siteName) return initSite(packageJson, authParams);
         })
         .then(() => authoriseSite(packageJson.linc.siteName, authParams))
-        .then(() => publishSite(packageJson.linc.siteName, authParams))
+        .then(() => publishSite(packageJson, authParams))
         .then(deployKey => console.log(`Done.
 
 Your site has been published with the key ${deployKey} and can be reached 
