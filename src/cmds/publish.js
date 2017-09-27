@@ -22,19 +22,37 @@ const DIST_DIR = 'dist';
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 const BUCKET_NAME = config.S3.deployBucket;
 
-const sha1Dir = (source_dir) => {
-    return sha1Sync(path.join(process.cwd(), source_dir)).substring(0, 8);
-};
+/**
+ * Create SHA1 of entire directory
+ * @param source_dir
+ */
+const sha1Dir = (source_dir) => sha1Sync(path.join(process.cwd(), source_dir)).substring(0, 8);
 
-const sha1 = (s) => {
-    return crypto.createHash('sha1').update(s).digest('hex');
-};
+/**
+ * Convenience function to create SHA1 of a string
+ * @param s
+ */
+const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex');
 
+/**
+ * Create deployment key, which is basically a SHA1
+ * @param code_id
+ * @param site_name
+ * @param settings
+ * @returns {string}
+ */
 const calculateDeployKey = (code_id, site_name, settings) => {
     const settings_id = sha1(JSON.stringify(settings));
     return sha1(`${code_id}.${site_name}.${settings_id}`).substr(0, 8);
 };
 
+/**
+ * Create a zip file from a source_dir, named <site_name>.zip
+ * @param temp_dir
+ * @param source_dir
+ * @param site_name
+ * @param opts
+ */
 const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((resolve, reject) => {
     const options = opts || {cwd: process.cwd()};
     const cwd = options.cwd;
@@ -53,10 +71,26 @@ const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((re
     });
 });
 
-const createKey = (user_id, deployKey, sha1, site_name) => {
-    return `${user_id}/${deployKey}/${site_name}-${sha1}.zip`;
-};
+/**
+ * Create key for S3.
+ * @param user_id
+ * @param deployKey
+ * @param sha1
+ * @param site_name
+ */
+const createKey = (user_id, deployKey, sha1, site_name) => (
+    `${user_id}/${deployKey}/${site_name}-${sha1}.zip`
+);
 
+/**
+ * Upload zip file to S3.
+ * @param description
+ * @param deployKey
+ * @param sha1
+ * @param auth
+ * @param site_name
+ * @param zipfile
+ */
 const uploadZipfile = (description, deployKey, sha1, auth, site_name, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
         credentials: auth.aws.credentials,
@@ -91,6 +125,9 @@ const uploadZipfile = (description, deployKey, sha1, auth, site_name, zipfile) =
         .catch(err => reject(err));
 });
 
+/**
+ * Get site settings from site-settings.json file.
+ */
 const getSiteSettings = () => new Promise((resolve, reject) => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
     fs.stat(settingsFile, (err, stats) => {
@@ -104,13 +141,22 @@ const getSiteSettings = () => new Promise((resolve, reject) => {
     });
 });
 
-const saveJSONFile = (temp_dir, settings, filename) => new Promise((resolve, reject) => {
-    fs.writeJson(path.join(temp_dir, filename), settings, err => {
+/**
+ * Save a JSON object into a JSON file.
+ * @param temp_dir
+ * @param json
+ * @param filename
+ */
+const saveJSONFile = (temp_dir, json, filename) => new Promise((resolve, reject) => {
+    fs.writeJson(path.join(temp_dir, filename), json, err => {
         if (err) return reject(err);
         else return resolve();
     });
 });
 
+/**
+ * Create a temporary directory using global TMP_DIR.
+ */
 const createTempDir = () => new Promise((resolve, reject) => {
     fs.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
         if (err) return reject(err);
@@ -118,6 +164,10 @@ const createTempDir = () => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Ask user for site name.
+ * @param name
+ */
 const askSiteName = (name) => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -138,6 +188,10 @@ const askSiteName = (name) => new Promise((resolve, reject) => {
     })
 });
 
+/**
+ * Ask user for a publication description.
+ * @param descr
+ */
 const askDescription = (descr) => new Promise((resolve, reject) => {
     console.log(`
 It's benefial to provide a description for your deployment.`);
@@ -158,6 +212,9 @@ It's benefial to provide a description for your deployment.`);
     })
 });
 
+/**
+ * Are you sure? :)
+ */
 const askIsThisOk = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -175,6 +232,11 @@ const askIsThisOk = () => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Create a new site in the backend.
+ * @param siteName
+ * @param auth_params
+ */
 const createNewSite = (siteName, auth_params) => new Promise((resolve, reject) => {
     const body = {
         name: siteName
@@ -198,6 +260,10 @@ const createNewSite = (siteName, auth_params) => new Promise((resolve, reject) =
     });
 });
 
+/**
+ * Check whether a site name already exists.
+ * @param siteName
+ */
 const checkSiteName = (siteName) => new Promise((resolve, reject) => {
     console.log('Checking availability of name. Please wait...');
 
@@ -217,6 +283,11 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Authorise the user.
+ * @param siteName
+ * @param authInfo
+ */
 const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
@@ -233,6 +304,11 @@ const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Actually publish the site (upload to S3, let backend take it from there).
+ * @param packageJson
+ * @param authParams
+ */
 const publishSite = (packageJson, authParams) => new Promise((resolve, reject) => {
     const siteName = packageJson.linc.siteName;
     const codeId = sha1Dir(DIST_DIR);
@@ -269,6 +345,11 @@ const publishSite = (packageJson, authParams) => new Promise((resolve, reject) =
         .catch(err => reject(err));
 });
 
+/**
+ * Initialise site.
+ * @param packageJson
+ * @param authParams
+ */
 const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
     const linc = packageJson.linc;
 
@@ -307,6 +388,10 @@ Now let's publish your site.`));
         .catch(err => reject(err));
 });
 
+/**
+ * Main entry point for this module.
+ * @param argv
+ */
 const publish = (argv) => {
     let authParams;
     let packageJson;
