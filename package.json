@@ -10,7 +10,6 @@
     "child_process": "^1.0.2",
     "compression": "^1.7.0",
     "copy-dir": "^0.3.0",
-    "deterministic-sha1": "0.0.2",
     "deterministic-zip": "^1.0.5",
     "eslint": "^4.4.1",
     "eslint-config-airbnb": "^15.1.0",
