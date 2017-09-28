@@ -4,12 +4,12 @@ const prompt = require('prompt');
 const request = require('request');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 const AWS = require('aws-sdk');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const zip = require('deterministic-zip');
-const sha1Sync = require('deterministic-sha1');
-const fs = require('fs-promise');
+const fsPromise = require('fs-promise');
 const auth = require('../auth');
 const domainify = require('../lib/domainify');
 const notice = require('../lib/notice');
@@ -21,12 +21,6 @@ const DIST_DIR = 'dist';
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 const BUCKET_NAME = config.S3.deployBucket;
-
-/**
- * Create SHA1 of entire directory
- * @param source_dir
- */
-const sha1Dir = (source_dir) => sha1Sync(path.join(process.cwd(), source_dir)).substring(0, 8);
 
 /**
  * Convenience function to create SHA1 of a string
@@ -60,7 +54,7 @@ const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((re
     const zipfile = path.join(temp_dir, site_name + '.zip');
 
     // Check whether the directory actually exists
-    fs.stat(options.cwd, (err, stats) => {
+    fsPromise.stat(options.cwd, (err, stats) => {
         if (err) return reject(err);
 
         // Create zipfile from directory
@@ -86,12 +80,12 @@ const createKey = (user_id, deployKey, sha1, site_name) => (
  * Upload zip file to S3.
  * @param description
  * @param deployKey
- * @param sha1
+ * @param codeId
  * @param auth
  * @param site_name
  * @param zipfile
  */
-const uploadZipfile = (description, deployKey, sha1, auth, site_name, zipfile) => new Promise((resolve, reject) => {
+const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
         credentials: auth.aws.credentials,
         signatureVersion: 'v4',
@@ -99,13 +93,13 @@ const uploadZipfile = (description, deployKey, sha1, auth, site_name, zipfile) =
     });
     const s3 = new AWS.S3();
 
-    fs.readFile(zipfile)
+    fsPromise.readFile(zipfile)
         .then(data => {
             const user_id = auth.auth0.profile.user_id;
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(user_id, deployKey, sha1.substring(0, 8), site_name),
+                Key: createKey(user_id, deployKey, codeId, site_name),
                 Metadata: {
                     description: description
                 }
@@ -130,12 +124,12 @@ const uploadZipfile = (description, deployKey, sha1, auth, site_name, zipfile) =
  */
 const getSiteSettings = () => new Promise((resolve, reject) => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
-    fs.stat(settingsFile, (err, stats) => {
+    fsPromise.stat(settingsFile, (err, stats) => {
         if (err) {
             return (err.code === 'ENOENT') ? resolve({}) : reject(err);
         }
 
-        fs.readFile(settingsFile)
+        fsPromise.readFile(settingsFile)
             .then(x => resolve(JSON.parse(x.toString())))
             .catch(err => reject(err))
     });
@@ -148,7 +142,7 @@ const getSiteSettings = () => new Promise((resolve, reject) => {
  * @param filename
  */
 const saveJSONFile = (temp_dir, json, filename) => new Promise((resolve, reject) => {
-    fs.writeJson(path.join(temp_dir, filename), json, err => {
+    fsPromise.writeJson(path.join(temp_dir, filename), json, err => {
         if (err) return reject(err);
         else return resolve();
     });
@@ -158,7 +152,7 @@ const saveJSONFile = (temp_dir, json, filename) => new Promise((resolve, reject)
  * Create a temporary directory using global TMP_DIR.
  */
 const createTempDir = () => new Promise((resolve, reject) => {
-    fs.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
+    fsPromise.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
         if (err) return reject(err);
         else return resolve(folder);
     });
@@ -311,7 +305,9 @@ const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
  */
 const publishSite = (packageJson, authParams) => new Promise((resolve, reject) => {
     const siteName = packageJson.linc.siteName;
-    const codeId = sha1Dir(DIST_DIR);
+    const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
+    const renderer = fs.readFileSync(rendererPath);
+    const codeId = sha1(renderer);
 
     let tempDir;
     let deployKey;
