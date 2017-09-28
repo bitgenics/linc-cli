@@ -109,7 +109,7 @@ const showAvailableDeployments = (results) => {
     console.log(`\nHere are the most recent deployments for ${site_name}:`);
 
     let code = 65; /* 'A' */
-    deployments.forEach(d => console.log(`     ${String.fromCharCode(code++)}) ${d.deploy_key}  (${d.description || ''})`));
+    deployments.forEach(d => console.log(`     ${String.fromCharCode(code++)}) ${d.deploy_key}  ${d.description || ''}`));
 };
 
 const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new Promise((resolve, reject) => {
