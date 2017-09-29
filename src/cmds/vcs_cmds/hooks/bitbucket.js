@@ -132,7 +132,7 @@ const createHook = argv => {
                 console.log('Your webhook has been created.');
             }
         })
-        .catch(err => {
+        .catch(() => {
             spinner.stop();
             console.log('Oops. Something seems to have gone wrong.');
         });
