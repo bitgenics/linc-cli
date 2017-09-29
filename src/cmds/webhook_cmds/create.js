@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const auth = require('../../auth');
 const prompt = require('prompt');
 const request = require('request');
@@ -127,6 +128,7 @@ type to 'application/json', or your webhook calls will fail.
 const createWebhook = (argv) => {
     console.log(explanation);
 
+    let spinner = ora();
     let siteName;
     const body = {};
 
@@ -144,15 +146,23 @@ const createWebhook = (argv) => {
             return askAccessToken();
         })
         .then(result => {
+            spinner.start('Authorising. Please wait...');
             body.access_token = result.access_token;
             return auth(argv.accessKey, argv.secretKey);
         })
         .then(auth_params => {
+            spinner.start('Creating webhook. Please wait...');
             const jwtToken = auth_params.jwtToken;
             return createWebhookInBackend(jwtToken, siteName, body);
         })
-        .then(response => showWebhookUrl(response.webhook_url))
-        .catch(err => console.log(err.message));
+        .then(response => {
+            spinner.stop();
+            return showWebhookUrl(response.webhook_url);
+        })
+        .catch(err => {
+            spinner.stop();
+            console.log(err.message);
+        });
 };
 
 exports.command = 'create';

@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const auth = require('../../auth');
 const prompt = require('prompt');
 const request = require('request');
@@ -63,6 +64,7 @@ const deleteWebhookInBackend = (jwtToken, site_name, service) => new Promise((re
  * @param argv
  */
 const deleteWebhook = (argv) => {
+    let spinner = ora();
     let siteName;
 
     readPkg()
@@ -77,14 +79,22 @@ const deleteWebhook = (argv) => {
             if (result.ok.toLowerCase() !== 'y') {
                 throw new Error('Aborted by user');
             }
+            spinner.start('Authorising. Please wait...');
             return auth(argv.accessKey, argv.secretKey);
         })
         .then(auth_params => {
+            spinner.start('Deleting webhook. Please wait...');
             const jwtToken = auth_params.jwtToken;
             return deleteWebhookInBackend(jwtToken, siteName);
         })
-        .then(reply => console.log(reply.status))
-        .catch(err => console.log(err.message));
+        .then(reply => {
+            spinner.stop();
+            console.log(reply.status);
+        })
+        .catch(err => {
+            spinner.stop();
+            console.log(err.message);
+        });
 };
 
 exports.command = 'delete';
