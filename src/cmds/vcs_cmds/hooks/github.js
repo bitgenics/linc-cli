@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const auth = require('../../../auth');
 const config = require('../../../config.json');
 const prompt = require('prompt');
@@ -95,6 +96,7 @@ const deleteWebhookInBackend = (jwtToken, siteName) => new Promise((resolve, rej
 const createHook = argv => {
     console.log(usage);
 
+    let spinner = ora();
     let siteName;
     const body = {};
     readPkg()
@@ -114,21 +116,26 @@ const createHook = argv => {
         .then(result => {
             body.repositoryUrl = result.repositoryUrl;
 
-            console.log('Please wait...');
+            spinner.start('Authorising. Please wait...');
             return auth(argv.accessKey, argv.secretKey);
         })
         .then(auth_params => {
+            spinner.start('Creating webhook. Please wait...');
             const jwtToken = auth_params.jwtToken;
             return createWebhookInBackend(jwtToken, siteName, body);
         })
         .then(response => {
+            spinner.stop();
             if (response.errors) {
                 console.log(`Oops. Something went wrong:\n${response.errors}`);
             } else {
                 console.log('Your webhook has been created.');
             }
         })
-        .catch(err => console.log('Oops. Something seems to have gone wrong.'));
+        .catch(() => {
+            spinner.stop();
+            console.log('Oops. Something seems to have gone wrong.');
+        });
 };
 
 /**
@@ -136,6 +143,7 @@ const createHook = argv => {
  * @param argv
  */
 const deleteHook = argv => {
+    let spinner = ora();
     let siteName;
     readPkg()
         .then(pkg => {
@@ -143,21 +151,26 @@ const deleteHook = argv => {
             if (!siteName) {
                 throw new Error('No site name found in package.json.');
             }
-            console.log('Please wait...');
+            spinner.start('Authorising. Please wait...');
             return auth(argv.accessKey, argv.secretKey);
         })
         .then(auth_params => {
+            spinner.start('Deleting webhook. Please wait...');
             const jwtToken = auth_params.jwtToken;
             return deleteWebhookInBackend(jwtToken, siteName);
         })
         .then(response => {
+            spinner.stop();
             if (response.errors) {
                 console.log(`Oops. Something went wrong:\n${response.errors}`);
             } else {
                 console.log('Your webhook has been deleted.');
             }
         })
-        .catch(err => console.log('Oops. Something seems to have gone wrong.'));
+        .catch(() => {
+            spinner.stop();
+            console.log('Oops. Something seems to have gone wrong.');
+        });
 };
 
 /**
