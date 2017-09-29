@@ -1,5 +1,6 @@
 'use strict';
 const logUpdate = require('log-update');
+const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const path = require('path');
@@ -187,8 +188,7 @@ const askSiteName = (name) => new Promise((resolve, reject) => {
  * @param descr
  */
 const askDescription = (descr) => new Promise((resolve, reject) => {
-    console.log(`
-It's benefial to provide a description for your deployment.`);
+    console.log(`It's benefial to provide a description for your deployment.`);
 
     let schema = {
         properties: {
@@ -347,9 +347,8 @@ const publishSite = (packageJson, authParams) => new Promise((resolve, reject) =
 const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
     const linc = packageJson.linc;
 
-    console.log(`
-It looks like you haven't provided a site name yet, so let's
-handle that now.
+    console.log(`It looks like you haven't provided a site name yet,
+so let's handle that now.
 `);
     askSiteName(domainify(packageJson.name))
         .then(result => {
@@ -361,8 +360,7 @@ handle that now.
                 throw new Error('This site name already exists.');
             }
 
-            console.log(`
-The following section will be updated in package.json:
+            console.log(`The following section will be updated in package.json:
 ${JSON.stringify({linc: linc}, null, 3)}
 `);
             return askIsThisOk();
@@ -390,12 +388,14 @@ const publish = (argv) => {
     let authParams;
     let packageJson;
 
-    console.log('Authorising user. Please wait...');
+    // Disappearing progress messages
+    const spinner = ora('Authorising user. Please wait...').start();
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => authParams = auth_params)
         .catch(err => {
-                console.log(`
+            spinner.stop();
+            console.log(`
 ${err.message}
 
 Please log in using 'linc login', or create a new user with 
@@ -410,17 +410,28 @@ us using the email address shown above.
 `);
             process.exit(255);
         })
-        .then(() => readPkg())
+        .then(() => {
+            spinner.stop();
+            return readPkg();
+        })
         .then(pkg => {
             packageJson = pkg;
             const linc = packageJson.linc;
             if (!linc || !linc.buildProfile || !linc.sourceDir) {
                 throw new Error('This project is not initialised. Did you forget to \'linc init\'?');
             }
-            if (!linc.siteName) return initSite(packageJson, authParams);
+            if (!linc.siteName) {
+                return initSite(packageJson, authParams);
+            }
+
+            spinner.text = 'Performing checks. Please wait...';
+            spinner.start();
         })
         .then(() => authoriseSite(packageJson.linc.siteName, authParams))
-        .then(() => publishSite(packageJson, authParams))
+        .then(() => {
+            spinner.stop();
+            return publishSite(packageJson, authParams);
+        })
         .then(deployKey => console.log(`Done.
 
 Your site has been published with the key ${deployKey} and can be reached 
@@ -435,7 +446,10 @@ The latest deployment can also be found via this URL:
 
 This URL *always* provides the most recent deployment.
 `))
-        .catch(err => console.log(err.message));
+        .catch(err => {
+            spinner.stop();
+            console.log(err.message)
+        });
 };
 
 exports.command = ['publish', 'deploy'];
