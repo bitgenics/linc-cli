@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
@@ -71,11 +72,12 @@ exports.handler = (argv) => {
 
     notice();
 
-    console.log('Please wait...');
+    const spinner = ora('Please wait...').start();
 
     auth(argv.accessKey, argv.secretKey)
         .then(authParams => getAuthoriseUri(argv.siteName, authParams))
         .then(response => {
+            spinner.stop();
             if (!response.already_authorised) return response.authorise_uri;
 
             return areYouSure()
@@ -89,6 +91,7 @@ exports.handler = (argv) => {
                 })
         })
         .then(uri => {
+            spinner.stop();
             console.log(`
 The following URL will open in your browser shortly:
 
@@ -100,5 +103,8 @@ Please note that this URL will be valid for approx. 30 minutes, after which you 
 `);
             openurl.open(uri, () => {});
         })
-        .catch(err => console.log(`Oops, something went wrong:\n${err}.`));
+        .catch(err => {
+            spinner.stop();
+            console.log(`Oops, something went wrong:\n${err}.`)
+        });
 };
