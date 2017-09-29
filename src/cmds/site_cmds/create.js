@@ -191,7 +191,7 @@ const createNewSite = (linc, auth_params, method) => new Promise((resolve, rejec
 });
 
 const checkSiteName = (siteName) => new Promise((resolve, reject) => {
-    console.log('Checking availability of name. Please wait...');
+    const spinner = ora('Checking availability of name. Please wait...').start();
 
     const options = {
         method: 'GET',
@@ -201,11 +201,22 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
         }
     };
     request(options, (err, response, body) => {
-        if (err) return reject(err);
+        if (err) {
+            spinner.fail('Something went wrong');
+            return reject(err);
+        }
 
         const json = JSON.parse(body);
-        if (response.statusCode === 200) return resolve(json.exists);
-        else return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        if (response.statusCode === 200) {
+            const exists = json.exists;
+            if (exists) spinner.warn('Site already exists');
+            else spinner.warn('Site name available');
+
+            return resolve(exists);
+        } else {
+            spinner.fail('Something went wrong');
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
     });
 });
 
