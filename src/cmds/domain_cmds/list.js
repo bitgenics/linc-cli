@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const auth = require('../../auth');
 const domains = require('../../lib/domains');
 const notice = require('../../lib/notice');
@@ -18,12 +19,18 @@ const list = (argv) => {
 
     notice();
 
-    console.log('Please wait...');
+    const spinner = ora('Retrieving available domains...').start();
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => domains.getAvailableDomains(argv.siteName, auth_params))
-        .then(result => domains.showAvailableDomains(result))
-        .catch(err => console.log(`Oops, something went wrong:\n${err}.`));
+        .then(result => {
+            spinner.stop();
+            return domains.showAvailableDomains(result);
+        })
+        .catch(err => {
+            spinner.stop();
+            console.log(`Oops, something went wrong:\n${err}.`);
+        });
 };
 
 exports.command = 'list';
