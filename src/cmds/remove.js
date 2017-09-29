@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../auth');
@@ -63,6 +64,8 @@ const remove = (argv) => {
 
     notice();
 
+    const spinner = ora();
+
     console.log(`Removing a site is a destructive operation that CANNOT be undone. 
 The operation will remove all resources associated with your site, 
 and it will no longer be accessible/available to you.
@@ -77,14 +80,28 @@ and it will no longer be accessible/available to you.
                     console.log('Please wait...');
                 })
         })
-        .then(() => auth(argv.accessKey, argv.secretKey))
-        .then(auth_params => deleteSite(siteName, auth_params))
-        .then(() => console.log(
-`Site successfully removed. You can no longer access this site. Please be
+        .then(() => {
+            spinner.start('Authorising. Please wait...');
+            return auth(argv.accessKey, argv.secretKey);
+        })
+        .then(auth_params => {
+            spinner.stop();
+
+            spinner.start('Deleting site. Please wait...');
+            return deleteSite(siteName, auth_params);
+        })
+        .then(() => {
+            spinner.stop();
+            console.log(
+                `Site successfully removed. You can no longer access this site. Please be
 advised that it takes a while for the process to finish on our servers, 
 during which time you can't create a new site with the same name.
-`))
-        .catch(err => error(err));
+`)
+        })
+        .catch(err => {
+            spinner.stop();
+            return error(err);
+        });
 };
 
 exports.command = 'remove';
