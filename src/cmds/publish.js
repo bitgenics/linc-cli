@@ -1,5 +1,4 @@
 'use strict';
-const logUpdate = require('log-update');
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
@@ -94,6 +93,8 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile)
     });
     const s3 = new AWS.S3();
 
+    const spinner = ora();
+
     fsPromise.readFile(zipfile)
         .then(data => {
             const user_id = auth.auth0.profile.user_id;
@@ -107,13 +108,14 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile)
             }
         })
         .then(params => {
+            let totalInKB;
             return s3.putObject(params).on('httpUploadProgress', (progress => {
                 const loadedInKB = Math.floor(progress.loaded / 1024);
-                const totalInKB = Math.floor(progress.total / 1024);
+                totalInKB = Math.floor(progress.total / 1024);
                 const progressInPct = Math.floor((progress.loaded / progress.total * 100));
-                logUpdate(`Transfered ${loadedInKB} KB of ${totalInKB} KB  [${progressInPct}%]`);
+                spinner.start(`Transfered ${loadedInKB} KB of ${totalInKB} KB  [${progressInPct}%]`);
             })).send(() => {
-                logUpdate('Finalising. Please wait...');
+                spinner.succeed(`Upload finished. Total upload size: ${totalInKB} KB.`);
                 return resolve();
             });
         })
@@ -331,10 +333,7 @@ const publishSite = (packageJson, authParams) => new Promise((resolve, reject) =
         })
         // Create "meta" zip-file containing package.json, settings.json and <siteName>.zip
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => {
-            console.log('Upload started. Please wait...');
-            return uploadZipfile(description, deployKey, codeId, authParams, siteName, zipfile);
-        })
+        .then(zipfile => uploadZipfile(description, deployKey, codeId, authParams, siteName, zipfile))
         .then(() => resolve(deployKey))
         .catch(err => reject(err));
 });
@@ -432,8 +431,7 @@ us using the email address shown above.
             spinner.stop();
             return publishSite(packageJson, authParams);
         })
-        .then(deployKey => console.log(`Done.
-
+        .then(deployKey => console.log(`
 Your site has been published with the key ${deployKey} and can be reached 
 at the following URL: 
 
