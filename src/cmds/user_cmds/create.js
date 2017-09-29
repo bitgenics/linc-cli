@@ -1,5 +1,5 @@
 'use strict';
-const colors = require('colors/safe');
+const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const cred = require('../../cred');
@@ -109,6 +109,7 @@ exports.desc = 'Create an account';
 exports.handler = (argv) => {
     notice();
 
+    const spinner = ora('Creating new user. Please wait...');
     getTCAcceptance()
         .then(accept => {
             if (accept.substr(0, 1).toLowerCase() !== 'y') {
@@ -117,10 +118,17 @@ exports.handler = (argv) => {
 
             return getUserEmail();
         })
-        .then(email => createNewUser(email))
+        .then(email => {
+            spinner.start();
+            return createNewUser(email);
+        })
         .then(apiResponse => {
+            spinner.stop();
             showUserCredentials(apiResponse);
             cred.save(apiResponse.clientId, apiResponse.clientSecret)
         })
-        .catch(err => console.log(err.message));
+        .catch(err => {
+            spinner.stop();
+            console.log(err.message);
+        });
 };
