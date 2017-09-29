@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
@@ -273,9 +274,12 @@ ${JSON.stringify(linc, null, 3)}
             // Make sure linc object contains site name
             packageJson.linc.siteName = packageJson.linc.siteName || linc.siteName;
 
+            const spinner = ora('Creating site. Please wait...').start();
             const method = siteName ? 'UPDATE' : 'CREATE';
             return createNewSite(linc, authParams, method)
                 .then(result => {
+                    spinner.stop();
+
                     console.log('Site successfully created.');
                     if (result.endpoint !== undefined) {
                         console.log(`
@@ -287,7 +291,11 @@ Use this endpoint to create CNAME entries for your custom domains
 in your DNS. 
 `);
                     }
-                });
+                })
+                .catch(err => {
+                    spinner.stop();
+                    return reject(err);
+                })
         })
         .then(() => {
             console.log('Updating your package.json.');
@@ -305,11 +313,12 @@ const createSite = (argv) => {
     let authParams;
     let packageJson;
 
-    console.log('Authorising user. Please wait...');
+    const spinner = ora('Authorising user. Please wait...').start();
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => authParams = auth_params)
         .catch(err => {
+            spinner.stop();
             console.log(`
 ${err.message}
 
@@ -325,7 +334,10 @@ us using the email address shown above.
 `);
             process.exit(255);
         })
-        .then(() => readPkg())
+        .then(() => {
+            spinner.stop();
+            return readPkg();
+        })
         .then(pkg => {
             packageJson = pkg;
             const linc = packageJson.linc;
@@ -335,12 +347,16 @@ us using the email address shown above.
 
             return initSite(packageJson, authParams);
         })
-        .then(() => authoriseSite(packageJson.linc.siteName, authParams))
-        .catch(err => {
-            console.log(err.message);
-            process.exit(255);
+        .then(() => {
+            spinner.text = 'Authorising. Please wait...';
+            spinner.start();
+            return authoriseSite(packageJson.linc.siteName, authParams);
         })
-
+        .then(() => spinner.stop())
+        .catch(err => {
+            spinner.stop();
+            console.log(err.message);
+        });
 };
 
 exports.command = 'create';
