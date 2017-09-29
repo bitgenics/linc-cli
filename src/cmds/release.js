@@ -1,4 +1,5 @@
 'use strict';
+const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../auth');
@@ -143,7 +144,7 @@ const release = (argv) => {
         process.exit(255);
     }
 
-    console.log('Please wait...');
+    const spinner = ora('Retrieving available domains...').start();
 
     let domainsToRelease = [];
     let siteName = argv.siteName;
@@ -155,6 +156,8 @@ const release = (argv) => {
             return getAvailableDomains(siteName, authParams);
         })
         .then(result => {
+            spinner.stop();
+
             showAvailableDomains(result);
             return askReleaseDomain()
                 .then(reply => {
@@ -178,8 +181,13 @@ const release = (argv) => {
                     });
                 })
         })
-        .then(() => getAvailableDeployments(siteName, authParams))
+        .then(() => {
+            spinner.text = 'Retrieving available deployments...';
+            spinner.start();
+            return getAvailableDeployments(siteName, authParams);
+        })
         .then(result => {
+            spinner.stop();
             showAvailableDeployments(result);
             return askDeploymentKey(true)
                 .then(reply => {
@@ -188,12 +196,20 @@ const release = (argv) => {
                         throw new Error('Invalid response. Aborted by user.');
                     }
                     deployKey = result.deployments[index].deploy_key;
-                    console.log('Please wait...');
+                    spinner.text = 'Creating new release...';
+                    spinner.start();
                 })
         })
         .then(() => Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, authParams))))
-        .then(response => console.log('Release(s) successfully created.'))
-        .catch(err => error(err));
+        .then(() => {
+            spinner.stop();
+            console.log(`
+Release(s) successfully created.`);
+        })
+        .catch(err => {
+            spinner.stop();
+            return error(err);
+        });
 };
 
 exports.command = 'release';
