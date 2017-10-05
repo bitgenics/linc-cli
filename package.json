@@ -43,6 +43,6 @@
     "lint": "eslint src test",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Sander Huijsen <sander.huijsen@gmail.com> (http://www.sanderhuijsen.com)",
+  "author": "Sander Huijsen <sander@bitgenics.io> (https://bitgenics.io)",
   "license": "ISC"
 }
