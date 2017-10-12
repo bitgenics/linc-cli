@@ -10,6 +10,8 @@ The LINC command line tools enable you to run your website on our Front-End Deli
 
 to install it on your system. The `-g` flag installs it globally. 
 
+Please be aware that LINC needs node version 8 to run. You can easily switch to node 8 if you're using `nvm` (node version manager). 
+
 ### Configuration
 
 To start using LINC run `linc init` in your project directory. Just like npm init it will ask you some questions related to your project, install the server-side rendering profile, and copy an example configuration file `linc.config.js`. Make the necessary changes to the config file and you are ready for the next step. If you need any help open up an issue on GitHub, mail us at `help@bitgenics.io` or post on StackOverflow with tag `linc`.
