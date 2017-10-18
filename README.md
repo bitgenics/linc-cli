@@ -14,7 +14,7 @@ Please be aware that LINC needs node version 8 to run. You can easily switch to 
 
 ### Configuration
 
-To start using LINC run `linc init` in your project directory. Just like npm init it will ask you some questions related to your project, install the server-side rendering profile, and copy an example configuration file `linc.config.js`. Make the necessary changes to the config file and you are ready for the next step. If you need any help open up an issue on GitHub, mail us at `help@bitgenics.io` or post on StackOverflow with tag `linc`.
+To start using LINC run `linc init` in your project directory. Just like npm init it will ask you some questions related to your project, install the server-side rendering profile, and copy an example configuration file `linc.config.js`. Make the necessary changes to the config file and you are ready for the next step. If you need any help open up an issue on GitHub, mail us at `help@bitgenics.io` or jump onto https://www.bitgenics.io and contact us via our chat app.
 
 ### Building/Running a SSR bundle locally
 
