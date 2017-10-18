@@ -31,6 +31,12 @@ function createRenderer(renderer_path, settings) {
     const renderer = vm.createReuseableRenderer(src, settings);
 
     return function(req, res, next) {
+        if (renderer.doGeoLookup && renderer.doGeoLookup(req)) {
+            req.userInfo = {
+                ip: '127.0.0.1',
+                msg: 'This will contain actual user location information in production'
+            };
+        }
         renderer.renderGet(req, res, settings);
     }
 }
@@ -67,7 +73,7 @@ const serve = (argv) => {
         const event = eventcollector.getEvent();
         console.log(JSON.stringify(event, null, 2));
         const hny_event = hny.newEvent().add(event );
-        hny_event.timestamp = event.time_date
+        hny_event.timestamp = event.time_date;
         hny_event.send();
     }));
     app.use('/', createRenderer(renderer, options));
