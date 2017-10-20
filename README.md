@@ -30,4 +30,4 @@ For a more in-depth look at `linc-cli` you will find a page with screenshots for
 
 ### Feedback and help
 
-If you run into problems, or have other feedback to give us, feel free to drop us a line at <a href="mailto:help@bitgenics.io">help@bitgenics.io</a> or visit us at https://www.bitgenics.io/ to chat with us betwen the hours of 9 - 5 weekdays. Alternatlity if you would like to book time to talk with one of our technical support representatives please do so [here](https://calendly.com/bitgenics/technical-support/) 
+If you run into problems or have other feedback to give us, feel free to drop us a line at <a href="mailto:help@bitgenics.io">help@bitgenics.io</a> or visit us at https://www.bitgenics.io/ tto chat with us between the hours of 9 - 5 weekdays. Alternately if you would like to book time to talk with one of our technical support engineers, please do so [here](https://calendly.com/bitgenics/technical-support/) 
