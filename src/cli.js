@@ -13,8 +13,8 @@ const argv = yargs
         return Object.assign({}, fileCredentials, envConfig);
     })
     .pkgConf('linc', process.cwd())
-    .global(['silent'])
-    .default({silent: false})
+    .global(['config', 'silent'])
+    .default({config: 'linc.toml', silent: false})
     .demand(1)
     .help("help")
     .alias("h", "help")
