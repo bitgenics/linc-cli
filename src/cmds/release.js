@@ -136,6 +136,8 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err.message);
+    console.log(`
+Please email us at help@bitgenics.io, so we can assist in manually creating a release.`);
 };
 
 const release = (argv) => {
