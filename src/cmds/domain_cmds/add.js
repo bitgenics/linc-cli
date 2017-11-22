@@ -55,6 +55,8 @@ const addDomainName = (domain_name, site_name, authInfo) => new Promise((resolve
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err);
+    console.log(`
+Please email us at help@bitgenics.io, so we can assist in manually adding the domain.`);
 };
 
 exports.command = 'add';
