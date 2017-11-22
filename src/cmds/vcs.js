@@ -1,5 +1,5 @@
 exports.command = 'vcs <command>';
-exports.desc = 'Manage your VCS';
+exports.desc = 'Manage your version control system';
 exports.builder = function (yargs) {
     return yargs.commandDir('vcs_cmds')
 };
