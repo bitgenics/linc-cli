@@ -12,7 +12,7 @@ const clean = (argv) => {
 };
 
 exports.command = 'clean';
-exports.desc = 'Clean project directory (removes \'dist\').';
+exports.desc = 'Clean project directory (removes \'dist\')';
 exports.handler = (argv) => {
     assertPkg();
 
