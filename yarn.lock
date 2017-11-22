@@ -386,10 +386,6 @@ cryptiles@2.x.x:
   dependencies:
     boom "2.x.x"
 
-crypto@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/crypto/-/crypto-0.0.3.tgz#470a81b86be4c5ee17acc8207a1f5315ae20dbb0"
-
 cycle@1.0.x:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/cycle/-/cycle-1.0.3.tgz#21e80b2be8580f98b468f379430662b046c34ad2"
@@ -458,13 +454,6 @@ depd@1.1.1, depd@~1.1.1:
 destroy@~1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/destroy/-/destroy-1.0.4.tgz#978857442c44749e4206613e37946205826abd80"
-
-deterministic-sha1@0.0.2:
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/deterministic-sha1/-/deterministic-sha1-0.0.2.tgz#4f61d2bf3231ba2c8d461aef9d175a102fa3c05b"
-  dependencies:
-    crypto "0.0.3"
-    path "^0.12.7"
 
 deterministic-zip@^1.0.5:
   version "1.0.5"
