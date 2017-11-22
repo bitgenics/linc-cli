@@ -144,21 +144,28 @@ const release = (argv) => {
         process.exit(255);
     }
 
-    const spinner = ora('Retrieving available domains...').start();
+    const spinner = ora('Retrieving domains and deployments...').start();
 
     let domainsToRelease = [];
     let siteName = argv.siteName;
     let authParams = null;
     let deployKey = null;
+    let listOfDeployments;
+
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
             authParams = auth_params;
-            return getAvailableDomains(siteName, authParams);
+            return Promise.all([
+                getAvailableDomains(siteName, authParams),
+                getAvailableDeployments(siteName, authParams),
+            ]);
         })
         .then(result => {
+            const listOfDomains = result[0];
+            listOfDeployments = result[1];
             spinner.stop();
 
-            showAvailableDomains(result);
+            showAvailableDomains(listOfDomains);
             return askReleaseDomain()
                 .then(reply => {
                     let ignored = false;
@@ -170,32 +177,28 @@ const release = (argv) => {
 
                     answers.forEach(a => {
                         const index = a.charCodeAt(0) - 65;
-                        if (index > result.domains.length - 1) {
+                        if (index > listOfDomains.domains.length - 1) {
                             if (!ignored) {
                                 ignored = true;
                                 console.log('One or more invalid responses ignored.');
                             }
                         } else {
-                            domainsToRelease.push(result.domains[index].domain_name);
+                            domainsToRelease.push(listOfDomains.domains[index].domain_name);
                         }
                     });
                 })
         })
         .then(() => {
-            spinner.text = 'Retrieving available deployments...';
-            spinner.start();
-            return getAvailableDeployments(siteName, authParams);
-        })
-        .then(result => {
             spinner.stop();
-            showAvailableDeployments(result);
+
+            showAvailableDeployments(listOfDeployments);
             return askDeploymentKey(true)
                 .then(reply => {
                     let index = reply.deploy_key_index.substr(0, 1).toUpperCase().charCodeAt(0) - 65;
-                    if (index > result.deployments.length - 1) {
+                    if (index > listOfDeployments.deployments.length - 1) {
                         throw new Error('Invalid response. Aborted by user.');
                     }
-                    deployKey = result.deployments[index].deploy_key;
+                    deployKey = listOfDeployments.deployments[index].deploy_key;
                     spinner.text = 'Creating new release...';
                     spinner.start();
                 })
