@@ -1,8 +1,6 @@
 'use strict';
 
 module.exports = () => {
-    console.log(`
-If you experience any problems or have any questions 
-while using LINC, please email us at help@bitgenics.io.
+    console.log(`Need help? Facing a problem? Please email us at help@bitgenics.io.
 `);
 };
