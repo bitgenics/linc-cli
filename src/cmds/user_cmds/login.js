@@ -56,7 +56,7 @@ const login = () => new Promise((resolve, reject) => {
 });
 
 exports.command = 'login';
-exports.desc = 'Log in to Linc';
+exports.desc = 'Log in';
 exports.handler = (argv) => {
 	login()
         .then(success)
