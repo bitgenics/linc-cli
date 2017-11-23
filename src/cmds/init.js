@@ -213,8 +213,8 @@ as needed.
         .catch(err => error(err));
 };
 
-exports.command = ['create', 'init'];
-exports.desc = 'Create a new site';
+exports.command = ['init', 'create'];
+exports.desc = 'Initialise a new site locally';
 exports.handler = (argv) => {
     assertPkg();
 
