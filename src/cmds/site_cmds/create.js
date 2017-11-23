@@ -333,14 +333,15 @@ const createSite = (argv) => {
             console.log(`
 ${err.message}
 
-Please log in using 'linc login' before continuing.
+Please log in using 'linc login', or create a new user with 
+'linc user create' before creating a site in the backend.
 
 If you created a user earlier, make sure to verify your email 
 address. You cannot use LINC with an email address that is 
 unverified.
 
 If the error message doesn't make sense to you, please contact
-us at help@bitgenics.io and we'll help you out. 
+us at help@bitgenics.io and we'll help you out.
 `);
             process.exit(255);
         })
