@@ -92,7 +92,5 @@ exports.desc = 'Start local web server';
 exports.handler = (argv) => {
     assertPkg();
 
-    notice();
-
     serve(argv);
 };
