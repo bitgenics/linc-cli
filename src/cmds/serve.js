@@ -3,9 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const Libhoney = require('libhoney').default;
-const notice = require('../lib/notice');
+const openurl = require('openurl');
 const assertPkg = require('../lib/package-json').assert;
 const vm = require('linc-vm');
+
+const SERVE_URL = 'http://localhost:3000';
 
 const getOptions = () => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
@@ -82,7 +84,8 @@ const serve = (argv) => {
         if (err) {
             console.log(err);
         } else {
-            console.log('Listening on http://localhost:3000');
+            console.log(`Listening on ${SERVE_URL}`);
+            openurl.open(SERVE_URL, () => {});
         }
     });
 };
