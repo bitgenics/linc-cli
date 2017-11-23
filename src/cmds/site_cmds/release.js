@@ -2,10 +2,10 @@
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
-const auth = require('../auth');
-const notice = require('../lib/notice');
-const config = require('../config.json');
-const assertPkg = require('../lib/package-json').assert;
+const auth = require('../../auth');
+const notice = require('../../lib/notice');
+const config = require('../../config.json');
+const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
