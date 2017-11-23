@@ -2,10 +2,10 @@
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
-const auth = require('../auth');
-const notice = require('../lib/notice');
-const config = require('../config.json');
-const assertPkg = require('../lib/package-json').assert;
+const auth = require('../../auth');
+const notice = require('../../lib/notice');
+const config = require('../../config.json');
+const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
@@ -66,7 +66,8 @@ const remove = (argv) => {
 
     const spinner = ora();
 
-    console.log(`Removing a site is a destructive operation that CANNOT be undone. 
+    console.log(
+`Removing a site is a destructive operation that CANNOT be undone. 
 The operation will remove all resources associated with your site, 
 and it will no longer be accessible/available to you.
 `);
@@ -93,7 +94,7 @@ and it will no longer be accessible/available to you.
         .then(() => {
             spinner.stop();
             console.log(
-                `Site successfully removed. You can no longer access this site. Please be
+`Site successfully removed. You can no longer access this site. Please be
 advised that it takes a while for the process to finish on our servers, 
 during which time you can't create a new site with the same name.
 `)
