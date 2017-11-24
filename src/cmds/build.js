@@ -19,8 +19,7 @@ const build = () => {
     buildssr({}, packageJson, (err, results) => {
     	if (err) console.log(err);
 
-        console.log(`Done! The new build can be found in the folder 'dist'.
-You can also try your new version locally by running 'linc serve'.
+        console.log(`Done! Next use your new version locally by running 'linc serve'.
 `);
     });
 };

@@ -98,8 +98,6 @@ The following URL will open in your browser shortly:
 ${uri}
 
 If your browser didn't open this URL, please click on the link or copy the link into your browser's address bar. (On Linux, you need to press the Ctrl key and click on the link.)
-
-Please note that this URL will be valid for approx. 30 minutes, after which you need to re-run this command.
 `);
             openurl.open(uri, () => {});
         })

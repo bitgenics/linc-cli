@@ -433,16 +433,12 @@ us using the email address shown above.
         })
         .then(deployKey => console.log(`
 Your site has been published with the key ${deployKey} and can be reached 
-at the following URL: 
+at the following URLs: 
 
     https://${deployKey}-${packageJson.linc.siteName}.dk.linc-app.co
-    
-Please note that it may take a short while for this URL to become available.
-The latest deployment can also be found via this URL:
-
     https://${packageJson.linc.siteName}.linc-app.co
-
-This URL *always* provides the most recent deployment.
+    
+Please note that it may take a short while for these URLs to become available.
 `))
         .catch(err => {
             spinner.stop();

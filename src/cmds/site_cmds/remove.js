@@ -94,9 +94,7 @@ and it will no longer be accessible/available to you.
         .then(() => {
             spinner.stop();
             console.log(
-`Site successfully removed. You can no longer access this site. Please be
-advised that it takes a while for the process to finish on our servers, 
-during which time you can't create a new site with the same name.
+`Site successfully removed. You can no longer access this site.
 `)
         })
         .catch(err => {
