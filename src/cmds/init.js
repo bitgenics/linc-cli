@@ -198,18 +198,7 @@ ${JSON.stringify({linc: linc}, null, 3)}
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
-        .then(() => console.log(`Done.
-
-Please note we've copied an example configuration file
-called 'linc.config.js' into your source directory.
-You should change this file to reflect your needs.
-
-In the root directory of your project, we've created a 
-file called 'site-settings.json', which contains the 
-settings specific for your application, e.g., API 
-endpoints that your application calls. Change this file 
-as needed.
-`))
+        .then(() => console.log('Done.'))
         .catch(err => error(err));
 };
 
