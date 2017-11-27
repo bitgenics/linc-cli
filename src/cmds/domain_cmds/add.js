@@ -62,8 +62,8 @@ Please email us at help@bitgenics.io, so we can assist in manually adding the do
 exports.command = 'add';
 exports.desc = 'Add a domain name';
 exports.handler = (argv) => {
-    if (argv.siteName === undefined) {
-        console.log('This project is not initialised. Did you forget to \'linc init\'?');
+    if (!argv.siteName) {
+        console.log('This project does not have a site name. Please create a site first.');
         process.exit(255);
     }
 

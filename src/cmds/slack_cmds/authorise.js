@@ -63,8 +63,8 @@ prompt.delimiter = '';
 exports.command = 'authorise';
 exports.desc = 'Authorise LINC and install LINC app in your Slack';
 exports.handler = (argv) => {
-    if (argv.siteName === undefined) {
-        console.log('This project is not initialised. Did you forget to \'linc init\'?');
+    if (!argv.siteName) {
+        console.log('This project does not have a site name. Please create a site first.');
         process.exit(255);
     }
 
