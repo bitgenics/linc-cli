@@ -79,7 +79,7 @@ const invalidate = (argv) => {
 };
 
 exports.command = 'invalidate [pattern]';
-exports.desc = 'Invalidate cache';
+exports.desc = 'Invalidate cache using optional pattern string';
 exports.handler = (argv) => {
     assertPkg();
 
