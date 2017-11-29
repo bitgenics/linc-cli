@@ -45,7 +45,7 @@ const invalidateCache = (site_name, pattern, authInfo) => new Promise((resolve, 
  */
 const error = (err) => {
     console.log('Oops! Something went wrong:');
-    console.log(err.message);
+    console.log(err);
 };
 
 /**
