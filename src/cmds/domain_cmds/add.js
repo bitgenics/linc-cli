@@ -1,6 +1,7 @@
 'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
+const readPkg = require('read-pkg');
 const request = require('request');
 const auth = require('../../auth');
 const notice = require('../../lib/notice');
@@ -56,7 +57,8 @@ const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err);
     console.log(`
-Please email us at help@bitgenics.io, so we can assist in manually adding the domain.`);
+If the problem persists, please email us at help@bitgenics.io,
+so we can assist in adding the domain.`);
 };
 
 exports.command = 'add';
@@ -72,7 +74,14 @@ exports.handler = (argv) => {
     notice();
 
     const spinner = ora('Authorising. Please wait...');
-    askDomainName()
+    readPkg()
+        .then(pkg => {
+            const linc = pkg.linc;
+            if (!linc || !linc.siteName || !linc.domains || !linc.viewer_protocol) {
+                return Promise.reject(new Error('Initalisation incomplete. Did you forget to run `linc site create`?'));
+            }
+            return askDomainName();
+        })
         .then(y => {
             spinner.start();
             return auth(argv.accessKey, argv.secretKey)
@@ -92,6 +101,6 @@ emails asking you to approve an SSL certificate.
         })
         .catch(err => {
             spinner.stop();
-            return error(err);
+            return error(err.message);
         });
 };
