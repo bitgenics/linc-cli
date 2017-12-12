@@ -4,7 +4,7 @@ const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../../auth');
 const config = require('../../../config.json');
-const openurl = require('openurl');
+const openurl = require('opn');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.OAuthEndpoint}/authorise_uri`;
 
@@ -86,7 +86,7 @@ If your browser didn't open this URL, please click on the link or copy the link 
 
 Please note that this URL will be valid for approx. 30 minutes, after which you need to re-run this command.
 `);
-            openurl.open(uri, () => {});
+            openurl(uri);
         })
         .catch(err => {
             spinner.stop();

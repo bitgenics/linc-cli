@@ -5,7 +5,7 @@ const request = require('request');
 const auth = require('../../auth');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
-const openurl = require('openurl');
+const openurl = require('opn');
 const assertPkg = require('../../lib/package-json').assert;
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.OAuthEndpoint}/authorise_uri`;
@@ -99,7 +99,7 @@ ${uri}
 
 If your browser didn't open this URL, please click on the link or copy the link into your browser's address bar. (On Linux, you need to press the Ctrl key and click on the link.)
 `);
-            openurl.open(uri, () => {});
+            openurl(uri);
         })
         .catch(err => {
             spinner.stop();
