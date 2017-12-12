@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const Libhoney = require('libhoney').default;
-const openurl = require('opn');
+const openBrowser = require('react-dev-utils/openBrowser');
 const assertPkg = require('../lib/package-json').assert;
 const vm = require('linc-vm');
 
@@ -85,7 +85,7 @@ const serve = (argv) => {
             console.log(err);
         } else {
             console.log(`Listening on ${SERVE_URL}`);
-            openurl(SERVE_URL);
+            openBrowser(SERVE_URL);
         }
     });
 };
