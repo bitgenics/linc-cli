@@ -133,17 +133,21 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
     });
 });
 
+const getDomainsAndDeployments = (site, auth) => Promise.all([
+    getAvailableDomains(site, auth),
+    getAvailableDeployments(site, auth),
+]);
+
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err.message);
 };
 
-const release = (argv) => {
-    if (!argv.siteName) {
-        console.log('This project does not have a site name. Please create a site first.');
-        process.exit(255);
-    }
-
+/**
+ * Release the latest version for all domains - don't ask for user input
+ * @param argv
+ */
+const releaseLatest = (argv) => {
     const spinner = ora('Retrieving domains and deployments...').start();
 
     let domainsToRelease = [];
@@ -155,10 +159,50 @@ const release = (argv) => {
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
             authParams = auth_params;
-            return Promise.all([
-                getAvailableDomains(siteName, authParams),
-                getAvailableDeployments(siteName, authParams),
-            ]);
+            return getDomainsAndDeployments(siteName, authParams);
+        })
+        .then(result => {
+            spinner.stop();
+
+            const listOfDomains = result[0];
+            listOfDeployments = result[1];
+            spinner.stop();
+
+            deployKey = listOfDeployments.deployments[0].deploy_key;
+            listOfDomains.domains.map(d => domainsToRelease.push(d.domain_name));
+
+            spinner.text = 'Creating new release(s)...';
+            spinner.start();
+
+            return Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, authParams)));
+        })
+        .then(() => {
+            spinner.stop();
+            console.log(`Release(s) successfully created.`);
+        })
+        .catch(err => {
+            spinner.stop();
+            return error(err);
+        });
+};
+
+/**
+ * Release a new version for one or more domains - ask for user input
+ * @param argv
+ */
+const release = (argv) => {
+    const spinner = ora('Retrieving domains and deployments...').start();
+
+    let domainsToRelease = [];
+    let siteName = argv.siteName;
+    let authParams = null;
+    let deployKey = null;
+    let listOfDeployments;
+
+    auth(argv.accessKey, argv.secretKey)
+        .then(auth_params => {
+            authParams = auth_params;
+            return getDomainsAndDeployments(siteName, authParams);
         })
         .then(result => {
             const listOfDomains = result[0];
@@ -199,7 +243,7 @@ const release = (argv) => {
                         throw new Error('Invalid response. Aborted by user.');
                     }
                     deployKey = listOfDeployments.deployments[index].deploy_key;
-                    spinner.text = 'Creating new release...';
+                    spinner.text = 'Creating new release(s)...';
                     spinner.start();
                 })
         })
@@ -222,5 +266,14 @@ exports.handler = (argv) => {
 
     notice();
 
-    release(argv);
+    if (!argv.siteName) {
+        console.log('This project does not have a site name. Please create a site first.');
+        process.exit(255);
+    }
+
+    if (argv.a) {
+        releaseLatest(argv);
+    } else {
+        release(argv);
+    }
 };
