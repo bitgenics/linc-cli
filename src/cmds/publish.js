@@ -84,9 +84,8 @@ const createKey = (user_id, deployKey, sha1, site_name) => (
  * @param auth
  * @param site_name
  * @param zipfile
- * @param env
  */
-const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile, env) => new Promise((resolve, reject) => {
+const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
         credentials: auth.aws.credentials,
         signatureVersion: 'v4',
@@ -104,8 +103,7 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile,
                 Bucket: BUCKET_NAME,
                 Key: createKey(user_id, deployKey, codeId, site_name),
                 Metadata: {
-                    description: description,
-                    environment: env || 'prod',
+                    description: description
                 }
             }
         })
@@ -306,9 +304,8 @@ const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
  * Actually publish the site (upload to S3, let backend take it from there).
  * @param packageJson
  * @param authParams
- * @param environment
  */
-const publishSite = (packageJson, authParams, environment) => new Promise((resolve, reject) => {
+const publishSite = (packageJson, authParams) => new Promise((resolve, reject) => {
     const siteName = packageJson.linc.siteName;
     const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
     const renderer = fs.readFileSync(rendererPath);
@@ -336,7 +333,7 @@ const publishSite = (packageJson, authParams, environment) => new Promise((resol
         })
         // Create "meta" zip-file containing package.json, settings.json and <siteName>.zip
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(description, deployKey, codeId, authParams, siteName, zipfile, environment))
+        .then(zipfile => uploadZipfile(description, deployKey, codeId, authParams, siteName, zipfile))
         .then(() => resolve(deployKey))
         .catch(err => reject(err));
 });
@@ -389,14 +386,6 @@ Now let's publish your site.`));
 const publish = (argv) => {
     let authParams;
     let packageJson;
-    let environment = 'prod';
-    if (argv.s) {
-        if (typeof argv.s !== 'string') {
-            console.log('Oops: you failed to provide an environment name with the flag -s.');
-            process.exit(255);
-        }
-        environment = argv.s;
-    }
 
     // Disappearing progress messages
     const spinner = ora('Authorising user. Please wait...').start();
@@ -440,7 +429,7 @@ us using the email address shown above.
         .then(() => authoriseSite(packageJson.linc.siteName, authParams))
         .then(() => {
             spinner.stop();
-            return publishSite(packageJson, authParams, environment);
+            return publishSite(packageJson, authParams);
         })
         .then(deployKey => console.log(`
 Your site has been published with the key ${deployKey} and can be reached 
