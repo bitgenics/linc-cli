@@ -85,7 +85,23 @@ const askSettingsFile = (argv) => new Promise((resolve, reject) => {
         return resolve(argv.f);
     }
 
-    return reject(new Error('No settings file name provided (use -f <file name>)'));
+    const schema = {
+        properties: {
+            file_name: {
+                // Simple pattern: at least one character, must end in .json
+                pattern: /^[a-zA-Z]+[A-Za-z0-9-]*\.json$/,
+                description: 'Settings file:',
+                message: 'The settings file must be a valid JSON file.',
+                required: true
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve(result.file_name);
+    });
 });
 
 /**
