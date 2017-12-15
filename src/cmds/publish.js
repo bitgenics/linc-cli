@@ -22,6 +22,8 @@ const DIST_DIR = 'dist';
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 const BUCKET_NAME = config.S3.deployBucket;
 
+let reference;
+
 /**
  * Convenience function to create SHA1 of a string
  * @param s
@@ -95,6 +97,7 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile)
 
     const spinner = ora();
 
+    reference = Math.floor(new Date()/1000).toString();
     fsPromise.readFile(zipfile)
         .then(data => {
             const user_id = auth.auth0.profile.user_id;
@@ -103,7 +106,8 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile)
                 Bucket: BUCKET_NAME,
                 Key: createKey(user_id, deployKey, codeId, site_name),
                 Metadata: {
-                    description: description
+                    description: description,
+                    reference,
                 }
             }
         })
