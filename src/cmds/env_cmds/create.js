@@ -56,7 +56,23 @@ const askEnvName = (argv) => new Promise((resolve, reject) => {
         return resolve(argv.n);
     }
 
-    return reject(new Error('No environment name provided (use -n <name>)'));
+    const schema = {
+        properties: {
+            env_name: {
+                // Simple pattern: at least one character
+                pattern: /^[a-z]+$/,
+                description: 'Name of environment:',
+                message: 'Must be a valid environment name (lowercase only).',
+                required: true
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve(result.env_name);
+    });
 });
 
 /**
