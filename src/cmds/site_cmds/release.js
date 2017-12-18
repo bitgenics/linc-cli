@@ -3,6 +3,7 @@ const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
+const domains = require('../../lib/domains');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
 const assertPkg = require('../../lib/package-json').assert;
@@ -73,26 +74,6 @@ const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, r
     });
 });
 
-const getAvailableDomains = (site_name, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/domains`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else if (!json.domains || json.domains.length === 0) return reject(new Error('No domains available. Add a domain first using \'linc domain add\'.'));
-        else return resolve(json);
-    });
-});
-
 const showAvailableDomains = (results) => {
     const domains = results.domains;
     const site_name = results.site_name;
@@ -134,7 +115,7 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
 });
 
 const getDomainsAndDeployments = (site, auth) => Promise.all([
-    getAvailableDomains(site, auth),
+    domains.getAvailableDomains(site, auth),
     getAvailableDeployments(site, auth),
 ]);
 
