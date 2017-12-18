@@ -167,7 +167,7 @@ const createNewSite = (linc, auth_params, method) => new Promise((resolve, rejec
         name: linc.siteName,
         settings: {
             description: linc.description,
-            viewer_protocol: linc.viewer_protocol,
+            viewer_protocol: linc.viewerProtocol,
             domains: linc.domains
         }
     };
@@ -261,7 +261,7 @@ const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
             return askViewerProtocol();
         })
         .then(result => {
-            linc.viewer_protocol = viewerProtocols[result.protocol.toUpperCase()].policy;
+            linc.viewerProtocol = viewerProtocols[result.protocol.toUpperCase()].policy;
             return askErrorPagesDir();
         })
         .then(result => {
