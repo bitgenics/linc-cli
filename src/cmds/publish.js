@@ -31,18 +31,6 @@ let reference;
 const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex');
 
 /**
- * Create deployment key, which is basically a SHA1
- * @param code_id
- * @param site_name
- * @param settings
- * @returns {string}
- */
-const calculateDeployKey = (code_id, site_name, settings) => {
-    const settings_id = sha1(JSON.stringify(settings));
-    return sha1(`${code_id}.${site_name}.${settings_id}`).substr(0, 8);
-};
-
-/**
  * Create a zip file from a source_dir, named <site_name>.zip
  * @param temp_dir
  * @param source_dir
@@ -70,24 +58,22 @@ const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((re
 /**
  * Create key for S3.
  * @param user_id
- * @param deployKey
  * @param sha1
  * @param site_name
  */
-const createKey = (user_id, deployKey, sha1, site_name) => (
-    `${user_id}/${deployKey}/${site_name}-${sha1}.zip`
+const createKey = (user_id, sha1, site_name) => (
+    `${user_id}/${site_name}-${sha1}.zip`
 );
 
 /**
  * Upload zip file to S3.
  * @param description
- * @param deployKey
  * @param codeId
  * @param auth
  * @param site_name
  * @param zipfile
  */
-const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile) => new Promise((resolve, reject) => {
+const uploadZipfile = (description, codeId, auth, site_name, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
         credentials: auth.aws.credentials,
         signatureVersion: 'v4',
@@ -96,6 +82,7 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile)
     const s3 = new AWS.S3();
 
     const spinner = ora();
+    spinner.start('Upload started.');
 
     reference = Math.floor(new Date()/1000).toString();
     fsPromise.readFile(zipfile)
@@ -104,7 +91,7 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile)
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(user_id, deployKey, codeId, site_name),
+                Key: createKey(user_id, codeId, site_name),
                 Metadata: {
                     description: description,
                     reference,
@@ -124,35 +111,6 @@ const uploadZipfile = (description, deployKey, codeId, auth, site_name, zipfile)
             });
         })
         .catch(err => reject(err));
-});
-
-/**
- * Get site settings from site-settings.json file.
- */
-const getSiteSettings = () => new Promise((resolve, reject) => {
-    const settingsFile = path.join(process.cwd(), 'site-settings.json');
-    fsPromise.stat(settingsFile, (err, stats) => {
-        if (err) {
-            return (err.code === 'ENOENT') ? resolve({}) : reject(err);
-        }
-
-        fsPromise.readFile(settingsFile)
-            .then(x => resolve(JSON.parse(x.toString())))
-            .catch(err => reject(err))
-    });
-});
-
-/**
- * Save a JSON object into a JSON file.
- * @param temp_dir
- * @param json
- * @param filename
- */
-const saveJSONFile = (temp_dir, json, filename) => new Promise((resolve, reject) => {
-    fsPromise.writeJson(path.join(temp_dir, filename), json, err => {
-        if (err) return reject(err);
-        else return resolve();
-    });
 });
 
 /**
@@ -316,7 +274,6 @@ const publishSite = (packageJson, authParams) => new Promise((resolve, reject) =
     const codeId = sha1(renderer);
 
     let tempDir;
-    let deployKey;
     let description;
 
     return askDescription('')
@@ -329,16 +286,10 @@ const publishSite = (packageJson, authParams) => new Promise((resolve, reject) =
             // Zip the dist directory
             return createZipfile(tempDir, DIST_DIR, siteName);
         })
-        .then(() => getSiteSettings())
-        .then(settings => {
-            deployKey = calculateDeployKey(codeId, siteName, settings);
-            // Save the site settings into the temporary directory as JSON file
-            return saveJSONFile(tempDir, settings, 'settings.json');
-        })
-        // Create "meta" zip-file containing package.json, settings.json and <siteName>.zip
+        // Create "meta" zip-file containing package.json and <siteName>.zip
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(description, deployKey, codeId, authParams, siteName, zipfile))
-        .then(() => resolve(deployKey))
+        .then(zipfile => uploadZipfile(description, codeId, authParams, siteName, zipfile))
+        .then(() => resolve())
         .catch(err => reject(err));
 });
 
@@ -427,23 +378,19 @@ us using the email address shown above.
                 return initSite(packageJson, authParams);
             }
 
-            spinner.text = 'Performing checks. Please wait...';
-            spinner.start();
+            spinner.start('Performing checks. Please wait...');
         })
         .then(() => authoriseSite(packageJson.linc.siteName, authParams))
         .then(() => {
             spinner.stop();
+
             return publishSite(packageJson, authParams);
         })
-        .then(deployKey => console.log(`
-Your site has been published with the key ${deployKey} and can be reached 
-at the following URLs: 
+        .then(() => {
+            spinner.stop();
 
-    https://${deployKey}-${packageJson.linc.siteName}.dk.linc-app.co
-    https://${packageJson.linc.siteName}.linc-app.co
-    
-Please note that it may take a short while for these URLs to become available.
-`))
+            console.log('Upload done.');
+        })
         .catch(err => {
             spinner.stop();
             console.log(err.message)
