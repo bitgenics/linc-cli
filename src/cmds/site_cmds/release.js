@@ -215,7 +215,6 @@ const releaseLatest = (argv) => {
     let envName = 'prod';
     let authInfo = null;
     let deployKey = null;
-    let listOfDeployments;
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
@@ -249,7 +248,7 @@ const releaseLatest = (argv) => {
         .then(result => {
             spinner.stop();
 
-            listOfDeployments = _.filter(result[1].deployments, d => d.env === envName);
+            const listOfDeployments = _.filter(result[1].deployments, d => d.env === envName);
             const listOfDomains = _.filter(result[0].domains, d => d.env === envName);
 
             if (listOfDomains.length === 0) {
