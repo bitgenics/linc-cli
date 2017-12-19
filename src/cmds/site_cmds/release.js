@@ -16,6 +16,9 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
+/**
+ * Ask user for a deployment key
+ */
 const askDeploymentKey = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -33,6 +36,9 @@ const askDeploymentKey = () => new Promise((resolve, reject) => {
     })
 });
 
+/**
+ * Ask user for a domain to release to
+ */
 const askReleaseDomain = () => new Promise((resolve, reject) => {
     console.log(`
 You can select one or more domains to release (using the same deployment key).
@@ -56,6 +62,11 @@ added domain name.
     })
 });
 
+/**
+ * Retrieve available deployments from back end
+ * @param site_name
+ * @param authInfo
+ */
 const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
@@ -76,6 +87,11 @@ const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, r
     });
 });
 
+/**
+ * Show available domains
+ * @param domains
+ * @param siteName
+ */
 const showAvailableDomains = (domains, siteName) => {
     console.log(`Here are the most recent domains for ${siteName}:`);
 
@@ -83,6 +99,11 @@ const showAvailableDomains = (domains, siteName) => {
     domains.forEach(d => console.log(`${String.fromCharCode(code++)})  ${d.env || 'prod'}\t${d.domain_name}`));
 };
 
+/**
+ * Show available deployment keys
+ * @param deployments
+ * @param siteName
+ */
 const showAvailableDeployments = (deployments, siteName) => {
     console.log(`\nHere are the most recent deployments for ${siteName}:`);
 
@@ -90,6 +111,14 @@ const showAvailableDeployments = (deployments, siteName) => {
     deployments.forEach(d => console.log(`${String.fromCharCode(code++)})  ${d.env || 'prod'}\t${d.deploy_key}  ${d.description || ''}`));
 };
 
+/**
+ * Create a new release in the back end
+ * @param siteName
+ * @param deployKey
+ * @param domainName
+ * @param envName
+ * @param authInfo
+ */
 const createNewRelease = (siteName, deployKey, domainName, envName, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'POST',
@@ -153,11 +182,21 @@ Please select the environment to which you want to attach the domain.
     })
 });
 
+/**
+ * Get domains and deployments in one go
+ * @param site
+ * @param auth
+ * @returns {Promise<[any , any]>}
+ */
 const getDomainsAndDeployments = (site, auth) => Promise.all([
     domains.getAvailableDomains(site, auth),
     getAvailableDeployments(site, auth),
 ]);
 
+/**
+ * Show error message
+ * @param err
+ */
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err.message);
