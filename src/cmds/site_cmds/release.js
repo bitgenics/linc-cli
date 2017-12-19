@@ -1,9 +1,11 @@
 'use strict';
+const _ = require('underscore');
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const auth = require('../../auth');
 const domains = require('../../lib/domains');
+const environments = require('../../lib/environments');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
 const assertPkg = require('../../lib/package-json').assert;
@@ -74,35 +76,33 @@ const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, r
     });
 });
 
-const showAvailableDomains = (results) => {
-    const domains = results.domains;
-    const site_name = results.site_name;
-
-    console.log(`Here are the most recent domains for ${site_name}:`);
+const showAvailableDomains = (domains, siteName) => {
+    console.log(`Here are the most recent domains for ${siteName}:`);
 
     let code = 65; /* 'A' */
     domains.forEach(d => console.log(`${String.fromCharCode(code++)})  ${d.env || 'prod'}\t${d.domain_name}`));
 };
 
-const showAvailableDeployments = (results) => {
-    const deployments = results.deployments;
-    const site_name = results.site_name;
-
-    console.log(`\nHere are the most recent deployments for ${site_name}:`);
+const showAvailableDeployments = (deployments, siteName) => {
+    console.log(`\nHere are the most recent deployments for ${siteName}:`);
 
     let code = 65; /* 'A' */
     deployments.forEach(d => console.log(`${String.fromCharCode(code++)})  ${d.env || 'prod'}\t${d.deploy_key}  ${d.description || ''}`));
 };
 
-const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new Promise((resolve, reject) => {
+const createNewRelease = (siteName, deployKey, domainName, envName, authInfo) => new Promise((resolve, reject) => {
     const options = {
         method: 'POST',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/releases`,
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authInfo.jwtToken}`
         },
-        body: `{ "domainName": "${domain_name}", "deployKey": "${deploy_key}" }`
+        body: JSON.stringify({
+            domainName,
+            deployKey,
+            envName,
+        }),
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
@@ -112,6 +112,45 @@ const createNewRelease = (site_name, deploy_key, domain_name, authInfo) => new P
 
         return resolve(json);
     });
+});
+
+/**
+ * Show available environments
+ * @param results
+ */
+const showAvailableEnvironments = (results) => {
+    const environments = results.environments;
+    const siteName = results.site_name;
+
+    console.log(`Here are the available environments for ${siteName}:`);
+
+    let code = 65; /* 'A' */
+    environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
+};
+
+/**
+ * Ask user which environment to use
+ */
+const askEnvironment = () => new Promise((resolve, reject) => {
+    console.log(`
+Please select the environment to which you want to attach the domain.
+`);
+    let schema = {
+        properties: {
+            environment_index: {
+                description: 'Environment to use:',
+                pattern: /^(?!-)[a-zA-Z]$/,
+                default: 'A',
+                required: true
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve(result);
+    })
 });
 
 const getDomainsAndDeployments = (site, auth) => Promise.all([
@@ -133,6 +172,7 @@ const releaseLatest = (argv) => {
 
     let domainsToRelease = [];
     let siteName = argv.siteName;
+    let envName = 'prod';
     let authParams = null;
     let deployKey = null;
     let listOfDeployments;
@@ -155,7 +195,7 @@ const releaseLatest = (argv) => {
             spinner.text = 'Creating new release(s)...';
             spinner.start();
 
-            return Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, authParams)));
+            return Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, envName, authParams)));
         })
         .then(() => {
             spinner.stop();
@@ -172,25 +212,55 @@ const releaseLatest = (argv) => {
  * @param argv
  */
 const release = (argv) => {
-    const spinner = ora('Retrieving domains and deployments...').start();
+    const spinner = ora('Authorising. Please wait...');
+    spinner.start();
 
     let domainsToRelease = [];
     let siteName = argv.siteName;
-    let authParams = null;
+    let envName = 'prod';
+    let authInfo = null;
     let deployKey = null;
     let listOfDeployments;
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
-            authParams = auth_params;
-            return getDomainsAndDeployments(siteName, authParams);
+            authInfo = auth_params;
+
+            spinner.start('Retrieving environments. Please wait...');
+            return environments.getAvailableEnvironments(argv.siteName, authInfo);
         })
-        .then(result => {
-            const listOfDomains = result[0];
-            listOfDeployments = result[1];
+        .then(envs => {
             spinner.stop();
 
-            showAvailableDomains(listOfDomains);
+            if (envs.environments.length < 1) return Promise.resolve('prod');
+            if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
+
+            showAvailableEnvironments(envs);
+            return askEnvironment()
+                .then(env => {
+                    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+                    if (index > envs.environments.length - 1) {
+                        throw new Error('Invalid input.');
+                    }
+                    return Promise.resolve(envs.environments[index].name);
+                })
+        })
+        .then(env => {
+            envName = env;
+
+            spinner.start('Retrieving domains and deployments. Please wait...');
+            return getDomainsAndDeployments(siteName, authInfo);
+        })
+        .then(result => {
+            spinner.stop();
+            listOfDeployments = _.filter(result[1].deployments, d => d.env === envName);
+            const listOfDomains = _.filter(result[0].domains, d => d.env === envName);
+
+            if (listOfDomains.length === 0) {
+                throw new Error('This environment contains no domains.');
+            }
+
+            showAvailableDomains(listOfDomains, siteName);
             return askReleaseDomain()
                 .then(reply => {
                     let ignored = false;
@@ -202,13 +272,13 @@ const release = (argv) => {
 
                     answers.forEach(a => {
                         const index = a.charCodeAt(0) - 65;
-                        if (index > listOfDomains.domains.length - 1) {
+                        if (index > listOfDomains.length - 1) {
                             if (!ignored) {
                                 ignored = true;
                                 console.log('One or more invalid responses ignored.');
                             }
                         } else {
-                            domainsToRelease.push(listOfDomains.domains[index].domain_name);
+                            domainsToRelease.push(listOfDomains[index].domain_name);
                         }
                     });
                 })
@@ -216,19 +286,19 @@ const release = (argv) => {
         .then(() => {
             spinner.stop();
 
-            showAvailableDeployments(listOfDeployments);
+            showAvailableDeployments(listOfDeployments, siteName);
             return askDeploymentKey(true)
                 .then(reply => {
                     let index = reply.deploy_key_index.substr(0, 1).toUpperCase().charCodeAt(0) - 65;
-                    if (index > listOfDeployments.deployments.length - 1) {
+                    if (index > listOfDeployments.length - 1) {
                         throw new Error('Invalid response. Aborted by user.');
                     }
-                    deployKey = listOfDeployments.deployments[index].deploy_key;
+                    deployKey = listOfDeployments[index].deploy_key;
                     spinner.text = 'Creating new release(s)...';
                     spinner.start();
                 })
         })
-        .then(() => Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, authParams))))
+        .then(() => Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, envName, authInfo))))
         .then(() => {
             spinner.stop();
             console.log(`
