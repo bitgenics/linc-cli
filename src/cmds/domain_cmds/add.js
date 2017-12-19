@@ -107,8 +107,6 @@ Please select the environment to which you want to attach the domain.
     })
 });
 
-
-
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err);
