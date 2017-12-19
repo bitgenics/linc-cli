@@ -207,34 +207,62 @@ const error = (err) => {
  * @param argv
  */
 const releaseLatest = (argv) => {
-    const spinner = ora('Retrieving domains and deployments...').start();
+    const spinner = ora('Authorising. Please wait...');
+    spinner.start();
 
     let domainsToRelease = [];
     let siteName = argv.siteName;
     let envName = 'prod';
-    let authParams = null;
+    let authInfo = null;
     let deployKey = null;
     let listOfDeployments;
 
     auth(argv.accessKey, argv.secretKey)
         .then(auth_params => {
-            authParams = auth_params;
-            return getDomainsAndDeployments(siteName, authParams);
+            authInfo = auth_params;
+
+            spinner.start('Retrieving environments. Please wait...');
+            return environments.getAvailableEnvironments(argv.siteName, authInfo);
+        })
+        .then(envs => {
+            spinner.stop();
+
+            if (envs.environments.length < 1) return Promise.resolve('prod');
+            if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
+
+            showAvailableEnvironments(envs);
+            return askEnvironment()
+                .then(env => {
+                    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+                    if (index > envs.environments.length - 1) {
+                        throw new Error('Invalid input.');
+                    }
+                    return Promise.resolve(envs.environments[index].name);
+                })
+        })
+        .then(env => {
+            envName = env;
+
+            spinner.start('Retrieving domains and deployments. Please wait...');
+            return getDomainsAndDeployments(siteName, authInfo);
         })
         .then(result => {
             spinner.stop();
 
-            const listOfDomains = result[0];
-            listOfDeployments = result[1];
-            spinner.stop();
+            listOfDeployments = _.filter(result[1].deployments, d => d.env === envName);
+            const listOfDomains = _.filter(result[0].domains, d => d.env === envName);
 
-            deployKey = listOfDeployments.deployments[0].deploy_key;
-            listOfDomains.domains.map(d => domainsToRelease.push(d.domain_name));
+            if (listOfDomains.length === 0) {
+                throw new Error('This environment contains no domains.');
+            }
+
+            deployKey = listOfDeployments[0].deploy_key;
+            listOfDomains.map(d => domainsToRelease.push(d.domain_name));
 
             spinner.text = 'Creating new release(s)...';
             spinner.start();
 
-            return Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, envName, authParams)));
+            return Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, envName, authInfo)));
         })
         .then(() => {
             spinner.stop();
@@ -292,6 +320,7 @@ const release = (argv) => {
         })
         .then(result => {
             spinner.stop();
+
             listOfDeployments = _.filter(result[1].deployments, d => d.env === envName);
             const listOfDomains = _.filter(result[0].domains, d => d.env === envName);
 
