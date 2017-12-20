@@ -12,6 +12,7 @@ const zip = require('deterministic-zip');
 const fsPromise = require('fs-promise');
 const auth = require('../auth');
 const domainify = require('../lib/domainify');
+const environments = require('../lib/environments');
 const notice = require('../lib/notice');
 const config = require('../config.json');
 const assertPkg = require('../lib/package-json').assert;
@@ -84,7 +85,7 @@ const uploadZipfile = (description, codeId, auth, site_name, zipfile) => new Pro
     const spinner = ora();
     spinner.start('Upload started.');
 
-    reference = Math.floor(new Date()/1000).toString();
+    reference = sha1(`${site_name}${Math.floor(new Date()/1000).toString()}`);
     fsPromise.readFile(zipfile)
         .then(data => {
             const user_id = auth.auth0.profile.user_id;
@@ -335,20 +336,82 @@ Now let's publish your site.`));
 });
 
 /**
+ * Retrieve deployment status using reference
+ * @param siteName
+ * @param authInfo
+ */
+const retrieveDeploymentStatus = (siteName, authInfo) => new Promise((resolve, reject) => {
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/deployments/${reference}`,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authInfo.jwtToken}`
+        }
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (response.statusCode === 200) return resolve(json.statuses);
+
+        return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+    });
+});
+
+/**
+ * Wait for deploy to finish (or to time out - timeout is set to three minutes)
+ * @param envs
+ * @param siteName
+ * @param authInfo
+ */
+const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve, reject) => {
+    const Count = 20;
+    const Timeout = 6;
+
+    /**
+     * Check whether deploy has finished
+     * @param count
+     */
+    const checkForDeployToFinish = (count) => {
+        if (count === 0) {
+            return reject(new Error('The process timed out'));
+        }
+
+        return setTimeout(() => {
+            retrieveDeploymentStatus(siteName, authInfo)
+                .then(s => {
+                    if (s.length === envs.length) return resolve(s);
+
+                    return checkForDeployToFinish(count - 1);
+                })
+                .catch(err => reject(err));
+        },
+        Timeout * 1000);
+    };
+
+    // Start the checking
+    return checkForDeployToFinish(Count);
+});
+
+/**
  * Main entry point for this module.
  * @param argv
  */
 const publish = (argv) => {
-    let authParams;
+    let authInfo;
     let packageJson;
+    let siteName;
+    let listOfEnvironments;
 
     // Disappearing progress messages
     const spinner = ora('Authorising user. Please wait...').start();
 
     auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => authParams = auth_params)
+        .then(auth_params => authInfo = auth_params)
         .catch(err => {
             spinner.stop();
+
             console.log(`
 ${err.message}
 
@@ -366,6 +429,7 @@ us using the email address shown above.
         })
         .then(() => {
             spinner.stop();
+
             return readPkg();
         })
         .then(pkg => {
@@ -375,21 +439,36 @@ us using the email address shown above.
                 throw new Error('This project is not initialised. Did you forget to \'linc init\'?');
             }
             if (!linc.siteName) {
-                return initSite(packageJson, authParams);
+                return initSite(packageJson, authInfo);
             }
 
             spinner.start('Performing checks. Please wait...');
         })
-        .then(() => authoriseSite(packageJson.linc.siteName, authParams))
         .then(() => {
+            siteName = argv.siteName || packageJson.linc.siteName;
+
+            return authoriseSite(siteName, authInfo);
+        })
+        .then(() => environments.getAvailableEnvironments(argv.siteName, authInfo))
+        .then(envs => {
             spinner.stop();
 
-            return publishSite(packageJson, authParams);
+            listOfEnvironments = envs.environments.map(x => x.name);
+
+            return publishSite(packageJson, authInfo);
         })
         .then(() => {
-            spinner.stop();
+            spinner.start('Waiting for deploy to finish...');
 
-            console.log('Upload done.');
+            return waitForDeployToFinish(listOfEnvironments, siteName, authInfo);
+        })
+        .then(envs => {
+            spinner.succeed('Deployment finished');
+
+            console.log('\nThe following deploy URLs were created:')
+            envs.forEach(e => {
+                console.log(`  https://${e.url}  (${e.env})`);
+            });
         })
         .catch(err => {
             spinner.stop();
