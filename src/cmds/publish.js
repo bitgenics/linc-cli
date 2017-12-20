@@ -367,7 +367,7 @@ const retrieveDeploymentStatus = (siteName, authInfo) => new Promise((resolve, r
  */
 const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve, reject) => {
     const Count = 20;
-    const Timeout = 6;
+    let Timeout = 3;
 
     /**
      * Check whether deploy has finished
@@ -383,6 +383,7 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
                 .then(s => {
                     if (s.length === envs.length) return resolve(s);
 
+                    Timeout = 6;
                     return checkForDeployToFinish(count - 1);
                 })
                 .catch(err => reject(err));
