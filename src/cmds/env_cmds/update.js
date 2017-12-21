@@ -161,12 +161,12 @@ const updateEnvironment = (argv) => {
             return fsp.readJson(fileName);
         })
         .then(json => {
+            spinner.start('Updating settings in environment. Please wait...');
+
             return updateBackendEnvironment(json, envName, argv.siteName, authInfo);
         })
         .then(() => {
-            spinner.stop();
-
-            console.log('Environment successfully added.');
+            spinner.succeed('Environment successfully updated.');
         })
         .catch(err => {
             spinner.stop();
