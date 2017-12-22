@@ -178,6 +178,6 @@ emails asking you to approve an SSL certificate (if needed).
         })
         .catch(err => {
             spinner.stop();
-            return error(err.message);
+            return error(err.message ? err.message : err);
         });
 };
