@@ -154,7 +154,6 @@ exports.handler = (argv) => {
             showAvailableEnvironments(envs);
             return askEnvironment()
                 .then(env => {
-                    console.log(env);
                     const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
                     if (index > envs.environments.length - 1) {
                         throw new Error('Invalid input.');
