@@ -1,5 +1,4 @@
 'use strict';
-const fsp = require('fs-promise');
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
@@ -110,7 +109,7 @@ const deleteEnvironment = (argv) => {
                 .then(env => {
                     const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
                     if (index > envs.environments.length - 1) {
-                        throw new Error('Invalid input.');
+                        throw new Error('Error: invalid input.');
                     }
                     return Promise.resolve(envs.environments[index].name);
                 })
@@ -119,7 +118,7 @@ const deleteEnvironment = (argv) => {
             envName = env;
 
             if (envName === 'prod') {
-                throw new Error('You cannot delete the default environment \'prod\'.');
+                throw new Error('Error: you cannot delete the default environment \'prod\'.');
             }
 
             spinner.start('Deleting environment. Please wait...');
