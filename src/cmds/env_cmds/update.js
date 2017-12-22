@@ -66,12 +66,12 @@ const showAvailableEnvironments = (results) => {
  */
 const askEnvironment = () => new Promise((resolve, reject) => {
     console.log(`
-Please select the environment to which you want to attach the domain.
+Please select the environment you want to update.
 `);
     let schema = {
         properties: {
             environment_index: {
-                description: 'Environment to use:',
+                description: 'Environment to update:',
                 pattern: /^(?!-)[a-zA-Z]$/,
                 default: 'A',
                 required: true
