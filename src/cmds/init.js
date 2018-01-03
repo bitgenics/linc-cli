@@ -109,7 +109,6 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
     const command = fs.existsSync(process.cwd() + '/yarn.lock')
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
-    console.log(command);
     exec(command, {cwd: process.cwd()}, (err) => {
         if (err) return reject(err);
 
