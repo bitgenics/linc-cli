@@ -16,28 +16,6 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
-const askSourceDir = () => new Promise((resolve, reject) => {
-    console.log(`
-Please provide the directory containing your source code.
-We assume the default directory for your source code is 'src'.`);
-
-    let schema = {
-        properties: {
-            source_dir: {
-                description: 'Site source directory:',
-                required: true,
-                type: 'string',
-                default: 'src'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    })
-});
-
 /**
  * Show profiles available
  */
@@ -70,10 +48,14 @@ const askProfile = () => new Promise((resolve, reject) => {
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     })
 });
 
+/**
+ * Are the settings Ok?
+ */
 const askIsThisOk = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -87,15 +69,25 @@ const askIsThisOk = () => new Promise((resolve, reject) => {
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     });
 });
 
+/**
+ * Show error
+ * @param err
+ */
 const error = (err) => {
     console.log('Something went wrong:');
     console.log(err.message);
 };
 
+/**
+ * Show LINC messsage :)
+ * @param msg
+ * @returns {Promise<any>}
+ */
 const linclet = (msg) => new Promise((resolve, reject) => {
     figlet(msg, (err, data) => {
         if (err) return reject();
