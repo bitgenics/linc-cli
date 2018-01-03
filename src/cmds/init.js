@@ -104,8 +104,6 @@ const linclet = (msg) => new Promise((resolve, reject) => {
  * @returns {Promise<any>}
  */
 const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
-    return resolve();
-
     const command = fs.existsSync(process.cwd() + '/yarn.lock')
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
