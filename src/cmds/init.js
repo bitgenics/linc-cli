@@ -105,6 +105,11 @@ const linclet = (msg) => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Install selected profile package
+ * @param pkgName
+ * @returns {Promise<any>}
+ */
 const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
     const command = fs.existsSync(process.cwd() + '/yarn.lock')
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
@@ -117,6 +122,12 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Copy example config files
+ * @param pkgName
+ * @param destDir
+ * @returns {Promise<any>}
+ */
 const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) => {
     const src_dir = process.cwd() + '/node_modules/' + pkgName + '/config_samples';
     if (fs.existsSync(src_dir)) {
@@ -168,6 +179,29 @@ const createSiteSettings = (destDir) => new Promise((resolve, reject) => {
 });
 
 /**
+ * Ask for name of "Other" profile
+ */
+const askOtherProfile = () => new Promise((resolve, reject) => {
+    console.log();
+
+    let schema = {
+        properties: {
+            profile: {
+                description: '\nProfile name to use for this site:',
+                message: 'Please enter a valid option',
+                type: 'string'
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve(result.profile);
+    })
+});
+
+/**
  * Initialise package.json with LINC information for site.
  *
  * @param argv
@@ -183,8 +217,13 @@ const initialise = (argv) => {
     linclet('LINC')
         .then(() => askProfile())
         .then(result => {
-            const profile = result.profile.toUpperCase();
-            linc.buildProfile = lincProfiles[profile].pkg;
+            const selectedProfile = result.profile.toUpperCase();
+
+            const profile = lincProfiles[selectedProfile].pkg;
+            return profile ? Promise.resolve(profile) : askOtherProfile();
+        })
+        .then(profile => {
+            linc.buildProfile = profile;
             console.log(`
 The following section will be added to package.json:
 ${JSON.stringify({linc: linc}, null, 3)}
