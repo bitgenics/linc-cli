@@ -37,7 +37,7 @@ const askProfile = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             profile: {
-                pattern: /^[A-Za-z]{1}$/,
+                pattern: /^[A-Za-z]$/,
                 description: 'Profile to use for this site:',
                 message: 'Please enter a valid option',
                 type: 'string',
@@ -154,23 +154,6 @@ const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) =
 });
 
 /**
- * Create an application settings file, but only if it doesn't yet exists.
- *
- * @param destDir Directory to put application settings file in
- */
-const createSiteSettings = (destDir) => new Promise((resolve, reject) => {
-    const settingsFile = 'site-settings.json';
-    const settingsFilePath = path.resolve(destDir, settingsFile);
-
-    if (fs.existsSync(settingsFilePath)) return resolve('File exists.');
-
-    fs.writeFile(settingsFilePath, `${JSON.stringify({}, null, 3)}\n`, 'utf-8', err => {
-        if (err) return reject(err);
-        else return  resolve();
-    })
-});
-
-/**
  * Ask for name of "Other" profile
  */
 const askOtherProfile = () => new Promise((resolve, reject) => {
@@ -191,6 +174,29 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
 
         return resolve(result.profile);
     })
+});
+
+/**
+ * Handle init questions from profile (if any)
+ * @param linc
+ * @param pkg
+ */
+const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
+    try {
+        const profile = require(pkg);
+        console.log('New profile loaded');
+        if (!profile.getInitQuestions) {
+            console.log('No further questions.');
+            return resolve();
+        }
+
+        const questions = profile.getInitQuestions();
+        console.log(questions);
+        return resolve();
+    }
+    catch (e) {
+        return reject(e);
+    }
 });
 
 /**
@@ -232,8 +238,8 @@ ${JSON.stringify({linc: linc}, null, 3)}
             console.log('\nInstalling profile package. Please wait...');
             const profilePackage = linc.buildProfile;
             return installProfilePkg(profilePackage)
-                .then(() => copyConfigExamples(profilePackage, linc.sourceDir))
-                .then(() => createSiteSettings(process.cwd()));
+                .then(() => handleInitQuestions(linc, profilePackage))
+                .then(() => copyConfigExamples(profilePackage, linc.sourceDir));
         })
         .then(() => readPkg())
         .then(packageJson => {
