@@ -1,6 +1,7 @@
 'use strict';
 const _ = require('underscore');
 const fs = require('fs');
+const ora = require('ora');
 const path = require('path');
 const prompt = require('prompt');
 const figlet = require('figlet');
@@ -103,13 +104,14 @@ const linclet = (msg) => new Promise((resolve, reject) => {
  * @returns {Promise<any>}
  */
 const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
+    return resolve();
+
     const command = fs.existsSync(process.cwd() + '/yarn.lock')
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
     exec(command, {cwd: process.cwd()}, (err) => {
         if (err) return reject(err);
 
-        console.log('Finished installing profile package.');
         return resolve();
     });
 });
@@ -121,36 +123,37 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
  * @returns {Promise<any>}
  */
 const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) => {
-    const src_dir = process.cwd() + '/node_modules/' + pkgName + '/config_samples';
-    if (fs.existsSync(src_dir)) {
-        console.log('Copying example config files...');
+    const srcDir = path.resolve(process.cwd(), 'node_modules', pkgName, 'config_samples');
 
-        const filter = (stat, filepath, filename) => {
-            return stat === 'file'
-                && path.extname(filepath) === '.js'
-                && !fs.existsSync(path.resolve(destDir, filename));
-        };
+    // We're done if there are no example configuration files
+    if (!fs.existsSync(srcDir)) return resolve();
 
-        copyDir(src_dir, destDir, filter, err => {
-            if (err) return reject(err);
+    const spinner = ora('Copying example config files. Please wait...');
+    spinner.start();
 
-            let fileList = [];
-            fs.readdir(src_dir, (err, files) => {
-                files.forEach(file => {
-                    if (/^.*.js$/.test(file)) {
-                        fileList.push(file);
-                    }
-                });
-                if (fileList.length > 0) {
-                    console.log(`The following files were copied into ${destDir}/:`);
-                    fileList.forEach(file => console.log(`+ ${file}`));
+    const filter = (stat, filepath, filename) => {
+        return stat === 'file'
+            && path.extname(filepath) === '.js'
+            && !fs.existsSync(path.resolve(destDir, filename));
+    };
+
+    copyDir(srcDir, destDir, filter, err => {
+        if (err) return reject(err);
+
+        let fileList = [];
+        fs.readdir(srcDir, (err, files) => {
+            files.forEach(file => {
+                if (/^.*.js$/.test(file)) {
+                    fileList.push(file);
                 }
-                return resolve();
             });
+            if (fileList.length > 0) {
+                spinner.succeed(`The following files were copied into ${destDir}/:`);
+                fileList.forEach(file => console.log(`  + ${file}`));
+            }
+            return resolve();
         });
-    } else {
-        return resolve();
-    }
+    });
 });
 
 /**
@@ -177,24 +180,64 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
 });
 
 /**
+ * Prompt question from profile
+ * @param q
+ */
+const promptQuestion = (q) => new Promise((resolve, reject) => {
+    let schema = {
+        properties: {
+            answer: {
+                description: q.text,
+                type: 'string',
+                default: q.dflt
+            }
+        }
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve(result.answer);
+    })
+});
+
+/**
  * Handle init questions from profile (if any)
  * @param linc
  * @param pkg
  */
 const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
     try {
-        const profile = require(pkg);
-        console.log('New profile loaded');
+        const path = require('path');
+
+        const profile = require(path.resolve(process.cwd(), 'node_modules', pkg));
         if (!profile.getInitQuestions) {
-            console.log('No further questions.');
             return resolve();
         }
 
         const questions = profile.getInitQuestions();
-        console.log(questions);
-        return resolve();
+        const keys = Object.keys(questions);
+
+        const askQuestion = () => {
+            if (_.isEmpty(keys)) return resolve();
+
+            const key = keys.shift();
+            const q = questions[key];
+            promptQuestion(q)
+                .then(response => {
+                    linc[key] = response;
+                    return askQuestion();
+                })
+                .catch(err => reject(err));
+        };
+
+        if (!_.isEmpty(keys)) {
+            console.log('\nThis profile needs some additional information.');
+            askQuestion();
+        }
     }
     catch (e) {
+        console.log(e);
         return reject(e);
     }
 });
@@ -211,6 +254,7 @@ const initialise = (argv) => {
     }
 
     let linc = {};
+    let spinner = ora();
 
     linclet('LINC')
         .then(() => askProfile())
@@ -222,6 +266,20 @@ const initialise = (argv) => {
         })
         .then(profile => {
             linc.buildProfile = profile;
+        })
+        .then(() => {
+            spinner.start('Installing profile package. Please wait...');
+
+            const profilePackage = linc.buildProfile;
+            return installProfilePkg(profilePackage)
+                .then(() => {
+                    spinner.succeed('Profile package installed.');
+
+                    return handleInitQuestions(linc, profilePackage)
+                })
+                .then(() => copyConfigExamples(profilePackage, linc.sourceDir));
+        })
+        .then(() => {
             console.log(`
 The following section will be added to package.json:
 ${JSON.stringify({linc: linc}, null, 3)}
@@ -234,21 +292,15 @@ ${JSON.stringify({linc: linc}, null, 3)}
                 return process.exit(255);
             }
         })
-        .then(() => {
-            console.log('\nInstalling profile package. Please wait...');
-            const profilePackage = linc.buildProfile;
-            return installProfilePkg(profilePackage)
-                .then(() => handleInitQuestions(linc, profilePackage))
-                .then(() => copyConfigExamples(profilePackage, linc.sourceDir));
-        })
         .then(() => readPkg())
         .then(packageJson => {
-            console.log('\nUpdating package.json.');
+            spinner.succeed('Updated package.json.');
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
         .then(() => console.log('Done.'))
-        .catch(err => error(err));
+        .catch(err => error(err))
+        .then(() => spinner.stop());
 };
 
 exports.command = ['init', 'create'];
