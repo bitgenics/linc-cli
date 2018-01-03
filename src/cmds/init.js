@@ -1,4 +1,5 @@
 'use strict';
+const _ = require('underscore');
 const fs = require('fs');
 const path = require('path');
 const prompt = require('prompt');
@@ -37,15 +38,28 @@ We assume the default directory for your source code is 'src'.`);
     })
 });
 
-const askProfile = () => new Promise((resolve, reject) => {
+/**
+ * Show profiles available
+ */
+const showProfiles = () => {
     console.log(`
 Please choose a profile:
-     A) ${lincProfiles['A'].name} (default)`);
+`);
+    _.each(lincProfiles, (p, k) => {
+        console.log(`${k}) ${p.name}`);
+    });
+};
+
+/**
+ * Ask for a profile from the list of known profiles
+ */
+const askProfile = () => new Promise((resolve, reject) => {
+    showProfiles();
 
     let schema = {
         properties: {
             profile: {
-                pattern: /^(?:A|a)?$/,
+                pattern: /^[A-Za-z]{1}$/,
                 description: 'Profile to use for this site:',
                 message: 'Please enter a valid option',
                 type: 'string',
@@ -95,7 +109,10 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
     const command = fs.existsSync(process.cwd() + '/yarn.lock')
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
-    exec(command, {cwd: process.cwd()}, () => {
+    console.log(command);
+    exec(command, {cwd: process.cwd()}, (err) => {
+        if (err) return reject(err);
+
         console.log('Finished installing profile package.');
         return resolve();
     });
@@ -165,13 +182,9 @@ const initialise = (argv) => {
     let linc = {};
 
     linclet('LINC')
-        .then(() => askSourceDir())
+        .then(() => askProfile())
         .then(result => {
-            linc.sourceDir = result.source_dir;
-            return askProfile();
-        })
-        .then(result => {
-            const profile = result.profile;
+            const profile = result.profile.toUpperCase();
             linc.buildProfile = lincProfiles[profile].pkg;
             console.log(`
 The following section will be added to package.json:
