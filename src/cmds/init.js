@@ -1,6 +1,6 @@
 'use strict';
 const _ = require('underscore');
-const fs = require('fs');
+const fs = require('fs-extra');
 const ora = require('ora');
 const path = require('path');
 const prompt = require('prompt');
@@ -115,46 +115,6 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
 });
 
 /**
- * Copy example config files
- * @param pkgName
- * @param destDir
- * @returns {Promise<any>}
- */
-const copyConfigExamples = (pkgName, destDir) => new Promise((resolve, reject) => {
-    const srcDir = path.resolve(process.cwd(), 'node_modules', pkgName, 'config_samples');
-
-    // We're done if there are no example configuration files
-    if (!fs.existsSync(srcDir)) return resolve();
-
-    const spinner = ora('Copying example config files. Please wait...');
-    spinner.start();
-
-    const filter = (stat, filepath, filename) => {
-        return stat === 'file'
-            && path.extname(filepath) === '.js'
-            && !fs.existsSync(path.resolve(destDir, filename));
-    };
-
-    copyDir(srcDir, destDir, filter, err => {
-        if (err) return reject(err);
-
-        let fileList = [];
-        fs.readdir(srcDir, (err, files) => {
-            files.forEach(file => {
-                if (/^.*.js$/.test(file)) {
-                    fileList.push(file);
-                }
-            });
-            if (fileList.length > 0) {
-                spinner.succeed(`The following files were copied into ${destDir}/:`);
-                fileList.forEach(file => console.log(`  + ${file}`));
-            }
-            return resolve();
-        });
-    });
-});
-
-/**
  * Ask for name of "Other" profile
  */
 const askOtherProfile = () => new Promise((resolve, reject) => {
@@ -197,6 +157,47 @@ const promptQuestion = (q) => new Promise((resolve, reject) => {
 
         return resolve(result.answer);
     })
+});
+
+/**
+ * Copy example config files
+ * @param linc
+ * @param pkg
+ * @returns {Promise<any>}
+ */
+const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) => {
+    const pkgDir = path.resolve(process.cwd(), 'node_modules', pkg);
+    const srcDir = path.resolve(pkgDir, 'config_samples');
+    const destDir = linc.sourceDir;
+
+    // We're done if there are no example configuration files, or no destination dir provided
+    if (!fs.existsSync(srcDir)) return resolve();
+    if (!destDir) return resolve();
+
+    const profile = require(pkgDir);
+    if (!profile.getConfigSampleFiles) return resolve();
+
+    const configSampleFiles = profile.getConfigSampleFiles();
+
+    const spinner = ora('Copying example config files. Please wait...');
+    spinner.start();
+
+    const promises = _.map(configSampleFiles, f => {
+        return fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f));
+    });
+
+    Promise.all(promises)
+        .then(() => {
+            spinner.succeed('Successfully copied example config files:');
+            _.each(configSampleFiles, f => console.log(`  + ${f}`));
+
+            return resolve();
+        })
+        .catch(err => {
+            spinner.fail('Could not copy example config files');
+
+            return reject(err);
+        });
 });
 
 /**
@@ -264,18 +265,16 @@ const initialise = (argv) => {
         })
         .then(profile => {
             linc.buildProfile = profile;
-        })
-        .then(() => {
+
             spinner.start('Installing profile package. Please wait...');
 
-            const profilePackage = linc.buildProfile;
-            return installProfilePkg(profilePackage)
+            return installProfilePkg(profile)
                 .then(() => {
                     spinner.succeed('Profile package installed.');
 
-                    return handleInitQuestions(linc, profilePackage)
+                    return handleInitQuestions(linc, profile)
                 })
-                .then(() => copyConfigExamples(profilePackage, linc.sourceDir));
+                .then(() => handleExampleConfigFiles(linc, profile));
         })
         .then(() => {
             console.log(`
