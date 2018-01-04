@@ -166,43 +166,44 @@ const promptQuestion = (q) => new Promise((resolve, reject) => {
  * @returns {Promise<any>}
  */
 const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) => {
+    const pkgDir = path.resolve(process.cwd(), 'node_modules', pkg);
+    const srcDir = path.resolve(pkgDir, 'config_samples');
+    const destDir = linc.sourceDir;
+
+    // We're done if there are no example configuration files, or no destination dir provided
+    if (!fs.existsSync(srcDir)) return resolve();
+    if (!destDir) return resolve();
+
+    let profile;
     try {
-        const pkgDir = path.resolve(process.cwd(), 'node_modules', pkg);
-        const srcDir = path.resolve(pkgDir, 'config_samples');
-        const destDir = linc.sourceDir;
-
-        // We're done if there are no example configuration files, or no destination dir provided
-        if (!fs.existsSync(srcDir)) return resolve();
-        if (!destDir) return resolve();
-
-        const profile = require(pkgDir);
-        if (!profile.getConfigSampleFiles) return resolve();
-
-        const configSampleFiles = profile.getConfigSampleFiles();
-
-        const spinner = ora('Copying example config files. Please wait...');
-        spinner.start();
-
-        const promises = _.map(configSampleFiles, f => {
-            return fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f));
-        });
-
-        Promise.all(promises)
-            .then(() => {
-                spinner.succeed('Successfully copied example config files:');
-                _.each(configSampleFiles, f => console.log(`  + ${f}`));
-
-                return resolve();
-            })
-            .catch(err => {
-                spinner.fail('Could not copy example config files');
-
-                return reject(err);
-            });
+        profile = require(pkgDir);
     } catch (e) {
-        console.log(e);
         return reject(e);
     }
+
+    if (!profile.getConfigSampleFiles) return resolve();
+
+    const configSampleFiles = profile.getConfigSampleFiles();
+
+    const spinner = ora('Copying example config files. Please wait...');
+    spinner.start();
+
+    const promises = _.map(configSampleFiles, f => {
+        return fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f));
+    });
+
+    Promise.all(promises)
+        .then(() => {
+            spinner.succeed('Successfully copied example config files:');
+            _.each(configSampleFiles, f => console.log(`  + ${f}`));
+
+            return resolve();
+        })
+        .catch(err => {
+            spinner.fail('Could not copy example config files');
+
+            return reject(err);
+        });
 });
 
 /**
@@ -211,36 +212,38 @@ const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) =>
  * @param pkg
  */
 const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
+    const path = require('path');
+
+    let profile;
     try {
-        const path = require('path');
-
-        const profile = require(path.resolve(process.cwd(), 'node_modules', pkg));
-        if (!profile.getInitQuestions) {
-            return resolve();
-        }
-
-        const questions = profile.getInitQuestions();
-        const keys = Object.keys(questions);
-
-        const askQuestion = () => {
-            if (_.isEmpty(keys)) return resolve();
-
-            const key = keys.shift();
-            const q = questions[key];
-            promptQuestion(q)
-                .then(response => {
-                    linc[key] = response;
-                    return askQuestion();
-                })
-                .catch(err => reject(err));
-        };
-
-        if (!_.isEmpty(keys)) {
-            console.log('\nThis profile needs some additional information.');
-            askQuestion();
-        }
+        profile = require(path.resolve(process.cwd(), 'node_modules', pkg));
     } catch (e) {
         return reject(e);
+    }
+
+    if (!profile.getInitQuestions) {
+        return resolve();
+    }
+
+    const questions = profile.getInitQuestions();
+    const keys = Object.keys(questions);
+
+    const askQuestion = () => {
+        if (_.isEmpty(keys)) return resolve();
+
+        const key = keys.shift();
+        const q = questions[key];
+        promptQuestion(q)
+            .then(response => {
+                linc[key] = response;
+                return askQuestion();
+            })
+            .catch(err => reject(err));
+    };
+
+    if (!_.isEmpty(keys)) {
+        console.log('\nThis profile needs some additional information.');
+        askQuestion();
     }
 });
 
