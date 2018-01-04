@@ -166,38 +166,43 @@ const promptQuestion = (q) => new Promise((resolve, reject) => {
  * @returns {Promise<any>}
  */
 const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) => {
-    const pkgDir = path.resolve(process.cwd(), 'node_modules', pkg);
-    const srcDir = path.resolve(pkgDir, 'config_samples');
-    const destDir = linc.sourceDir;
+    try {
+        const pkgDir = path.resolve(process.cwd(), 'node_modules', pkg);
+        const srcDir = path.resolve(pkgDir, 'config_samples');
+        const destDir = linc.sourceDir;
 
-    // We're done if there are no example configuration files, or no destination dir provided
-    if (!fs.existsSync(srcDir)) return resolve();
-    if (!destDir) return resolve();
+        // We're done if there are no example configuration files, or no destination dir provided
+        if (!fs.existsSync(srcDir)) return resolve();
+        if (!destDir) return resolve();
 
-    const profile = require(pkgDir);
-    if (!profile.getConfigSampleFiles) return resolve();
+        const profile = require(pkgDir);
+        if (!profile.getConfigSampleFiles) return resolve();
 
-    const configSampleFiles = profile.getConfigSampleFiles();
+        const configSampleFiles = profile.getConfigSampleFiles();
 
-    const spinner = ora('Copying example config files. Please wait...');
-    spinner.start();
+        const spinner = ora('Copying example config files. Please wait...');
+        spinner.start();
 
-    const promises = _.map(configSampleFiles, f => {
-        return fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f));
-    });
-
-    Promise.all(promises)
-        .then(() => {
-            spinner.succeed('Successfully copied example config files:');
-            _.each(configSampleFiles, f => console.log(`  + ${f}`));
-
-            return resolve();
-        })
-        .catch(err => {
-            spinner.fail('Could not copy example config files');
-
-            return reject(err);
+        const promises = _.map(configSampleFiles, f => {
+            return fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f));
         });
+
+        Promise.all(promises)
+            .then(() => {
+                spinner.succeed('Successfully copied example config files:');
+                _.each(configSampleFiles, f => console.log(`  + ${f}`));
+
+                return resolve();
+            })
+            .catch(err => {
+                spinner.fail('Could not copy example config files');
+
+                return reject(err);
+            });
+    } catch (e) {
+        console.log(e);
+        return reject(e);
+    }
 });
 
 /**
@@ -234,9 +239,7 @@ const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
             console.log('\nThis profile needs some additional information.');
             askQuestion();
         }
-    }
-    catch (e) {
-        console.log(e);
+    } catch (e) {
         return reject(e);
     }
 });
