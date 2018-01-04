@@ -10,7 +10,6 @@ const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const lincProfiles = require('../lib/linc-profiles');
 const exec = require('child_process').exec;
-const copyDir = require('copy-dir');
 const assertPkg = require('../lib/package-json').assert;
 
 prompt.colors = false;
