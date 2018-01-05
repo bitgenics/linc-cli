@@ -47,10 +47,14 @@ You have successfully logged in.
 const login = () => new Promise((resolve, reject) => {
     notice();
 
+    let credentials;
     credentialsFromPrompt()
-    	.then(z => auth(z.access_key_id, z.secret_access_key))
+    	.then(creds => {
+    	    credentials = creds;
+    	    return auth(creds.access_key_id, creds.secret_access_key);
+        })
     	.then(() => cred.rm())
-    	.then(q => cred.save(q.access_key_id, q.secret_access_key))
+    	.then(() => cred.save(credentials.access_key_id, credentials.secret_access_key))
     	.then(resolve)
     	.catch(reject);
 });
