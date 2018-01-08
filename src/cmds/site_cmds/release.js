@@ -23,7 +23,7 @@ const askDeploymentKey = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
             deploy_key_index: {
-                description: 'Deployment key for release:',
+                description: 'Deployment to release:',
                 default: 'A',
                 required: true
             }
