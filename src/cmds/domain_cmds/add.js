@@ -133,7 +133,7 @@ exports.handler = (argv) => {
     readPkg()
         .then(pkg => {
             const linc = pkg.linc;
-            if (!linc || !linc.buildProfile || !linc.sourceDir) {
+            if (!linc || !linc.buildProfile) {
                 return Promise.reject(new Error('Initalisation incomplete. Did you forget to run `linc site create`?'));
             }
 

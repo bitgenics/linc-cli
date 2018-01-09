@@ -352,7 +352,7 @@ us at help@bitgenics.io and we'll help you out.
         .then(pkg => {
             packageJson = pkg;
             const linc = packageJson.linc;
-            if (!linc || !linc.buildProfile || !linc.sourceDir) {
+            if (!linc || !linc.buildProfile) {
                 throw new Error('This project is not initialised. Did you forget to \'linc init\'?');
             }
 
