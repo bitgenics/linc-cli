@@ -327,11 +327,11 @@ ${JSON.stringify({linc: linc}, null, 3)}
             }
 
             return createNewSite(linc.siteName, authParams)
-                .then(result => console.log(`Site successfully created.
+                .then(() => console.log(`Site successfully created.
 Now let's publish your site.`));
         })
         .then(() => writePkg(packageJson))
-        .then(() => resolve())
+        .then(() => resolve(linc.siteName))
         .catch(err => reject(err));
 });
 
@@ -443,14 +443,15 @@ us using the email address shown above.
                 return initSite(packageJson, authInfo);
             }
 
-            spinner.start('Performing checks. Please wait...');
+            return Promise.resolve(linc.siteName);
         })
-        .then(() => {
-            siteName = argv.siteName || packageJson.linc.siteName;
+        .then(name => {
+            siteName = name;
 
+            spinner.start('Performing checks. Please wait...');
             return authoriseSite(siteName, authInfo);
         })
-        .then(() => environments.getAvailableEnvironments(argv.siteName, authInfo))
+        .then(() => environments.getAvailableEnvironments(siteName, authInfo))
         .then(envs => {
             spinner.stop();
 
@@ -471,7 +472,7 @@ us using the email address shown above.
         })
         .catch(err => {
             spinner.stop();
-            console.log(err.message)
+            console.log(err.message ? err.message : err);
         });
 };
 
