@@ -466,13 +466,8 @@ us using the email address shown above.
         .then(envs => {
             spinner.succeed('Deployment finished');
 
-            console.log('\nThe following deploy URLs were created:')
-            envs.forEach(e => {
-                console.log(`  https://${e.url}  (${e.env})`);
-                if (e.env === 'prod') {
-                    console.log(`  https://${siteName}.linc-app.co  (${e.env})`)
-                }
-            });
+            console.log('\nThe following deploy URLs were created:');
+            envs.forEach(e => console.log(`  https://${e.url}  (${e.env})`));
         })
         .catch(err => {
             spinner.stop();
