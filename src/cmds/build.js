@@ -1,7 +1,10 @@
 'use strict';
+const _ = require('underscore');
 const fs = require('fs-extra');
 const assertPkg = require('../lib/package-json').assert;
 const notice = require('../lib/notice');
+const packageOptions = require('../lib/pkgOptions');
+const serve = require('../lib/serve');
 
 const clean = (argv) => {
     const distDir = process.cwd() + '/dist';
@@ -10,7 +13,9 @@ const clean = (argv) => {
     fs.rmdirSync(distDir);
 };
 
-
+/**
+ * Build site
+ */
 const build = () => {
     const path = require('path');
     const buildssr = require('linc-build-ssr');
@@ -18,9 +23,7 @@ const build = () => {
 
     buildssr({}, packageJson, (err, results) => {
     	if (err) console.log(err);
-
-        console.log(`Done! Next use your new version locally by running 'linc serve'.
-`);
+        else serve();
     });
 };
 
@@ -31,7 +34,11 @@ exports.handler = (argv) => {
 
     notice();
 
-    console.log('Building. Please wait...');
     clean();
-	build();
+    packageOptions(['buildProfile'])
+        .then(() => {
+            console.log('Building. Please wait...');
+            return build();
+        })
+        .catch(err => console.log(err.message ? err.message : err));
 };

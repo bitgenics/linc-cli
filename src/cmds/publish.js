@@ -6,16 +6,14 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const AWS = require('aws-sdk');
-const readPkg = require('read-pkg');
-const writePkg = require('write-pkg');
 const zip = require('deterministic-zip');
 const fsPromise = require('fs-promise');
 const auth = require('../auth');
-const domainify = require('../lib/domainify');
 const environments = require('../lib/environments');
 const notice = require('../lib/notice');
 const config = require('../config.json');
 const assertPkg = require('../lib/package-json').assert;
+const packageOptions = require('../lib/pkgOptions');
 
 const TMP_DIR = '/tmp/';
 const DIST_DIR = 'dist';
@@ -125,30 +123,6 @@ const createTempDir = () => new Promise((resolve, reject) => {
 });
 
 /**
- * Ask user for site name.
- * @param name
- */
-const askSiteName = (name) => new Promise((resolve, reject) => {
-    let schema = {
-        properties: {
-            site_name: {
-                // Pattern AWS uses for host names.
-                pattern: /^(?!-)[a-z0-9-]{0,62}[a-z0-9]$/,
-                default: name,
-                description: 'Name of site to create:',
-                message: 'Only a-z, 0-9 and - are allowed characters. Cannot start/end with -.',
-                required: true
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    })
-});
-
-/**
  * Ask user for a publication description.
  * @param descr
  */
@@ -169,77 +143,6 @@ const askDescription = (descr) => new Promise((resolve, reject) => {
         if (err) return reject(err);
         else return resolve(result);
     })
-});
-
-/**
- * Are you sure? :)
- */
-const askIsThisOk = () => new Promise((resolve, reject) => {
-    let schema = {
-        properties: {
-            ok: {
-                description: "Is this OK?",
-                default: 'Y',
-                type: 'string'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
-    });
-});
-
-/**
- * Create a new site in the backend.
- * @param siteName
- * @param auth_params
- */
-const createNewSite = (siteName, auth_params) => new Promise((resolve, reject) => {
-    const body = {
-        name: siteName
-    };
-    const options = {
-        method: 'POST',
-        url: LINC_API_SITES_ENDPOINT,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth_params.jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else return resolve(json);
-    });
-});
-
-/**
- * Check whether a site name already exists.
- * @param siteName
- */
-const checkSiteName = (siteName) => new Promise((resolve, reject) => {
-    console.log('Checking availability of name. Please wait...');
-
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (response.statusCode === 200) return resolve(json.exists);
-        else return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-    });
 });
 
 /**
@@ -265,11 +168,10 @@ const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
 
 /**
  * Actually publish the site (upload to S3, let backend take it from there).
- * @param packageJson
+ * @param siteName
  * @param authParams
  */
-const publishSite = (packageJson, authParams) => new Promise((resolve, reject) => {
-    const siteName = packageJson.linc.siteName;
+const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
     const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
@@ -291,47 +193,6 @@ const publishSite = (packageJson, authParams) => new Promise((resolve, reject) =
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
         .then(zipfile => uploadZipfile(description, codeId, authParams, siteName, zipfile))
         .then(() => resolve())
-        .catch(err => reject(err));
-});
-
-/**
- * Initialise site.
- * @param packageJson
- * @param authParams
- */
-const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
-    const linc = packageJson.linc;
-
-    console.log(`It looks like you haven't provided a site name yet,
-so let's handle that now.
-`);
-    askSiteName(domainify(packageJson.name))
-        .then(result => {
-            linc.siteName = result.site_name;
-            return checkSiteName(linc.siteName)
-        })
-        .then(exists => {
-            if (exists) {
-                throw new Error('This site name already exists.');
-            }
-
-            console.log(`The following section will be updated in package.json:
-${JSON.stringify({linc: linc}, null, 3)}
-`);
-            return askIsThisOk();
-        })
-        .then(result => {
-            if (result.ok.toLowerCase().substr(0, 1) !== 'y') {
-                console.log('Aborted by user.');
-                process.exit(255);
-            }
-
-            return createNewSite(linc.siteName, authParams)
-                .then(() => console.log(`Site successfully created.
-Now let's publish your site.`));
-        })
-        .then(() => writePkg(packageJson))
-        .then(() => resolve(linc.siteName))
         .catch(err => reject(err));
 });
 
@@ -431,22 +292,12 @@ us using the email address shown above.
         .then(() => {
             spinner.stop();
 
-            return readPkg();
+            return packageOptions(['siteName', 'buildProfile'], authInfo);
         })
         .then(pkg => {
             packageJson = pkg;
-            const linc = packageJson.linc;
-            if (!linc || !linc.buildProfile) {
-                throw new Error('This project is not initialised. Did you forget to \'linc init\'?');
-            }
-            if (!linc.siteName) {
-                return initSite(packageJson, authInfo);
-            }
 
-            return Promise.resolve(linc.siteName);
-        })
-        .then(name => {
-            siteName = name;
+            siteName = packageJson.linc.siteName;
 
             spinner.start('Performing checks. Please wait...');
             return authoriseSite(siteName, authInfo);
@@ -456,8 +307,7 @@ us using the email address shown above.
             spinner.stop();
 
             listOfEnvironments = envs.environments.map(x => x.name);
-
-            return publishSite(packageJson, authInfo);
+            return publishSite(siteName, authInfo);
         })
         .then(() => {
             spinner.start('Waiting for deploy to finish...');
