@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 const _ = require('underscore');
 const ora = require('ora');
 const prompt = require('prompt');
@@ -9,7 +10,7 @@ const config = require('../config.json');
 const domainify = require('./domainify');
 const lincProfiles = require('./linc-profiles');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 prompt.colors = false;
 prompt.message = '';
@@ -20,7 +21,7 @@ prompt.delimiter = '';
  * @param dflt
  */
 const getName = (dflt) => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             name: {
                 // Pattern AWS uses for host names.
@@ -28,16 +29,16 @@ const getName = (dflt) => new Promise((resolve, reject) => {
                 default: dflt,
                 description: 'Name of site to create:',
                 message: 'Only a-z, 0-9 and - are allowed characters. Cannot start/end with -.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.name);
-    })
+    });
 });
 
 /**
@@ -52,8 +53,8 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
         headers: {
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+        },
     };
     request(options, (err, response, body) => {
         if (err) {
@@ -82,23 +83,25 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
  */
 const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) => {
     const body = {
-        name: siteName
+        name: siteName,
     };
     const options = {
         method: 'POST',
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
     };
-    request(options, (err, response, body) => {
+    request(options, (err, response, _body) => {
         if (err) return reject(err);
 
-        const json = JSON.parse(body);
+        const json = JSON.parse(_body);
         if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         return resolve(json);
     });
@@ -143,21 +146,21 @@ Please choose a profile:\n`);
 const askOtherProfile = () => new Promise((resolve, reject) => {
     console.log();
 
-    let schema = {
+    const schema = {
         properties: {
             profile: {
                 description: '\nProfile name to use for this site:',
                 message: 'Please enter a valid option',
-                type: 'string'
-            }
-        }
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.profile);
-    })
+    });
 });
 
 /**
@@ -170,16 +173,16 @@ const profileHandler = (argv, pkg) => new Promise((resolve, reject) => {
 
     showProfiles();
 
-    let schema = {
+    const schema = {
         properties: {
             profile: {
                 pattern: /^[A-Za-z]$/,
                 description: 'Profile to use for this site:',
                 message: 'Please enter a valid option',
                 type: 'string',
-                default: 'A'
-            }
-        }
+                default: 'A',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
@@ -192,18 +195,18 @@ const profileHandler = (argv, pkg) => new Promise((resolve, reject) => {
             return resolve(pkg);
         }
         return askOtherProfile()
-            .then(profile => {
-                pkg.linc.buildProflie = profile;
+            .then(p => {
+                pkg.linc.buildProfile = p;
             });
-    })
+    });
 });
 
 /**
  * Options we have and their handlers
  */
 const availableOptions = {
-    'siteName': nameHandler,
-    'buildProfile': profileHandler,
+    siteName: nameHandler,
+    buildProfile: profileHandler,
 };
 
 /**

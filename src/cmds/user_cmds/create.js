@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
@@ -6,7 +5,7 @@ const cred = require('../../cred');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
 
-const LINC_API_USERS_ENDPOINT = config.Api.LincBaseEndpoint + '/users';
+const LINC_API_USERS_ENDPOINT = `${config.Api.LincBaseEndpoint}/users`;
 
 prompt.colors = false;
 prompt.message = '';
@@ -25,16 +24,17 @@ You can find the Terms and Conditions here: https://bitgenics.io/link/legal
             accept: {
                 description: 'Do you accept the Terms and Conditions:',
                 default: 'Y',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
-    prompt.start();
 
+    prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result.accept.trim());
-    })
+
+        return resolve(result.accept.trim());
+    });
 });
 
 /**
@@ -51,20 +51,20 @@ address by clicking this link.
         properties: {
             email: {
                 // Fairly good pattern for email addresses
-                pattern: /[a-zA-Z0-9%-.+_]+\@[a-zA-Z0-9%-.+_]+\.[a-zA-Z]{2,}/,
+                pattern: /[a-zA-Z0-9%-.+_]+@[a-zA-Z0-9%-.+_]+\.[a-zA-Z]{2,}/,
                 description: 'Your email address:',
                 message: 'Please enter a valid email address.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
 
     prompt.start();
-
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result.email.trim());
-    })
+
+        return resolve(result.email.trim());
+    });
 });
 
 /**
@@ -76,7 +76,7 @@ const createNewUser = (email) => new Promise((resolve, reject) => {
         method: 'POST',
         url: LINC_API_USERS_ENDPOINT,
         headers: { 'Content-Type': 'application/json' },
-        body: `{ "email": "${email}" }`
+        body: `{ "email": "${email}" }`,
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
@@ -121,7 +121,7 @@ servers, so it's impossible for us to retrieve them should you lose them.`;
 
 exports.command = 'create';
 exports.desc = 'Create an account';
-exports.handler = (argv) => {
+exports.handler = () => {
     notice();
 
     const spinner = ora('Creating new user. Please wait...');
@@ -140,7 +140,7 @@ exports.handler = (argv) => {
         .then(apiResponse => {
             spinner.stop();
             showUserCredentials(apiResponse);
-            cred.save(apiResponse.clientId, apiResponse.clientSecret)
+            cred.save(apiResponse.clientId, apiResponse.clientSecret);
         })
         .catch(err => {
             spinner.stop();

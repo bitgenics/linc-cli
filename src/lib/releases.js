@@ -1,10 +1,9 @@
-'use strict';
 const _ = require('underscore');
 const request = require('request');
 const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 /**
  * Create a new release in the back end
@@ -19,7 +18,7 @@ const createRelease = (siteName, deployKey, domainName, envName) => (jwtToken) =
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
         body: JSON.stringify({
             domainName,
@@ -47,8 +46,8 @@ const getAvailableReleases = (siteName) => (jwtToken) => new Promise((resolve, r
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        }
+            Authorization: `Bearer ${jwtToken}`,
+        },
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
@@ -56,7 +55,9 @@ const getAvailableReleases = (siteName) => (jwtToken) => new Promise((resolve, r
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (!json.releases || json.releases.length === 0) return reject('No releases available. Add domain names using \'linc domain add\'.');
+        if (!json.releases || json.releases.length === 0) {
+            return reject('No releases available. Add domain names using \'linc domain add\'.');
+        }
 
         return resolve(json);
     });
@@ -68,9 +69,9 @@ const getAvailableReleases = (siteName) => (jwtToken) => new Promise((resolve, r
  */
 module.exports.showAvailableReleases = (results) => {
     const releases = _.sortBy(results.releases, x => x.url);
-    const site_name = results.site_name;
+    const siteName = results.site_name;
 
-    console.log(`Here are the available releases for ${site_name}:`);
+    console.log(`Here are the available releases for ${siteName}:`);
     releases.forEach(d => {
         console.log(`   - ${d.url}`);
         console.log(`       + Released on: ${d.created_at}`);

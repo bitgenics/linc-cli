@@ -1,9 +1,8 @@
-'use strict';
 const request = require('request');
 const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 /**
  * Check authorisation
@@ -15,10 +14,10 @@ const authoriseSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        }
+            Authorization: `Bearer ${jwtToken}`,
+        },
     };
-    request(options, (err, response, body) => {
+    request(options, (err, response) => {
         if (err) return reject(err);
         if (response.statusCode !== 200) return reject(new Error('Unauthorised access or invalid site.'));
 
@@ -37,24 +36,26 @@ const createSite = (linc, method) => (jwtToken) => new Promise((resolve, reject)
         settings: {
             description: linc.description,
             viewer_protocol: linc.viewerProtocol,
-            domains: linc.domains
-        }
+            domains: linc.domains,
+        },
     };
     const options = {
         method: (method === 'CREATE') ? 'POST' : 'PUT',
         url: LINC_API_SITES_ENDPOINT + (method === 'UPDATE' ? `/${linc.siteName}` : ''),
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
     };
-    request(options, (err, response, body) => {
+    request(options, (err, response, _body) => {
         if (err) return reject(err);
 
-        const json = JSON.parse(body);
+        const json = JSON.parse(_body);
         if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         return resolve(json);
     });
@@ -70,9 +71,9 @@ const deleteSite = (siteName) => (jwtToken) => new Promise((resolve, reject) => 
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
-        body: `{"site_name":"${siteName}"}`
+        body: `{"site_name":"${siteName}"}`,
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
@@ -96,9 +97,9 @@ const invalidateCache = (siteName, pattern) => (jwtToken) => new Promise((resolv
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/invalidations`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
-        body: JSON.stringify({ pattern })
+        body: JSON.stringify({ pattern }),
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);

@@ -1,9 +1,8 @@
-'use strict';
 const request = require('request');
 const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 /**
  * Get available environments
@@ -15,8 +14,8 @@ const getAvailableEnvironments = (siteName) => (jwtToken) => new Promise((resolv
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        }
+            Authorization: `Bearer ${jwtToken}`,
+        },
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
@@ -45,14 +44,14 @@ const addEnvironment = (settings, envName, siteName) => (jwtToken) => new Promis
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
-    request(options, (err, response, body) => {
+    request(options, (err, response, _body) => {
         if (err) return reject(err);
 
-        const json = JSON.parse(body);
+        const json = JSON.parse(_body);
         if (json.error) return reject(json.error);
         if (response.statusCode !== 200) return reject(new Error(`${response.statusCode}: ${response.statusMessage}`));
 
@@ -71,7 +70,7 @@ const deleteEnvironment = (envName, siteName) => (jwtToken) => new Promise((reso
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments/${envName}`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -91,7 +90,7 @@ const deleteEnvironment = (envName, siteName) => (jwtToken) => new Promise((reso
  * @param envName
  * @param siteName
  */
-const updateEnvironment = (settings, envName, siteName) => ( jwtToken) => new Promise((resolve, reject) => {
+const updateEnvironment = (settings, envName, siteName) => (jwtToken) => new Promise((resolve, reject) => {
     const body = {
         settings,
     };
@@ -100,14 +99,14 @@ const updateEnvironment = (settings, envName, siteName) => ( jwtToken) => new Pr
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments/${envName}`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
-    request(options, (err, response, body) => {
+    request(options, (err, response, _body) => {
         if (err) return reject(err);
 
-        const json = JSON.parse(body);
+        const json = JSON.parse(_body);
         if (json.error) return reject(json.error);
         if (response.statusCode !== 200) return reject(new Error(`${response.statusCode}: ${response.statusMessage}`));
 

@@ -1,7 +1,5 @@
-'use strict';
 const ora = require('ora');
 const assertPkg = require('../lib/package-json').assert;
-const auth = require('../lib/auth');
 const domains = require('../lib/domains');
 const notice = require('../lib/notice');
 const releases = require('../lib/releases');
@@ -35,16 +33,16 @@ const show = (argv) => {
         domains.getAvailableDomains(argv, siteName),
         releases.getAvailableReleases(argv, siteName),
     ])
-    .then(result => {
-        spinner.stop();
-        domains.showAvailableDomains(result[0]);
-        releases.showAvailableReleases(result[1]);
-    })
-    .catch(err => {
-        spinner.stop();
+        .then(result => {
+            spinner.stop();
+            domains.showAvailableDomains(result[0]);
+            releases.showAvailableReleases(result[1]);
+        })
+        .catch(err => {
+            spinner.stop();
 
-        error(err);
-    });
+            error(err);
+        });
 };
 
 exports.command = 'show';

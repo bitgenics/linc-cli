@@ -1,4 +1,3 @@
-'use strict';
 const fsp = require('fs-promise');
 const ora = require('ora');
 const prompt = require('prompt');
@@ -17,22 +16,22 @@ const askEnvironment = () => new Promise((resolve, reject) => {
     console.log(`
 Please select the environment you want to update.
 `);
-    let schema = {
+    const schema = {
         properties: {
             environment_index: {
                 description: 'Environment to update:',
                 pattern: /^(?!-)[a-zA-Z]$/,
                 default: 'A',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result);
-    })
+    });
 });
 
 /**
@@ -52,12 +51,12 @@ const askSettingsFile = (argv) => new Promise((resolve, reject) => {
                 pattern: /^[a-zA-Z]+[A-Za-z0-9-]*\.json$/,
                 description: 'Settings file:',
                 message: 'The settings file must be a valid JSON file.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
-    prompt.get(schema, (err, result) => {
+    return prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.file_name);
@@ -92,7 +91,7 @@ const updateEnvironment = (argv) => {
                         throw new Error('Invalid input.');
                     }
                     return Promise.resolve(envs.environments[index].name);
-                })
+                });
         })
         .then(env => {
             envName = env;
@@ -115,7 +114,7 @@ const updateEnvironment = (argv) => {
         .catch(err => {
             spinner.stop();
 
-            console.log(err)
+            console.log(err);
         });
 };
 

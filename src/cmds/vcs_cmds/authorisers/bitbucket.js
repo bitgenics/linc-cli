@@ -1,4 +1,4 @@
-'use strict';
+/* eslint-disable max-len */
 const ora = require('ora');
 const prompt = require('prompt');
 const oauth = require('../../../lib/oauth');
@@ -8,19 +8,20 @@ const openurl = require('opn');
  * Ask whether user is sure
  */
 const areYouSure = () => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             ok: {
-                description: "You are already authorised. Authorise again?",
+                description: 'You are already authorised. Authorise again?',
                 default: 'Y',
-                type: 'string'
-            }
-        }
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     });
 });
 
@@ -45,7 +46,7 @@ module.exports.handler = (argv) => {
                     }
 
                     return response.authorise_uri;
-                })
+                });
         })
         .then(uri => {
             console.log(`The following URL will open in your browser shortly:

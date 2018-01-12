@@ -1,9 +1,9 @@
-'use strict';
+/* eslint-disable max-len */
 const request = require('request');
 const authorisify = require('../../../lib/authorisify');
 const config = require('../../../config.json');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 /**
  * Create webhook by calling appropriate API endpoint
@@ -16,14 +16,14 @@ const createWebhook = (siteName, serviceName, body) => (jwtToken) => new Promise
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
     };
-    return request.post(options, (err, response, body) => {
+    return request.post(options, (err, response, _body) => {
         if (err) return reject(err);
 
-        const json = JSON.parse(body);
+        const json = JSON.parse(_body);
         if (json.error) return reject(new Error(json.error));
         if (response.statusCode !== 200) {
             return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
@@ -34,35 +34,6 @@ const createWebhook = (siteName, serviceName, body) => (jwtToken) => new Promise
 });
 
 /**
- * Call API to create webhook
- */
-const createWebhookInBackend = (site_name, service, body) => (jwtToken) => new Promise((resolve, reject) => {
-    console.log('Please wait...');
-    if (body === undefined) {
-        body = service;
-        service = 'GitHub';
-    }
-    const options = {
-        method: 'POST',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/webhooks/${service}`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else return resolve(json);
-    });
-});
-
-
-/**
  * Delete webhook in backend
  * @param siteName
  * @param serviceName
@@ -71,7 +42,7 @@ const deleteWebhook = (siteName, serviceName) => (jwtToken) => new Promise((reso
     const options = {
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/${serviceName}`,
         headers: {
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
     };
     return request.delete(options, (err, response, body) => {

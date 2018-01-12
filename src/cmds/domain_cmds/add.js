@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
 const readPkg = require('read-pkg');
@@ -15,23 +14,23 @@ prompt.delimiter = '';
  * Ask user for domain name
  */
 const askDomainName = () => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             domain_name: {
                 // This is the pattern AWS uses for domain names
                 pattern: /^(\*\.)?(((?!-)[a-z0-9-]{0,62}[a-z0-9])\.)+((?!-)[a-z0-9-]{1,62}[a-z0-9])$/,
                 description: 'Domain name to add:',
                 message: 'Must be a valid domain name (lowercase only).',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result);
-    })
+    });
 });
 
 /**
@@ -39,13 +38,12 @@ const askDomainName = () => new Promise((resolve, reject) => {
  * @param results
  */
 const showAvailableEnvironments = (results) => {
-    const environments = results.environments;
     const siteName = results.site_name;
 
     console.log(`Here are the available environments for ${siteName}:`);
 
     let code = 65; /* 'A' */
-    environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
+    results.environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
 };
 
 /**
@@ -55,24 +53,28 @@ const askEnvironment = () => new Promise((resolve, reject) => {
     console.log(`
 Please select the environment to which you want to attach the domain.
 `);
-    let schema = {
+    const schema = {
         properties: {
             environment_index: {
                 description: 'Environment to use:',
                 pattern: /^(?!-)[a-zA-Z]$/,
                 default: 'A',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result);
-    })
+    });
 });
 
+/**
+ * Error message
+ * @param err
+ */
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err);
@@ -120,7 +122,7 @@ exports.handler = (argv) => {
                         throw new Error('Invalid input.');
                     }
                     return Promise.resolve(envs.environments[index].name);
-                })
+                });
         })
         .then(env => {
             envName = env;
@@ -132,8 +134,7 @@ exports.handler = (argv) => {
         })
         .then(() => {
             spinner.stop();
-            console.log(
-`Domain name successfully added. Shortly, you may be receiving 
+            console.log(`Domain name successfully added. Shortly, you may be receiving 
 emails asking you to approve an SSL certificate (if needed).
 `);
         })

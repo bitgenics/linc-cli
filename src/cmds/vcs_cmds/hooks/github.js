@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const webhooks = require('./webhooks');
 const prompt = require('prompt');
@@ -13,23 +12,23 @@ prompt.delimiter = '';
  * Ask for a username
  */
 const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             repositoryUrl: {
-                pattern: /^[^\/@]+(?::\/\/|@)(?:github.com)[\/:]([^\/]+)\/([^.]+)(\.git)?$/,
+                pattern: /^[^/@]+(?::\/\/|@)(?:github.com)[/:]([^/]+)\/([^.]+)(\.git)?$/,
                 default: suggestion,
                 description: 'Please enter your GitHub repository URL:',
                 message: 'Please enter a valid GitHub URL.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result);
-    })
+    });
 });
 
 /**
@@ -39,13 +38,14 @@ const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
 const createHook = argv => {
     console.log(usage);
 
-    let spinner = ora();
+    const spinner = ora();
     let siteName;
     const body = {};
     readPkg()
         .then(pkg => {
             siteName = pkg.linc.siteName;
             if (!siteName) {
+                // eslint-disable-next-line max-len
                 throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
             }
 
@@ -81,7 +81,7 @@ const createHook = argv => {
  * @param argv
  */
 const deleteHook = argv => {
-    let spinner = ora();
+    const spinner = ora();
     let siteName;
     readPkg()
         .then(pkg => {
@@ -111,6 +111,7 @@ const deleteHook = argv => {
  * Entry point for this module
  * @param argv
  */
+// eslint-disable-next-line consistent-return
 module.exports.handler = argv => {
     if (!argv.command) {
         console.log('You failed to provide a command.');

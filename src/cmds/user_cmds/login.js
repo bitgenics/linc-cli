@@ -1,4 +1,3 @@
-"use strict";
 const colors = require('colors/safe');
 const prompt = require('prompt');
 const cred = require('../../cred');
@@ -17,13 +16,13 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
         properties: {
             access_key_id: {
                 description: colors.white('Access key:'),
-                required: true
+                required: true,
             },
             secret_access_key: {
                 description: colors.white('Secret key:'),
-                hidden: true
-            }
-        }
+                hidden: true,
+            },
+        },
     };
 
     prompt.message = colors.grey('(linc) ');
@@ -34,9 +33,9 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 
         return resolve({
             access_key_id: result.access_key_id,
-            secret_access_key: result.secret_access_key
+            secret_access_key: result.secret_access_key,
         });
-    })
+    });
 });
 
 const success = () => {
@@ -53,20 +52,20 @@ const login = () => new Promise((resolve, reject) => {
 
     let credentials;
     credentialsFromPrompt()
-    	.then(creds => {
-    	    credentials = creds;
-    	    return auth(creds.access_key_id, creds.secret_access_key);
+        .then(creds => {
+            credentials = creds;
+            return auth(creds.access_key_id, creds.secret_access_key);
         })
-    	.then(() => cred.rm())
-    	.then(() => cred.save(credentials.access_key_id, credentials.secret_access_key))
-    	.then(resolve)
-    	.catch(reject);
+        .then(() => cred.rm())
+        .then(() => cred.save(credentials.access_key_id, credentials.secret_access_key))
+        .then(resolve)
+        .catch(reject);
 });
 
 exports.command = 'login';
 exports.desc = 'Log in';
-exports.handler = (argv) => {
-	login()
+exports.handler = () => {
+    login()
         .then(success)
         .catch(console.log);
 };

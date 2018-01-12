@@ -1,4 +1,4 @@
-'use strict';
+/* eslint-disable max-len */
 const ora = require('ora');
 const prompt = require('prompt');
 const notice = require('../../lib/notice');
@@ -6,29 +6,31 @@ const oauth = require('../../lib/oauth');
 const openurl = require('opn');
 const assertPkg = require('../../lib/package-json').assert;
 
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
+
+
 /**
  * Ask whether user is sure
  */
 const areYouSure = () => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             ok: {
-                description: "You are already authorised. Authorise again?",
+                description: 'You are already authorised. Authorise again?',
                 default: 'Y',
-                type: 'string'
-            }
-        }
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     });
 });
-
-prompt.colors = false;
-prompt.message = '';
-prompt.delimiter = '';
 
 exports.command = 'authorise';
 exports.desc = 'Authorise LINC and install LINC app in your Slack';
@@ -58,7 +60,7 @@ exports.handler = (argv) => {
                     }
 
                     return response.authorise_uri;
-                })
+                });
         })
         .then(uri => {
             spinner.stop();
@@ -73,6 +75,6 @@ If your browser didn't open this URL, please click on the link or copy the link 
         })
         .catch(err => {
             spinner.stop();
-            console.log(`Oops, something went wrong:\n${err}.`)
+            console.log(`Oops, something went wrong:\n${err}.`);
         });
 };

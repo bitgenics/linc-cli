@@ -1,10 +1,9 @@
-'use strict';
 const _ = require('underscore');
 const request = require('request');
 const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 /**
  * Get available domains
@@ -16,8 +15,8 @@ const getAvailableDomains = (siteName) => (jwtToken) => new Promise((resolve, re
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/domains`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        }
+            Authorization: `Bearer ${jwtToken}`,
+        },
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
@@ -25,7 +24,9 @@ const getAvailableDomains = (siteName) => (jwtToken) => new Promise((resolve, re
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (!json.domains || json.domains.length === 0) return reject('No domains available. Add domain names using \'linc domain add\'.');
+        if (!json.domains || json.domains.length === 0) {
+            return reject('No domains available. Add domain names using \'linc domain add\'.');
+        }
 
         return resolve(json);
     });
@@ -43,11 +44,11 @@ const addDomainName = (domainName, envName, siteName) => (jwtToken) => new Promi
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/domains`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
         body: JSON.stringify({
             domainName,
-            envName
+            envName,
         }),
     };
     request(options, (err, response, body) => {
@@ -67,9 +68,9 @@ const addDomainName = (domainName, envName, siteName) => (jwtToken) => new Promi
  */
 module.exports.showAvailableDomains = (results) => {
     const domains = _.sortBy(results.domains, x => x.domain_name);
-    const site_name = results.site_name;
+    const siteName = results.site_name;
 
-    console.log(`Here are the available domains for ${site_name}:`);
+    console.log(`Here are the available domains for ${siteName}:`);
     domains.forEach(d => { console.log(`   - ${d.domain_name}`); });
     console.log('');
 };

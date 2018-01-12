@@ -1,16 +1,14 @@
-'use strict';
-
 module.exports = {
-    'A': {
+    A: {
         name: 'Redirect HTTP to HTTPS',
-        policy: 'redirect-to-https'
+        policy: 'redirect-to-https',
     },
-    'B': {
+    B: {
         name: 'HTTP and HTTPS',
-        policy: 'allow-all'
+        policy: 'allow-all',
     },
-    'C': {
+    C: {
         name: 'HTTPS only',
-        policy: 'https-only'
-    }
+        policy: 'https-only',
+    },
 };

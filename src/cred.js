@@ -1,4 +1,4 @@
-"use strict";
+/* eslint-disable consistent-return,no-bitwise */
 const path = require('path');
 const fs = require('fs');
 const fsp = require('fs-promise');
@@ -15,12 +15,12 @@ const getCredentials = () => {
         if (fs.existsSync(credentials)) {
             if ((fs.statSync(credentials).mode & 0o777) === 0o600) {
                 const json = JSON.parse(fs.readFileSync(credentials));
-                return json.User ? json.User : {}
+                return json.User ? json.User : {};
             }
 
             console.log(`WARNING: permissions of credentials file ${credentials} has been tampered with.`);
         }
-        return {}
+        return {};
     } catch (e) {
         console.log(`Error happened while parsing credentials file ${credentials}\n${e}`);
     }
@@ -45,9 +45,8 @@ const login = () => new Promise((resolve, reject) => {
         })
         .then(() => fsp.readJson(credentials))
         .then(data => {
-            if (! data.hasOwnProperty('User')) {
-                return reject('Invalid file format');
-            }
+            if (!data.User) return reject('Invalid file format');
+
             return resolve(data.User);
         })
         .catch(err => reject(err));
@@ -56,7 +55,7 @@ const login = () => new Promise((resolve, reject) => {
 /**
  * Remove credentials
  */
-const rm = () => new Promise((resolve, reject) => {
+const rm = () => new Promise((resolve) => {
     fsp.exists(credentials)
         .then((x) => {
             if (!x) {
@@ -65,7 +64,7 @@ const rm = () => new Promise((resolve, reject) => {
         })
         .then(() => fsp.unlink(credentials))
         .then(() => resolve())
-        .catch(() => resolve())
+        .catch(() => resolve());
 });
 
 /**
@@ -76,9 +75,9 @@ const rm = () => new Promise((resolve, reject) => {
 const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
     const json = {
         User: {
-            accessKey: accessKey,
-            secretKey: secretKey
-        }
+            accessKey,
+            secretKey,
+        },
     };
 
     fsp.ensureDir(LINC_DIR)
@@ -99,5 +98,5 @@ module.exports = {
     getCredentials,
     login,
     save,
-    rm
+    rm,
 };

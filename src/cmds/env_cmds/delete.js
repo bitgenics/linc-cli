@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
 const environments = require('../../lib/environments');
@@ -14,13 +13,12 @@ prompt.delimiter = '';
  * @param results
  */
 const showAvailableEnvironments = (results) => {
-    const environments = results.environments;
     const siteName = results.site_name;
 
     console.log(`Here are the available environments for ${siteName}:`);
 
     let code = 65; /* 'A' */
-    environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
+    results.environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
 };
 
 /**
@@ -30,22 +28,22 @@ const askEnvironment = () => new Promise((resolve, reject) => {
     console.log(`
 Please select the environment you want to delete.
 `);
-    let schema = {
+    const schema = {
         properties: {
             environment_index: {
                 description: 'Environment to delete:',
                 pattern: /^(?!-)[a-zA-Z]$/,
                 default: 'A',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result);
-    })
+    });
 });
 
 /**
@@ -75,7 +73,7 @@ const deleteEnvironment = (argv) => {
                         throw new Error('Error: invalid input.');
                     }
                     return Promise.resolve(envs.environments[index].name);
-                })
+                });
         })
         .then(env => {
             envName = env;

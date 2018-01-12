@@ -1,9 +1,9 @@
-'use strict';
+/* eslint-disable no-param-reassign */
 const request = require('request');
-const authorisify = require('../../../lib/authorisify');
-const config = require('../../../config.json');
+const authorisify = require('../../lib/authorisify');
+const config = require('../../config.json');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 /**
  * Call API to create webhook
@@ -19,16 +19,18 @@ const createWebhook = (siteName, serviceName, body) => (jwtToken) => new Promise
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/webhooks/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
     };
-    request(options, (err, response, body) => {
+    request(options, (err, response, _body) => {
         if (err) return reject(err);
 
-        const json = JSON.parse(body);
+        const json = JSON.parse(_body);
         if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         return resolve(json);
     });
@@ -46,15 +48,17 @@ const deleteWebhook = (siteName, serviceName) => (jwtToken) => new Promise((reso
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/webhooks/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        }
+            Authorization: `Bearer ${jwtToken}`,
+        },
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
 
         const json = JSON.parse(body);
         if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         return resolve(json);
     });

@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const webhooks = require('./webhooks');
 const prompt = require('prompt');
@@ -33,60 +32,62 @@ your token before closing, you won't be able to see it ever again.
  * Ask for a username
  */
 const askUsername = () => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             user_name: {
                 // Max length is 39 characters
                 pattern: /^[a-z0-9][a-z0-9_]{0,37}[a-z0-9]$/,
                 description: 'Please enter your (lowercase) GitHub username:',
                 message: 'Please enter a valid GitHub username (a-z, 0-9 and _ are allowed).',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
-    })
+
+        return resolve(result);
+    });
 });
 
 /**
  * Ask for an access token
  */
 const askAccessToken = () => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             access_token: {
                 pattern: /^[0-9a-f]{40}$/,
                 description: 'Please enter your GitHub access token:',
                 message: 'Please enter a valid GitHub access token.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
-    })
+
+        return resolve(result);
+    });
 });
 
 /**
  * Show webhook URL for the user's benefit.
- * @param webhook_url
+ * @param webhookUrl
  */
-const showWebhookUrl = (webhook_url) => {
+const showWebhookUrl = (webhookUrl) => {
     console.log(`
 Thank your for waiting. Please copy the following URL and paste it in 
 the Webhook "Payload URL" field in GitHub:
     
-    ${webhook_url}
+    ${webhookUrl}
 
 and you're good to go! You can find this field in your repository's
 Settings | Webhooks | Add Webhook. Please make sure to set the Content
 type to 'application/json', or your webhook calls will fail.
-`)
+`);
 };
 
 /**
@@ -96,7 +97,7 @@ type to 'application/json', or your webhook calls will fail.
 const createWebhook = (argv) => {
     console.log(explanation);
 
-    let spinner = ora();
+    const spinner = ora();
     let siteName;
     const body = {};
 
@@ -104,6 +105,7 @@ const createWebhook = (argv) => {
         .then(pkg => {
             siteName = pkg.linc.siteName;
             if (siteName === undefined) {
+                // eslint-disable-next-line max-len
                 throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
             }
 

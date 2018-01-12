@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
 const assertPkg = require('../../lib/package-json').assert;
@@ -28,7 +27,7 @@ const invalidate = (argv) => {
         process.exit(255);
     }
 
-    let siteName = argv.siteName;
+    const siteName = argv.siteName;
 
     let pattern = '/*';
     if (argv.pattern) {

@@ -1,15 +1,13 @@
-'use strict';
-
 module.exports = {
-    'A': {
+    A: {
         name: 'Generic React Profile',
-        pkg: 'linc-profile-generic-react'
+        pkg: 'linc-profile-generic-react',
     },
-    'B': {
+    B: {
         name: 'Next.js Profile',
-        pkg: 'linc-profile-nextjs'
+        pkg: 'linc-profile-nextjs',
     },
-    'C': {
-        name: 'Other'
-    }
+    C: {
+        name: 'Other',
+    },
 };

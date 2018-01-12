@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
 const notice = require('../../lib/notice');
@@ -14,23 +13,24 @@ prompt.delimiter = '';
  * @param message
  */
 const getSiteName = (message) => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             site_name: {
                 // Only a-z, 0-9 and - are allowed. Cannot start/end with -.
                 pattern: /^(?!-)[a-z0-9-]{0,62}[a-z0-9]$/,
                 description: message,
                 message: 'Only a-z, 0-9 and - are allowed. Cannot start/end with -.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
 
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
-    })
+
+        return resolve(result);
+    });
 });
 
 /**
@@ -54,11 +54,11 @@ const remove = (argv) => {
 
     const spinner = ora();
 
-    console.log(
-`Removing a site is a destructive operation that CANNOT be undone. 
+    console.log(`Removing a site is a destructive operation that CANNOT be undone. 
 The operation will remove all resources associated with your site, 
 and it will no longer be accessible/available to you.
 `);
+
     getSiteName('Name of site to remove:')
         .then(x => {
             siteName = x.site_name;
@@ -67,7 +67,7 @@ and it will no longer be accessible/available to you.
                     if (siteName !== y.site_name) throw new Error('Error: the names don\'t match.');
 
                     console.log('Please wait...');
-                })
+                });
         })
         .then(() => {
             spinner.start('Deleting site. Please wait...');

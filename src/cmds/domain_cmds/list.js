@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const domains = require('../../lib/domains');
 const notice = require('../../lib/notice');

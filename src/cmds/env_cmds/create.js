@@ -1,4 +1,3 @@
-'use strict';
 const fsp = require('fs-promise');
 const ora = require('ora');
 const prompt = require('prompt');
@@ -27,12 +26,12 @@ const askEnvName = (argv) => new Promise((resolve, reject) => {
                 pattern: /^[a-z]+$/,
                 description: 'Name of environment:',
                 message: 'Must be a valid environment name (lowercase only).',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
-    prompt.get(schema, (err, result) => {
+    return prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.env_name);
@@ -56,12 +55,12 @@ const askSettingsFile = (argv) => new Promise((resolve, reject) => {
                 pattern: /^[a-zA-Z]+[A-Za-z0-9-]*\.json$/,
                 description: 'Settings file:',
                 message: 'The settings file must be a valid JSON file.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
-    prompt.get(schema, (err, result) => {
+    return prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.file_name);
@@ -99,7 +98,7 @@ const createEnvironment = (argv) => {
         .catch(err => {
             spinner.stop();
 
-            console.log(err)
+            console.log(err);
         });
 };
 

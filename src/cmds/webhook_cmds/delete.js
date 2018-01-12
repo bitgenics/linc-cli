@@ -1,4 +1,3 @@
-'use strict';
 const ora = require('ora');
 const webhooks = require('./webhooks');
 const prompt = require('prompt');
@@ -14,14 +13,14 @@ prompt.delimiter = '';
  * Ask whether user is sure
  */
 const areYouSure = () => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             ok: {
-                description: "Are you sure you want to delete the webhook?",
+                description: 'Are you sure you want to delete the webhook?',
                 default: 'Y',
-                type: 'string'
-            }
-        }
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
@@ -36,13 +35,14 @@ const areYouSure = () => new Promise((resolve, reject) => {
  * @param argv
  */
 const deleteWebhook = (argv) => {
-    let spinner = ora();
+    const spinner = ora();
     let siteName;
 
     readPkg()
         .then(pkg => {
             siteName = pkg.linc.siteName;
             if (siteName === undefined) {
+                // eslint-disable-next-line max-len
                 throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
             }
             return areYouSure();
