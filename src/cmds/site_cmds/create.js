@@ -2,12 +2,12 @@
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
-const auth = require('../../auth');
 const notice = require('../../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const config = require('../../config.json');
 const domainify = require('../../lib/domainify');
+const sites = require('../../lib/sites');
 const viewerProtocols = require('../../lib/viewer-protocols');
 const createErrorTemplates = require('../../lib/error-templates');
 const assertPkg = require('../../lib/package-json').assert;
@@ -18,6 +18,10 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
+/**
+ * Ask user for site name
+ * @param name
+ */
 const askSiteName = (name) => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -38,6 +42,10 @@ const askSiteName = (name) => new Promise((resolve, reject) => {
     })
 });
 
+/**
+ * Ask user for description
+ * @param descr
+ */
 const askDescription = (descr) => new Promise((resolve, reject) => {
     console.log(`
 Please provide a description for your site.`);
@@ -58,6 +66,9 @@ Please provide a description for your site.`);
     })
 });
 
+/**
+ * Ask for error pages directory
+ */
 const askErrorPagesDir = () => new Promise((resolve, reject) => {
     console.log(`
 Please provide a directory containing custom error pages (HTML).
@@ -82,6 +93,9 @@ directory for custom error pages is 'errors'.`);
     })
 });
 
+/**
+ * Ask user for viewer protocol
+ */
 const askViewerProtocol = () => new Promise((resolve, reject) => {
     console.log(`
 Please choose the viewer protocol to use:
@@ -107,6 +121,11 @@ Please choose the viewer protocol to use:
     })
 });
 
+/**
+ * Validate domain name
+ * @param x
+ * @returns {boolean}
+ */
 const validateDomainName = (x) => {
     const match = /^(\*\.)?(((?!-)[a-z0-9-]{0,62}[a-z0-9])\.)+((?!-)[a-z0-9-]{1,62}[a-z0-9])$/.test(x);
     if (! match) {
@@ -115,6 +134,9 @@ const validateDomainName = (x) => {
     return match;
 };
 
+/**
+ * Ask for domain names
+ */
 const askDomainNames = () => new Promise((resolve, reject) => {
     console.log(`
 If you want, you can already add domain names for your site.
@@ -145,6 +167,9 @@ Please enter domain names separated by a comma:`);
     })
 });
 
+/**
+ * User confirmation
+ */
 const askIsThisOk = () => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -162,34 +187,10 @@ const askIsThisOk = () => new Promise((resolve, reject) => {
     });
 });
 
-const createNewSite = (linc, auth_params, method) => new Promise((resolve, reject) => {
-    const body = {
-        name: linc.siteName,
-        settings: {
-            description: linc.description,
-            viewer_protocol: linc.viewerProtocol,
-            domains: linc.domains
-        }
-    };
-    const options = {
-        method: (method === 'CREATE') ? 'POST' : 'PUT',
-        url: LINC_API_SITES_ENDPOINT + (method === 'UPDATE' ? `/${linc.siteName}` : ''),
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth_params.jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else return resolve(json);
-    });
-});
-
+/**
+ * Check site name availability
+ * @param siteName
+ */
 const checkSiteName = (siteName) => new Promise((resolve, reject) => {
     const spinner = ora('Checking availability of name. Please wait...').start();
 
@@ -220,23 +221,11 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
     });
 });
 
-const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(new Error('Unauthorised access or invalid site.'));
-        else return resolve();
-    });
-});
-
-const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
+/**
+ * Initialise site
+ * @param packageJson
+ */
+const initSite = (packageJson) => new Promise((resolve, reject) => {
     const siteName = packageJson.linc.siteName;
 
     const linc = {};
@@ -287,7 +276,7 @@ ${JSON.stringify(linc, null, 3)}
 
             const spinner = ora('Creating site. Please wait...').start();
             const method = siteName ? 'UPDATE' : 'CREATE';
-            return createNewSite(linc, authParams, method)
+            return sites.createSite(linc, method)
                 .then(result => {
                     spinner.stop();
 
@@ -320,35 +309,16 @@ in your DNS.
         .catch(err => reject(err));
 });
 
+/**
+ * Create site
+ * @param argv
+ */
 const createSite = (argv) => {
-    let authParams;
     let packageJson;
 
-    const spinner = ora('Authorising user. Please wait...').start();
+    const spinner = ora();
 
-    auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => authParams = auth_params)
-        .catch(err => {
-            spinner.stop();
-            console.log(`
-${err.message}
-
-Please log in using 'linc login', or create a new user with 
-'linc user create' before creating a site in the backend.
-
-If you created a user earlier, make sure to verify your email 
-address. You cannot use LINC with an email address that is 
-unverified.
-
-If the error message doesn't make sense to you, please contact
-us at help@bitgenics.io and we'll help you out.
-`);
-            process.exit(255);
-        })
-        .then(() => {
-            spinner.stop();
-            return readPkg();
-        })
+    readPkg()
         .then(pkg => {
             packageJson = pkg;
             const linc = packageJson.linc;
@@ -356,12 +326,12 @@ us at help@bitgenics.io and we'll help you out.
                 throw new Error('This project is not initialised. Did you forget to \'linc init\'?');
             }
 
-            return initSite(packageJson, authParams);
+            return initSite(packageJson);
         })
         .then(() => {
             spinner.text = 'Authorising. Please wait...';
             spinner.start();
-            return authoriseSite(packageJson.linc.siteName, authParams);
+            return sites.authoriseSite(argv, packageJson.linc.siteName);
         })
         .then(() => spinner.stop())
         .catch(err => {

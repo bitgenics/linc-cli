@@ -12,6 +12,9 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
+/**
+ * Ask user to accept terms and conditions
+ */
 const getTCAcceptance = () => new Promise((resolve, reject) => {
     console.log(`
 In order to use LINC, you'll need to accept the Terms and Conditions.
@@ -34,6 +37,9 @@ You can find the Terms and Conditions here: https://bitgenics.io/link/legal
     })
 });
 
+/**
+ * Get user's email
+ */
 const getUserEmail = () => new Promise((resolve, reject) => {
     console.log(`Thank you for accepting the Terms and Conditions.
 
@@ -61,6 +67,10 @@ address by clicking this link.
     })
 });
 
+/**
+ * Create new user in back end
+ * @param email
+ */
 const createNewUser = (email) => new Promise((resolve, reject) => {
     const options = {
         method: 'POST',
@@ -73,11 +83,16 @@ const createNewUser = (email) => new Promise((resolve, reject) => {
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        else if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
-        else return resolve(json);
+        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+
+        return resolve(json);
     });
 });
 
+/**
+ * Show user credentials
+ * @param response
+ */
 const showUserCredentials = (response) => {
     const email = response.email;
     const accessKey = response.clientId;

@@ -2,15 +2,12 @@
 const _ = require('underscore');
 const ora = require('ora');
 const prompt = require('prompt');
-const request = require('request');
-const auth = require('../auth');
+const deployments = require('../lib/deployments');
 const domains = require('../lib/domains');
 const environments = require('../lib/environments');
+const releases = require('../lib/releases');
 const notice = require('../lib/notice');
-const config = require('../config.json');
 const assertPkg = require('../lib/package-json').assert;
-
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 prompt.colors = false;
 prompt.message = '';
@@ -32,7 +29,8 @@ const askDeploymentKey = () => new Promise((resolve, reject) => {
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     })
 });
 
@@ -58,33 +56,9 @@ added domain name.
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     })
-});
-
-/**
- * Retrieve available deployments from back end
- * @param site_name
- * @param authInfo
- */
-const getAvailableDeployments = (site_name, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/deployments`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else if (json.deployments.length === 0) return reject(new Error('No deployments available. Deploy your site using \'linc deploy\'.'));
-        else return resolve(json);
-    });
 });
 
 /**
@@ -109,52 +83,6 @@ const showAvailableDeployments = (deployments, siteName) => {
 
     let code = 65; /* 'A' */
     deployments.forEach(d => console.log(`${String.fromCharCode(code++)})  ${d.env || 'prod'}\t${d.deploy_key}  ${d.description || ''}`));
-};
-
-/**
- * Create a new release in the back end
- * @param siteName
- * @param deployKey
- * @param domainName
- * @param envName
- * @param authInfo
- */
-const createNewRelease = (siteName, deployKey, domainName, envName, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'POST',
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        },
-        body: JSON.stringify({
-            domainName,
-            deployKey,
-            envName,
-        }),
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
-
-        return resolve(json);
-    });
-});
-
-/**
- * Show available environments
- * @param results
- */
-const showAvailableEnvironments = (results) => {
-    const environments = results.environments;
-    const siteName = results.site_name;
-
-    console.log(`Here are the available environments for ${siteName}:`);
-
-    let code = 65; /* 'A' */
-    environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
 };
 
 /**
@@ -184,13 +112,12 @@ Please select the environment to which you want to attach the domain.
 
 /**
  * Get domains and deployments in one go
+ * @param argv
  * @param site
- * @param auth
- * @returns {Promise<[any , any]>}
  */
-const getDomainsAndDeployments = (site, auth) => Promise.all([
-    domains.getAvailableDomains(site, auth),
-    getAvailableDeployments(site, auth),
+const getDomainsAndDeployments = (argv, site) => Promise.all([
+    domains.getAvailableDomains(argv, site),
+    deployments.getAvailableDeployments(argv, site),
 ]);
 
 /**
@@ -207,29 +134,23 @@ const error = (err) => {
  * @param argv
  */
 const releaseLatest = (argv) => {
-    const spinner = ora('Authorising. Please wait...');
+    const spinner = ora();
     spinner.start();
 
     let domainsToRelease = [];
     let siteName = argv.siteName;
     let envName = 'prod';
-    let authInfo = null;
     let deployKey = null;
 
-    auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => {
-            authInfo = auth_params;
-
-            spinner.start('Retrieving environments. Please wait...');
-            return environments.getAvailableEnvironments(argv.siteName, authInfo);
-        })
+    spinner.start('Retrieving environments. Please wait...');
+    return environments.getAvailableEnvironments(argv, siteName)
         .then(envs => {
             spinner.stop();
 
             if (envs.environments.length < 1) return Promise.resolve('prod');
             if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
 
-            showAvailableEnvironments(envs);
+            environments.showAvailableEnvironments(envs);
             return askEnvironment()
                 .then(env => {
                     const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
@@ -243,7 +164,7 @@ const releaseLatest = (argv) => {
             envName = env;
 
             spinner.start('Retrieving domains and deployments. Please wait...');
-            return getDomainsAndDeployments(siteName, authInfo);
+            return getDomainsAndDeployments(argv, siteName);
         })
         .then(result => {
             spinner.stop();
@@ -261,7 +182,7 @@ const releaseLatest = (argv) => {
             spinner.text = 'Creating new release(s)...';
             spinner.start();
 
-            return Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, envName, authInfo)));
+            return Promise.all(domainsToRelease.map(d => releases.createRelease(argv, siteName, deployKey, d, envName)));
         })
         .then(() => {
             spinner.stop();
@@ -278,30 +199,23 @@ const releaseLatest = (argv) => {
  * @param argv
  */
 const release = (argv) => {
-    const spinner = ora('Authorising. Please wait...');
-    spinner.start();
+    const spinner = ora();
 
     let domainsToRelease = [];
     let siteName = argv.siteName;
     let envName = 'prod';
-    let authInfo = null;
     let deployKey = null;
     let listOfDeployments;
 
-    auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => {
-            authInfo = auth_params;
-
-            spinner.start('Retrieving environments. Please wait...');
-            return environments.getAvailableEnvironments(argv.siteName, authInfo);
-        })
+    spinner.start('Retrieving environments. Please wait...');
+    environments.getAvailableEnvironments(argv, siteName)
         .then(envs => {
             spinner.stop();
 
             if (envs.environments.length < 1) return Promise.resolve('prod');
             if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
 
-            showAvailableEnvironments(envs);
+            environments.showAvailableEnvironments(envs);
             return askEnvironment()
                 .then(env => {
                     const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
@@ -315,7 +229,7 @@ const release = (argv) => {
             envName = env;
 
             spinner.start('Retrieving domains and deployments. Please wait...');
-            return getDomainsAndDeployments(siteName, authInfo);
+            return getDomainsAndDeployments(argv, siteName);
         })
         .then(result => {
             spinner.stop();
@@ -365,7 +279,7 @@ const release = (argv) => {
                     spinner.start();
                 })
         })
-        .then(() => Promise.all(domainsToRelease.map(d => createNewRelease(siteName, deployKey, d, envName, authInfo))))
+        .then(() => Promise.all(domainsToRelease.map(d => releases.createRelease(argv, siteName, deployKey, d, envName))))
         .then(() => {
             spinner.stop();
             console.log(`

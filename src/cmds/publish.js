@@ -8,8 +8,9 @@ const fs = require('fs');
 const AWS = require('aws-sdk');
 const zip = require('deterministic-zip');
 const fsPromise = require('fs-promise');
-const auth = require('../auth');
+const auth = require('../lib/auth');
 const environments = require('../lib/environments');
+const sites = require('../lib/sites');
 const notice = require('../lib/notice');
 const config = require('../config.json');
 const assertPkg = require('../lib/package-json').assert;
@@ -49,32 +50,31 @@ const createZipfile = (temp_dir, source_dir, site_name, opts) => new Promise((re
         // Create zipfile from directory
         zip(localdir, zipfile, options, err => {
             if (err) return reject(err);
-            else return resolve(zipfile);
+
+            return resolve(zipfile);
         })
     });
 });
 
 /**
  * Create key for S3.
- * @param user_id
+ * @param userId
  * @param sha1
  * @param site_name
  */
-const createKey = (user_id, sha1, site_name) => (
-    `${user_id}/${site_name}-${sha1}.zip`
-);
+const createKey = (userId, sha1, site_name) => `${userId}/${site_name}-${sha1}.zip`;
 
 /**
  * Upload zip file to S3.
  * @param description
  * @param codeId
- * @param auth
+ * @param credentials
  * @param site_name
  * @param zipfile
  */
-const uploadZipfile = (description, codeId, auth, site_name, zipfile) => new Promise((resolve, reject) => {
+const uploadZipfile = (description, codeId, credentials, site_name, zipfile) => new Promise((resolve, reject) => {
     AWS.config = new AWS.Config({
-        credentials: auth.aws.credentials,
+        credentials: credentials.aws,
         signatureVersion: 'v4',
         region: 'eu-central-1'
     });
@@ -86,11 +86,10 @@ const uploadZipfile = (description, codeId, auth, site_name, zipfile) => new Pro
     reference = sha1(`${site_name}${Math.floor(new Date()/1000).toString()}`);
     fsPromise.readFile(zipfile)
         .then(data => {
-            const user_id = auth.auth0.profile.user_id;
             return {
                 Body: data,
                 Bucket: BUCKET_NAME,
-                Key: createKey(user_id, codeId, site_name),
+                Key: createKey(credentials.userId, codeId, site_name),
                 Metadata: {
                     description: description,
                     reference,
@@ -146,32 +145,11 @@ const askDescription = (descr) => new Promise((resolve, reject) => {
 });
 
 /**
- * Authorise the user.
- * @param siteName
- * @param authInfo
- */
-const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(new Error('Unauthorised access or invalid site.'));
-        else return resolve();
-    });
-});
-
-/**
  * Actually publish the site (upload to S3, let backend take it from there).
  * @param siteName
- * @param authParams
+ * @param credentials
  */
-const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
+const publishSite = (siteName, credentials) => new Promise((resolve, reject) => {
     const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
@@ -191,7 +169,7 @@ const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
         })
         // Create "meta" zip-file containing package.json and <siteName>.zip
         .then(() => createZipfile(TMP_DIR, '/', siteName, {cwd: tempDir}))
-        .then(zipfile => uploadZipfile(description, codeId, authParams, siteName, zipfile))
+        .then(zipfile => uploadZipfile(description, codeId, credentials, siteName, zipfile))
         .then(() => resolve())
         .catch(err => reject(err));
 });
@@ -199,15 +177,15 @@ const publishSite = (siteName, authParams) => new Promise((resolve, reject) => {
 /**
  * Retrieve deployment status using reference
  * @param siteName
- * @param authInfo
+ * @param jwtToken
  */
-const retrieveDeploymentStatus = (siteName, authInfo) => new Promise((resolve, reject) => {
+const retrieveDeploymentStatus = (siteName, jwtToken) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/deployments/${reference}`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
+            'Authorization': `Bearer ${jwtToken}`
         }
     };
     request(options, (err, response, body) => {
@@ -261,7 +239,8 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
  * @param argv
  */
 const publish = (argv) => {
-    let authInfo;
+    let extendedCredentials;
+    let jwtToken;
     let packageJson;
     let siteName;
     let listOfEnvironments;
@@ -269,8 +248,11 @@ const publish = (argv) => {
     // Disappearing progress messages
     const spinner = ora('Authorising user. Please wait...').start();
 
-    auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => authInfo = auth_params)
+    auth.getExtentedCredentials(argv.accessKey, argv.secretKey)
+        .then(creds => {
+            extendedCredentials = creds;
+            jwtToken = creds.jwtToken;
+        })
         .catch(err => {
             spinner.stop();
 
@@ -292,7 +274,7 @@ us using the email address shown above.
         .then(() => {
             spinner.stop();
 
-            return packageOptions(['siteName', 'buildProfile'], authInfo);
+            return packageOptions(argv, ['siteName', 'buildProfile']);
         })
         .then(pkg => {
             packageJson = pkg;
@@ -300,19 +282,19 @@ us using the email address shown above.
             siteName = packageJson.linc.siteName;
 
             spinner.start('Performing checks. Please wait...');
-            return authoriseSite(siteName, authInfo);
+            sites.authoriseSite(argv, siteName);
         })
-        .then(() => environments.getAvailableEnvironments(siteName, authInfo))
+        .then(() => environments.getAvailableEnvironments(argv, siteName))
         .then(envs => {
             spinner.stop();
 
             listOfEnvironments = envs.environments.map(x => x.name);
-            return publishSite(siteName, authInfo);
+            return publishSite(siteName, extendedCredentials);
         })
         .then(() => {
             spinner.start('Waiting for deploy to finish...');
 
-            return waitForDeployToFinish(listOfEnvironments, siteName, authInfo);
+            return waitForDeployToFinish(listOfEnvironments, siteName, jwtToken);
         })
         .then(envs => {
             spinner.succeed('Deployment finished');

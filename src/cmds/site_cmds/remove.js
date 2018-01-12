@@ -1,18 +1,18 @@
 'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
-const request = require('request');
-const auth = require('../../auth');
 const notice = require('../../lib/notice');
-const config = require('../../config.json');
 const assertPkg = require('../../lib/package-json').assert;
-
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const sites = require('../../lib/sites');
 
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
+/**
+ * Ask user for site name
+ * @param message
+ */
 const getSiteName = (message) => new Promise((resolve, reject) => {
     let schema = {
         properties: {
@@ -33,30 +33,18 @@ const getSiteName = (message) => new Promise((resolve, reject) => {
     })
 });
 
-const deleteSite = (siteName, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'DELETE',
-        url: LINC_API_SITES_ENDPOINT,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        },
-        body: `{"site_name":"${siteName}"}`
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
-        else return resolve(json);
-    });
-});
-
+/**
+ * Show error message
+ * @param err
+ */
 const error = (err) => {
     console.log(`\nOops! Something went wrong: ${err.message}`);
 };
 
+/**
+ * Remove site
+ * @param argv
+ */
 const remove = (argv) => {
     let siteName = null;
 
@@ -82,20 +70,11 @@ and it will no longer be accessible/available to you.
                 })
         })
         .then(() => {
-            spinner.start('Authorising. Please wait...');
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth_params => {
-            spinner.stop();
-
             spinner.start('Deleting site. Please wait...');
-            return deleteSite(siteName, auth_params);
+            return sites.deleteSite(argv, siteName);
         })
         .then(() => {
-            spinner.stop();
-            console.log(
-`Site successfully removed. You can no longer access this site.
-`)
+            spinner.succeed('Site deleted. It can no longer be accessed.');
         })
         .catch(err => {
             spinner.stop();

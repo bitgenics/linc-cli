@@ -1,13 +1,9 @@
 'use strict';
 const ora = require('ora');
-const auth = require('../../../auth');
-const config = require('../../../config.json');
+const webhooks = require('./webhooks');
 const prompt = require('prompt');
 const readPkg = require('read-pkg');
-const request = require('request');
 const usage = require('./usage');
-
-const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 prompt.colors = false;
 prompt.message = '';
@@ -37,59 +33,6 @@ const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
 });
 
 /**
- * Create webhook by calling appropriate API endpoint
- * @param jwtToken
- * @param siteName
- * @param body
- */
-const createWebhookInBackend = (jwtToken, siteName, body) => new Promise((resolve, reject) => {
-    const options = {
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/github`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    return request.post(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) {
-            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        }
-
-        return resolve(json);
-    });
-});
-
-/**
- * Delete webhook in backend
- * @param jwtToken
- * @param siteName
- */
-const deleteWebhookInBackend = (jwtToken, siteName) => new Promise((resolve, reject) => {
-    const options = {
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/github`,
-        headers: {
-            'Authorization': `Bearer ${jwtToken}`
-        },
-    };
-    return request.delete(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) {
-            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        }
-
-        return resolve(json);
-    });
-});
-
-/**
  * Create a new webhook
  * @param argv
  */
@@ -116,13 +59,8 @@ const createHook = argv => {
         .then(result => {
             body.repositoryUrl = result.repositoryUrl;
 
-            spinner.start('Authorising. Please wait...');
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth_params => {
             spinner.start('Creating webhook. Please wait...');
-            const jwtToken = auth_params.jwtToken;
-            return createWebhookInBackend(jwtToken, siteName, body);
+            return webhooks.createWebhook(argv, siteName, 'github', body);
         })
         .then(response => {
             spinner.stop();
@@ -151,13 +89,9 @@ const deleteHook = argv => {
             if (!siteName) {
                 throw new Error('No site name found in package.json.');
             }
-            spinner.start('Authorising. Please wait...');
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth_params => {
+
             spinner.start('Deleting webhook. Please wait...');
-            const jwtToken = auth_params.jwtToken;
-            return deleteWebhookInBackend(jwtToken, siteName);
+            return webhooks.deleteWebhook(argv, siteName, 'github');
         })
         .then(response => {
             spinner.stop();

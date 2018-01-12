@@ -7,25 +7,29 @@ const homedir = require('homedir');
 const LINC_DIR = path.resolve(homedir(), '.linc');
 const credentials = path.resolve(LINC_DIR, 'credentials');
 
+/**
+ * Get credentials
+ */
 const getCredentials = () => {
     try {
-        if( fs.existsSync(credentials) ) {
-            if((fs.statSync(credentials).mode & 0o777) === 0o600) {
+        if (fs.existsSync(credentials)) {
+            if ((fs.statSync(credentials).mode & 0o777) === 0o600) {
                 const json = JSON.parse(fs.readFileSync(credentials));
                 return json.User ? json.User : {}
-            } else {
-                console.log(`WARNING: permissions of credentials file ${credentials} has been tampered with.`);
             }
+
+            console.log(`WARNING: permissions of credentials file ${credentials} has been tampered with.`);
         }
         return {}
     } catch (e) {
-        console.log(`Error happened while parsing credentials file ${credentials}`);
-        console.log(e);
+        console.log(`Error happened while parsing credentials file ${credentials}\n${e}`);
     }
 };
 
+/**
+ * Log user in
+ */
 const login = () => new Promise((resolve, reject) => {
-
     fsp.exists(credentials)
         .then(x => {
             if (!x) {
@@ -49,6 +53,9 @@ const login = () => new Promise((resolve, reject) => {
         .catch(err => reject(err));
 });
 
+/**
+ * Remove credentials
+ */
 const rm = () => new Promise((resolve, reject) => {
     fsp.exists(credentials)
         .then((x) => {
@@ -61,6 +68,11 @@ const rm = () => new Promise((resolve, reject) => {
         .catch(() => resolve())
 });
 
+/**
+ * Save credentials
+ * @param accessKey
+ * @param secretKey
+ */
 const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
     const json = {
         User: {

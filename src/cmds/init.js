@@ -8,6 +8,7 @@ const figlet = require('figlet');
 const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
+const createDotLinc = require('../lib/createDotLinc');
 const lincProfiles = require('../lib/linc-profiles');
 const exec = require('child_process').exec;
 const assertPkg = require('../lib/package-json').assert;
@@ -257,6 +258,9 @@ const initialise = (argv) => {
         process.exit(255);
     }
 
+    // Create .linc directory
+    createDotLinc();
+
     let linc = {};
     let spinner = ora();
 
@@ -297,9 +301,11 @@ ${JSON.stringify({linc: linc}, null, 3)}
         .then(() => readPkg())
         .then(packageJson => {
             spinner.succeed('Updated package.json.');
+
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
+        .then(() => createDotLinc())
         .then(() => console.log('Done.'))
         .catch(err => error(err))
         .then(() => spinner.stop());

@@ -1,6 +1,5 @@
 'use strict';
 const ora = require('ora');
-const auth = require('../../auth');
 const domains = require('../../lib/domains');
 const notice = require('../../lib/notice');
 const assertPkg = require('../../lib/package-json').assert;
@@ -19,16 +18,18 @@ const list = (argv) => {
 
     notice();
 
+    const siteName = argv.siteName;
     const spinner = ora('Retrieving available domains...').start();
 
-    auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => domains.getAvailableDomains(argv.siteName, auth_params))
+    domains.getAvailableDomains(argv, siteName)
         .then(result => {
             spinner.stop();
+
             return domains.showAvailableDomains(result);
         })
         .catch(err => {
             spinner.stop();
+
             console.log(`Oops, something went wrong:\n${err}.`);
         });
 };

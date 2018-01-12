@@ -1,14 +1,10 @@
 'use strict';
 const ora = require('ora');
-const auth = require('../../auth');
+const webhooks = require('./webhooks');
 const prompt = require('prompt');
-const request = require('request');
 const notice = require('../../lib/notice');
-const config = require('../../config.json');
 const readPkg = require('read-pkg');
 const assertPkg = require('../../lib/package-json').assert;
-
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 prompt.colors = false;
 prompt.message = '';
@@ -77,34 +73,6 @@ const askAccessToken = () => new Promise((resolve, reject) => {
 });
 
 /**
- * Call API to create webhook
- */
-const createWebhookInBackend = (jwtToken, site_name, service, body) => new Promise((resolve, reject) => {
-    console.log('Please wait...');
-    if (body === undefined) {
-        body = service;
-        service = 'GitHub';
-    }
-    const options = {
-        method: 'POST',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/webhooks/${service}`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else return resolve(json);
-    });
-});
-
-/**
  * Show webhook URL for the user's benefit.
  * @param webhook_url
  */
@@ -146,14 +114,10 @@ const createWebhook = (argv) => {
             return askAccessToken();
         })
         .then(result => {
-            spinner.start('Authorising. Please wait...');
             body.access_token = result.access_token;
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth_params => {
+
             spinner.start('Creating webhook. Please wait...');
-            const jwtToken = auth_params.jwtToken;
-            return createWebhookInBackend(jwtToken, siteName, body);
+            return webhooks.createWebhook(argv, siteName, body);
         })
         .then(response => {
             spinner.stop();

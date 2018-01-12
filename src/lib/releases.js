@@ -1,22 +1,53 @@
 'use strict';
 const _ = require('underscore');
 const request = require('request');
+const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
 
 const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 /**
- * Get available releases
- * @param site_name
- * @param authInfo
+ * Create a new release in the back end
+ * @param siteName
+ * @param deployKey
+ * @param domainName
+ * @param envName
  */
-const getAvailableReleases = (site_name, authInfo) => new Promise((resolve, reject) => {
+const createRelease = (siteName, deployKey, domainName, envName) => (jwtToken) => new Promise((resolve, reject) => {
     const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/releases`,
+        method: 'POST',
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
+            'Authorization': `Bearer ${jwtToken}`
+        },
+        body: JSON.stringify({
+            domainName,
+            deployKey,
+            envName,
+        }),
+    };
+    request(options, (err, response, body) => {
+        if (err) return reject(err);
+
+        const json = JSON.parse(body);
+        if (json.error) return reject(json.error);
+
+        return resolve(json);
+    });
+});
+
+/**
+ * Get available releases
+ * @param siteName
+ */
+const getAvailableReleases = (siteName) => (jwtToken) => new Promise((resolve, reject) => {
+    const options = {
+        method: 'GET',
+        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}`
         }
     };
     request(options, (err, response, body) => {
@@ -35,7 +66,7 @@ const getAvailableReleases = (site_name, authInfo) => new Promise((resolve, reje
  * Show available releases
  * @param results
  */
-const showAvailableReleases = (results) => {
+module.exports.showAvailableReleases = (results) => {
     const releases = _.sortBy(results.releases, x => x.url);
     const site_name = results.site_name;
 
@@ -51,7 +82,19 @@ const showAvailableReleases = (results) => {
     console.log('');
 };
 
-module.exports = {
-    getAvailableReleases,
-    showAvailableReleases,
-};
+/**
+ * Create a new release
+ * @param argv
+ * @param s - siteName
+ * @param d - deployKey
+ * @param n - domainName
+ * @param e - envName
+ */
+module.exports.createRelease = (argv, s, d, n, e) => authorisify(argv, createRelease(s, d, n, e));
+
+/**
+ * Get available releases
+ * @param argv
+ * @param siteName
+ */
+module.exports.getAvailableReleases = (argv, siteName) => authorisify(argv, getAvailableReleases(siteName));

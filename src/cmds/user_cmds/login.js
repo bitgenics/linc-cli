@@ -2,13 +2,16 @@
 const colors = require('colors/safe');
 const prompt = require('prompt');
 const cred = require('../../cred');
-const auth = require('../../auth');
+const auth = require('../../lib/auth');
 const notice = require('../../lib/notice');
 
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
+/**
+ * Ask for user credentials
+ */
 const credentialsFromPrompt = () => new Promise((resolve, reject) => {
     const schema = {
         properties: {
@@ -24,10 +27,8 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
     };
 
     prompt.message = colors.grey('(linc) ');
-    prompt.delimiter = '';
 
     prompt.start();
-
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
@@ -44,6 +45,9 @@ You have successfully logged in.
 `);
 };
 
+/**
+ * Log in user
+ */
 const login = () => new Promise((resolve, reject) => {
     notice();
 

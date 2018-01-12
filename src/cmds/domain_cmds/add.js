@@ -2,14 +2,10 @@
 const ora = require('ora');
 const prompt = require('prompt');
 const readPkg = require('read-pkg');
-const request = require('request');
-const auth = require('../../auth');
+const domains = require('../../lib/domains');
 const environments = require('../../lib/environments');
 const notice = require('../../lib/notice');
-const config = require('../../config.json');
 const assertPkg = require('../../lib/package-json').assert;
-
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
 
 prompt.colors = false;
 prompt.message = '';
@@ -33,39 +29,9 @@ const askDomainName = () => new Promise((resolve, reject) => {
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     })
-});
-
-/**
- * Add domain name
- * @param domainName
- * @param envName
- * @param site_name
- * @param authInfo
- * @returns {Promise<any>}
- */
-const addDomainName = (domainName, envName, site_name, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'POST',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/domains`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        },
-        body: JSON.stringify({
-            domainName,
-            envName
-        }),
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
-        else if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
-        else return resolve(json);
-    });
 });
 
 /**
@@ -127,9 +93,9 @@ exports.handler = (argv) => {
 
     notice();
 
-    let authInfo;
+    const spinner = ora();
+    const siteName = argv.siteName;
     let envName;
-    const spinner = ora('Authorising. Please wait...');
     readPkg()
         .then(pkg => {
             const linc = pkg.linc;
@@ -137,13 +103,8 @@ exports.handler = (argv) => {
                 return Promise.reject(new Error('Initalisation incomplete. Did you forget to run `linc site create`?'));
             }
 
-            spinner.start();
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth => {
-            authInfo = auth;
             spinner.start('Retrieving environments. Please wait...');
-            return environments.getAvailableEnvironments(argv.siteName, authInfo);
+            return environments.getAvailableEnvironments(argv, siteName);
         })
         .then(envs => {
             spinner.stop();
@@ -167,7 +128,7 @@ exports.handler = (argv) => {
         })
         .then(y => {
             spinner.start('Adding domain. Please wait...');
-            return addDomainName(y.domain_name, envName, argv.siteName, authInfo);
+            return domains.addDomain(y.domain_name, envName, siteName);
         })
         .then(() => {
             spinner.stop();

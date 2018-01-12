@@ -4,7 +4,7 @@ const prompt = require('prompt');
 const request = require('request');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
-const auth = require('../auth');
+const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
 const domainify = require('./domainify');
 const lincProfiles = require('./linc-profiles');
@@ -79,9 +79,8 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
 /**
  * Create a new site in the backend.
  * @param siteName
- * @param authInfo
  */
-const createNewSite = (siteName, authInfo) => new Promise((resolve, reject) => {
+const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) => {
     const body = {
         name: siteName
     };
@@ -90,7 +89,7 @@ const createNewSite = (siteName, authInfo) => new Promise((resolve, reject) => {
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
+            'Authorization': `Bearer ${jwtToken}`
         },
         body: JSON.stringify(body)
     };
@@ -107,10 +106,10 @@ const createNewSite = (siteName, authInfo) => new Promise((resolve, reject) => {
 
 /**
  * Handler name option
+ * @param argv
  * @param pkg
- * @param authInfo
  */
-const nameHandler = (pkg, authInfo) => new Promise((resolve, reject) => {
+const nameHandler = (argv, pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     getName(domainify(pkg.name))
@@ -123,7 +122,7 @@ const nameHandler = (pkg, authInfo) => new Promise((resolve, reject) => {
             // Site name already existing is a fatal error
             if (exists) process.exit(255);
 
-            return createNewSite(pkg.linc.siteName, authInfo);
+            return authorisify(argv, createNewSite(pkg.linc.siteName));
         })
         .then(() => resolve(pkg))
         .catch(reject);
@@ -163,9 +162,10 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
 
 /**
  * Ask which profile to use
+ * @param argv
  * @param pkg
  */
-const profileHandler = pkg => new Promise((resolve, reject) => {
+const profileHandler = (argv, pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     showProfiles();
@@ -208,11 +208,11 @@ const availableOptions = {
 
 /**
  * Core function that handles the options
+ * @param argv
  * @param opts
  * @param pkg
- * @param authInfo
  */
-const handleOptions = (opts, pkg, authInfo) => new Promise((resolve, reject) => {
+const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
     const options = opts;
 
     const handleOption = () => {
@@ -224,7 +224,7 @@ const handleOptions = (opts, pkg, authInfo) => new Promise((resolve, reject) => 
         const handler = availableOptions[option];
         if (!handler) return reject(new Error('Unknown option provided!'));
 
-        return handler(pkg, authInfo)
+        return handler(argv, pkg)
             .then(handleOption)
             .catch(reject);
     };
@@ -233,17 +233,17 @@ const handleOptions = (opts, pkg, authInfo) => new Promise((resolve, reject) => 
 });
 
 /**
- *
+ * Option handler
+ * @param argv
  * @param opts
- * @param authInfo
  */
-const optionHandler = (opts, authInfo) => new Promise((resolve, reject) => {
+const optionHandler = (argv, opts) => new Promise((resolve, reject) => {
     let packageJson;
     readPkg()
         .then(pkg => {
             packageJson = pkg;
             packageJson.linc = packageJson.linc || {};
-            return handleOptions(opts, packageJson, authInfo);
+            return handleOptions(argv, opts, packageJson);
         })
         .then(() => writePkg(packageJson))
         .then(() => resolve(packageJson))
