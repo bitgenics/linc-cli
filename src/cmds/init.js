@@ -4,6 +4,7 @@ const ora = require('ora');
 const path = require('path');
 const prompt = require('prompt');
 const figlet = require('figlet');
+const isThisOk = require('../lib/isThisOk');
 const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
@@ -42,27 +43,6 @@ const askProfile = () => new Promise((resolve, reject) => {
                 message: 'Please enter a valid option',
                 type: 'string',
                 default: 'A',
-            },
-        },
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-
-        return resolve(result);
-    });
-});
-
-/**
- * Are the settings Ok?
- */
-const askIsThisOk = () => new Promise((resolve, reject) => {
-    const schema = {
-        properties: {
-            ok: {
-                description: 'Is this OK?',
-                default: 'Y',
-                type: 'string',
             },
         },
     };
@@ -288,7 +268,7 @@ const initialise = (argv) => {
 The following section will be added to package.json:
 ${JSON.stringify({ linc }, null, 3)}
 `);
-            return askIsThisOk();
+            return isThisOk();
         })
         .then(result => {
             if (result.ok.charAt(0).toLowerCase() !== 'y') {

@@ -1,6 +1,7 @@
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
+const isThisOk = require('../../lib/isThisOk');
 const notice = require('../../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
@@ -172,27 +173,6 @@ Please enter domain names separated by a comma:`);
 });
 
 /**
- * User confirmation
- */
-const askIsThisOk = () => new Promise((resolve, reject) => {
-    const schema = {
-        properties: {
-            ok: {
-                description: 'Is this OK?',
-                default: 'Y',
-                type: 'string',
-            },
-        },
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-
-        return resolve(result);
-    });
-});
-
-/**
  * Check site name availability
  * @param siteName
  */
@@ -268,7 +248,7 @@ const initSite = (packageJson) => new Promise((resolve, reject) => {
 You provided the following information:
 ${JSON.stringify(linc, null, 3)}
 `);
-            return askIsThisOk();
+            return isThisOk();
         })
         .then(result => {
             if (result.ok.toLowerCase().substr(0, 1) !== 'y') {
