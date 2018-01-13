@@ -3,6 +3,8 @@ const path = require('path');
 const auth = require('./auth');
 const createDotLinc = require('../lib/createDotLinc');
 
+let JwtToken = null;
+
 /**
  * Convenience function to authorise
  * @param argv
@@ -13,6 +15,8 @@ const authorise = (argv) => auth(argv.accessKey, argv.secretKey);
  * Get jwt token from file in .linc directory
  */
 const getJwtToken = () => new Promise((resolve, reject) => {
+    if (JwtToken) return resolve(JwtToken);
+
     try {
         const tokenFile = path.resolve(process.cwd(), '.linc', 'token');
         const token = fs.readFileSync(tokenFile);
@@ -27,6 +31,8 @@ const getJwtToken = () => new Promise((resolve, reject) => {
  * @param jwtToken
  */
 const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
+    JwtToken = jwtToken;
+
     // Create .linc directory if not already there
     createDotLinc();
 
