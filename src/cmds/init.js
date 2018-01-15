@@ -4,7 +4,6 @@ const ora = require('ora');
 const path = require('path');
 const prompt = require('prompt');
 const figlet = require('figlet');
-const isThisOk = require('../lib/isThisOk');
 const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
@@ -262,19 +261,6 @@ const initialise = (argv) => {
                     return handleInitQuestions(linc, profile);
                 })
                 .then(() => handleExampleConfigFiles(linc, profile));
-        })
-        .then(() => {
-            console.log(`
-The following section will be added to package.json:
-${JSON.stringify({ linc }, null, 3)}
-`);
-            return isThisOk();
-        })
-        .then(result => {
-            if (result.ok.charAt(0).toLowerCase() !== 'y') {
-                console.log('Aborted by user.');
-                process.exit(255);
-            }
         })
         .then(() => readPkg())
         .then(packageJson => {
