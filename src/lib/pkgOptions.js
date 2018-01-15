@@ -1,15 +1,16 @@
+/* eslint-disable no-param-reassign */
 const _ = require('underscore');
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
-const auth = require('../auth');
+const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
 const domainify = require('./domainify');
 const lincProfiles = require('./linc-profiles');
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 prompt.colors = false;
 prompt.message = '';
@@ -20,7 +21,7 @@ prompt.delimiter = '';
  * @param dflt
  */
 const getName = (dflt) => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             name: {
                 // Pattern AWS uses for host names.
@@ -28,16 +29,16 @@ const getName = (dflt) => new Promise((resolve, reject) => {
                 default: dflt,
                 description: 'Name of site to create:',
                 message: 'Only a-z, 0-9 and - are allowed characters. Cannot start/end with -.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.name);
-    })
+    });
 });
 
 /**
@@ -52,8 +53,8 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
         headers: {
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+        },
     };
     request(options, (err, response, body) => {
         if (err) {
@@ -79,27 +80,28 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
 /**
  * Create a new site in the backend.
  * @param siteName
- * @param authInfo
  */
-const createNewSite = (siteName, authInfo) => new Promise((resolve, reject) => {
+const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) => {
     const body = {
-        name: siteName
+        name: siteName,
     };
     const options = {
         method: 'POST',
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
+            Authorization: `Bearer ${jwtToken}`,
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
     };
-    request(options, (err, response, body) => {
+    request(options, (err, response, _body) => {
         if (err) return reject(err);
 
-        const json = JSON.parse(body);
+        const json = JSON.parse(_body);
         if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         return resolve(json);
     });
@@ -107,10 +109,10 @@ const createNewSite = (siteName, authInfo) => new Promise((resolve, reject) => {
 
 /**
  * Handler name option
+ * @param argv
  * @param pkg
- * @param authInfo
  */
-const nameHandler = (pkg, authInfo) => new Promise((resolve, reject) => {
+const nameHandler = (argv, pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     getName(domainify(pkg.name))
@@ -123,7 +125,7 @@ const nameHandler = (pkg, authInfo) => new Promise((resolve, reject) => {
             // Site name already existing is a fatal error
             if (exists) process.exit(255);
 
-            return createNewSite(pkg.linc.siteName, authInfo);
+            return authorisify(argv, createNewSite(pkg.linc.siteName));
         })
         .then(() => resolve(pkg))
         .catch(reject);
@@ -144,42 +146,43 @@ Please choose a profile:\n`);
 const askOtherProfile = () => new Promise((resolve, reject) => {
     console.log();
 
-    let schema = {
+    const schema = {
         properties: {
             profile: {
                 description: '\nProfile name to use for this site:',
                 message: 'Please enter a valid option',
-                type: 'string'
-            }
-        }
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.profile);
-    })
+    });
 });
 
 /**
  * Ask which profile to use
+ * @param argv
  * @param pkg
  */
-const profileHandler = pkg => new Promise((resolve, reject) => {
+const profileHandler = (argv, pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     showProfiles();
 
-    let schema = {
+    const schema = {
         properties: {
             profile: {
                 pattern: /^[A-Za-z]$/,
                 description: 'Profile to use for this site:',
                 message: 'Please enter a valid option',
                 type: 'string',
-                default: 'A'
-            }
-        }
+                default: 'A',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
@@ -192,27 +195,27 @@ const profileHandler = pkg => new Promise((resolve, reject) => {
             return resolve(pkg);
         }
         return askOtherProfile()
-            .then(profile => {
-                pkg.linc.buildProflie = profile;
+            .then(p => {
+                pkg.linc.buildProfile = p;
             });
-    })
+    });
 });
 
 /**
  * Options we have and their handlers
  */
 const availableOptions = {
-    'siteName': nameHandler,
-    'buildProfile': profileHandler,
+    siteName: nameHandler,
+    buildProfile: profileHandler,
 };
 
 /**
  * Core function that handles the options
+ * @param argv
  * @param opts
  * @param pkg
- * @param authInfo
  */
-const handleOptions = (opts, pkg, authInfo) => new Promise((resolve, reject) => {
+const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
     const options = opts;
 
     const handleOption = () => {
@@ -224,7 +227,7 @@ const handleOptions = (opts, pkg, authInfo) => new Promise((resolve, reject) => 
         const handler = availableOptions[option];
         if (!handler) return reject(new Error('Unknown option provided!'));
 
-        return handler(pkg, authInfo)
+        return handler(argv, pkg)
             .then(handleOption)
             .catch(reject);
     };
@@ -233,17 +236,17 @@ const handleOptions = (opts, pkg, authInfo) => new Promise((resolve, reject) => 
 });
 
 /**
- *
+ * Option handler
+ * @param argv
  * @param opts
- * @param authInfo
  */
-const optionHandler = (opts, authInfo) => new Promise((resolve, reject) => {
+const optionHandler = (argv, opts) => new Promise((resolve, reject) => {
     let packageJson;
     readPkg()
         .then(pkg => {
             packageJson = pkg;
             packageJson.linc = packageJson.linc || {};
-            return handleOptions(opts, packageJson, authInfo);
+            return handleOptions(argv, opts, packageJson);
         })
         .then(() => writePkg(packageJson))
         .then(() => resolve(packageJson))

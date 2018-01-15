@@ -1,13 +1,8 @@
-'use strict';
 const ora = require('ora');
-const auth = require('../../../auth');
-const config = require('../../../config.json');
+const webhooks = require('./webhooks');
 const prompt = require('prompt');
 const readPkg = require('read-pkg');
-const request = require('request');
 const usage = require('./usage');
-
-const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 prompt.colors = false;
 prompt.message = '';
@@ -17,75 +12,22 @@ prompt.delimiter = '';
  * Ask for a username
  */
 const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             repositoryUrl: {
-                pattern: /^[^\/@]+(?::\/\/|@)(?:github.com)[\/:]([^\/]+)\/([^.]+)(\.git)?$/,
+                pattern: /^[^/@]+(?::\/\/|@)(?:github.com)[/:]([^/]+)\/([^.]+)(\.git)?$/,
                 default: suggestion,
                 description: 'Please enter your GitHub repository URL:',
                 message: 'Please enter a valid GitHub URL.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result);
-    })
-});
-
-/**
- * Create webhook by calling appropriate API endpoint
- * @param jwtToken
- * @param siteName
- * @param body
- */
-const createWebhookInBackend = (jwtToken, siteName, body) => new Promise((resolve, reject) => {
-    const options = {
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/github`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    return request.post(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) {
-            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        }
-
-        return resolve(json);
-    });
-});
-
-/**
- * Delete webhook in backend
- * @param jwtToken
- * @param siteName
- */
-const deleteWebhookInBackend = (jwtToken, siteName) => new Promise((resolve, reject) => {
-    const options = {
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/hooks/github`,
-        headers: {
-            'Authorization': `Bearer ${jwtToken}`
-        },
-    };
-    return request.delete(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        if (response.statusCode !== 200) {
-            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        }
-
-        return resolve(json);
     });
 });
 
@@ -96,13 +38,14 @@ const deleteWebhookInBackend = (jwtToken, siteName) => new Promise((resolve, rej
 const createHook = argv => {
     console.log(usage);
 
-    let spinner = ora();
+    const spinner = ora();
     let siteName;
     const body = {};
     readPkg()
         .then(pkg => {
             siteName = pkg.linc.siteName;
             if (!siteName) {
+                // eslint-disable-next-line max-len
                 throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
             }
 
@@ -116,13 +59,8 @@ const createHook = argv => {
         .then(result => {
             body.repositoryUrl = result.repositoryUrl;
 
-            spinner.start('Authorising. Please wait...');
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth_params => {
             spinner.start('Creating webhook. Please wait...');
-            const jwtToken = auth_params.jwtToken;
-            return createWebhookInBackend(jwtToken, siteName, body);
+            return webhooks.createWebhook(argv, siteName, 'github', body);
         })
         .then(response => {
             spinner.stop();
@@ -143,7 +81,7 @@ const createHook = argv => {
  * @param argv
  */
 const deleteHook = argv => {
-    let spinner = ora();
+    const spinner = ora();
     let siteName;
     readPkg()
         .then(pkg => {
@@ -151,13 +89,9 @@ const deleteHook = argv => {
             if (!siteName) {
                 throw new Error('No site name found in package.json.');
             }
-            spinner.start('Authorising. Please wait...');
-            return auth(argv.accessKey, argv.secretKey);
-        })
-        .then(auth_params => {
+
             spinner.start('Deleting webhook. Please wait...');
-            const jwtToken = auth_params.jwtToken;
-            return deleteWebhookInBackend(jwtToken, siteName);
+            return webhooks.deleteWebhook(argv, siteName, 'github');
         })
         .then(response => {
             spinner.stop();
@@ -177,6 +111,7 @@ const deleteHook = argv => {
  * Entry point for this module
  * @param argv
  */
+// eslint-disable-next-line consistent-return
 module.exports.handler = argv => {
     if (!argv.command) {
         console.log('You failed to provide a command.');

@@ -1,43 +1,12 @@
-'use strict';
-const assertPkg = require('../../lib/package-json').assert;
-const auth = require('../../auth');
-const config = require('../../config.json');
-const notice = require('../../lib/notice');
 const ora = require('ora');
 const prompt = require('prompt');
-const request = require('request');
-
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const assertPkg = require('../../lib/package-json').assert;
+const notice = require('../../lib/notice');
+const sites = require('../../lib/sites');
 
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
-
-/**
- * Invalidate cache in backend
- * @param site_name
- * @param pattern
- * @param authInfo
- */
-const invalidateCache = (site_name, pattern, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'POST',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/invalidations`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        },
-        body: JSON.stringify({ pattern })
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
-
-        return resolve(json);
-    });
-});
 
 /**
  * Show error
@@ -58,7 +27,7 @@ const invalidate = (argv) => {
         process.exit(255);
     }
 
-    let siteName = argv.siteName;
+    const siteName = argv.siteName;
 
     let pattern = '/*';
     if (argv.pattern) {
@@ -66,11 +35,9 @@ const invalidate = (argv) => {
     }
 
     const spinner = ora('Invalidating cache...').start();
-    auth(argv.accessKey, argv.secretKey)
-        .then(authInfo => invalidateCache(siteName, pattern, authInfo))
+    sites.invalidateCache(argv, siteName, pattern)
         .then(() => {
-            spinner.stop();
-            console.log('Done.');
+            spinner.succeed('Cache invalidated.');
         })
         .catch(err => {
             spinner.stop();

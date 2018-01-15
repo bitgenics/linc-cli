@@ -1,35 +1,51 @@
-'use strict';
+/* eslint-disable indent */
 const fs = require('fs');
 
-const clientTemplate = () =>
-`import reducer from './reducers';
+/**
+ * Client template
+ */
+const clientTemplate = () => `import reducer from './reducers';
 import routes from './routes';
 import thunk from 'redux-thunk'
 
 //import 'bootstrap/dist/css/bootstrap.css';
 
 const config = {
-	redux: {
-		reducer: reducer,
-		middleware: [ thunk ]
-	},
-	router: {
-		routes: routes	
-	}
+    redux: {
+        reducer: reducer,
+        middleware: [ thunk ]
+    },
+    router: {
+        routes: routes
+    }
 };
 `;
 
-const writeClientTemplate = (path) => new Promise((resolve, reject) => {
-    return fs.writeFile(`${path}/linc.config.js`, clientTemplate(), { encoding: 'utf-8' }, err => {
-        if (err) return reject(err);
-        else return resolve();
-    });
-});
+/**
+ * Write client template
+ * @param path
+ */
+// eslint-disable-next-line max-len
+const writeClientTemplate = (path) => new Promise((resolve, reject) => fs.writeFile(`${path}/linc.config.js`, clientTemplate(), { encoding: 'utf-8' }, err => {
+    if (err) return reject(err);
 
+    return resolve();
+}));
+
+/**
+ * Write server template
+ * @param path
+ * @returns {Promise<any>}
+ */
+// eslint-disable-next-line no-unused-vars,arrow-body-style
 const writeServerTemplate = (path) => new Promise((resolve, reject) => {
     return resolve();
 });
 
-const createFiles = (path) => Promise.all([ writeClientTemplate(path), writeServerTemplate(path) ]);
+/**
+ * Create files
+ * @param path
+ */
+const createFiles = (path) => Promise.all([writeClientTemplate(path), writeServerTemplate(path)]);
 
 module.exports = createFiles;

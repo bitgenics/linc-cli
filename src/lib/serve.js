@@ -1,46 +1,53 @@
-'use strict';
+/* eslint-disable global-require */
+// eslint-disable global-require
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const Libhoney = require('libhoney').default;
 const openBrowser = require('react-dev-utils/openBrowser');
-const assertPkg = require('../lib/package-json').assert;
 const vm = require('linc-vm');
 
 const SERVE_URL = 'http://localhost:3000';
 
+/**
+ * Get options
+ */
 const getOptions = () => {
     const settingsFile = path.join(process.cwd(), 'site-settings.json');
     try {
-        const settings = fs.readFileSync(settingsFile, {encoding: 'utf-8'});
-        const jsonObj = JSON.parse(settings);
-        return jsonObj;
+        const settings = fs.readFileSync(settingsFile, { encoding: 'utf-8' });
+        return JSON.parse(settings);
     } catch (e) {
         return {};
     }
 };
 
-function createRenderer(renderer_path, settings) {
-    if (!renderer_path) {
-        throw new TypeError('renderer_path required')
+/**
+ * Create renderer
+ * @param rendererPath
+ * @param settings
+ */
+function createRenderer(rendererPath, settings) {
+    if (!rendererPath) {
+        throw new TypeError('rendererPath required');
     }
 
-    if (typeof renderer_path !== 'string') {
-        throw new TypeError('renderer_path must be a string')
+    if (typeof rendererPath !== 'string') {
+        throw new TypeError('rendererPath must be a string');
     }
 
-    const src = fs.readFileSync(renderer_path);
+    const src = fs.readFileSync(rendererPath);
     const renderer = vm.createReuseableRenderer(src, settings);
 
-    return function(req, res, next) {
+    return (req, res) => {
         if (renderer.doGeoLookup && renderer.doGeoLookup(req)) {
             req.userInfo = {
                 ip: '127.0.0.1',
-                msg: 'This will contain actual user location information in production'
+                msg: 'This will contain actual user location information in production',
             };
         }
         renderer.renderGet(req, res, settings);
-    }
+    };
 }
 
 /**
@@ -54,14 +61,14 @@ module.exports = () => {
     const hny = new Libhoney({
         writeKey: process.env.HONEYCOMB_WRITE_KEY,
         dataset: process.env.HONEYCOMB_DATASET || 'linc-local-serve',
-        disabled: !process.env.HONEYCOMB_WRITE_KEY
+        disabled: !process.env.HONEYCOMB_WRITE_KEY,
     });
     hny.add({
         node_version: process.version,
         os_cpus_amount: os.cpus().length,
         os_cpus_model: os.cpus()[0].model,
         os_cpus_speed: os.cpus()[0].speed,
-        os_hostname: os.hostname()
+        os_hostname: os.hostname(),
     });
     hny.addDynamicField('os_freemem', os.freemem);
     hny.addDynamicField('os_loadavg', os.loadavg);
@@ -77,9 +84,9 @@ module.exports = () => {
     app.use(EventCollector.express({}, (eventcollector) => {
         const event = eventcollector.getEvent();
         console.log(JSON.stringify(event, null, 2));
-        const hny_event = hny.newEvent().add(event );
-        hny_event.timestamp = event.time_date;
-        hny_event.send();
+        const hnyEvent = hny.newEvent().add(event);
+        hnyEvent.timestamp = event.time_date;
+        hnyEvent.send();
     }));
     app.use('/', createRenderer(renderer, options));
 

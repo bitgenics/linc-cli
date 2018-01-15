@@ -1,4 +1,3 @@
-'use strict';
 const prompt = require('prompt');
 const notice = require('../../lib/notice');
 const assertPkg = require('../../lib/package-json').assert;
@@ -11,6 +10,7 @@ prompt.delimiter = '';
 
 exports.command = 'hook <name> [command]';
 exports.desc = 'Handle webhook for your VCS';
+// eslint-disable-next-line consistent-return
 exports.handler = (argv) => {
     if (!argv.siteName) {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');

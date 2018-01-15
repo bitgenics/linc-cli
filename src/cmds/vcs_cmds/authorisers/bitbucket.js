@@ -1,56 +1,27 @@
-'use strict';
+/* eslint-disable max-len */
 const ora = require('ora');
 const prompt = require('prompt');
-const request = require('request');
-const auth = require('../../../auth');
-const config = require('../../../config.json');
+const oauth = require('../../../lib/oauth');
 const openurl = require('opn');
-
-const LINC_API_SITES_ENDPOINT = `${config.Api.OAuthEndpoint}/authorise_uri`;
-
-/**
- * Get URL to authorise with Bitbucket
- * @param site_name
- * @param authInfo
- */
-const getAuthoriseUri = (site_name, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${site_name}/Bitbucket`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
-        if (!json.authorise_uri) return reject('No authorisation_uri in response.');
-
-        return resolve(json);
-    });
-});
 
 /**
  * Ask whether user is sure
  */
 const areYouSure = () => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             ok: {
-                description: "You are already authorised. Authorise again?",
+                description: 'You are already authorised. Authorise again?',
                 default: 'Y',
-                type: 'string'
-            }
-        }
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
+
+        return resolve(result);
     });
 });
 
@@ -61,8 +32,8 @@ prompt.delimiter = '';
 module.exports.handler = (argv) => {
     const spinner = ora('Authorising. Please wait...').start();
 
-    auth(argv.accessKey, argv.secretKey)
-        .then(authParams => getAuthoriseUri(argv.siteName, authParams))
+    const siteName = argv.siteName;
+    oauth.getAuthoriseUrl(argv, siteName, 'Bitbucket')
         .then(response => {
             spinner.stop();
             if (!response.already_authorised) return response.authorise_uri;
@@ -75,7 +46,7 @@ module.exports.handler = (argv) => {
                     }
 
                     return response.authorise_uri;
-                })
+                });
         })
         .then(uri => {
             console.log(`The following URL will open in your browser shortly:

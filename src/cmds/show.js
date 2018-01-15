@@ -1,16 +1,22 @@
-'use strict';
 const ora = require('ora');
 const assertPkg = require('../lib/package-json').assert;
-const auth = require('../auth');
 const domains = require('../lib/domains');
 const notice = require('../lib/notice');
 const releases = require('../lib/releases');
 
+/**
+ * Show error
+ * @param err
+ */
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err.message);
 };
 
+/**
+ * Show site information
+ * @param argv
+ */
 const show = (argv) => {
     if (!argv.siteName) {
         console.log('This project does not have a site name. Please create a site first.');
@@ -19,21 +25,14 @@ const show = (argv) => {
 
     console.log(`The current site is: '${argv.siteName}'\n`);
 
-    const spinner = ora('Authorising. Please wait...').start();
+    const siteName = argv.siteName;
+    const spinner = ora();
 
-    let authParams = null;
-    auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => {
-            authParams = auth_params;
-            spinner.stop();
-
-            spinner.text = 'Retrieving data. Please wait...';
-            spinner.start();
-            return Promise.all([
-                domains.getAvailableDomains(argv.siteName, authParams),
-                releases.getAvailableReleases(argv.siteName, authParams),
-            ]);
-        })
+    spinner.start('Retrieving data. Please wait...');
+    return Promise.all([
+        domains.getAvailableDomains(argv, siteName),
+        releases.getAvailableReleases(argv, siteName),
+    ])
         .then(result => {
             spinner.stop();
             domains.showAvailableDomains(result[0]);

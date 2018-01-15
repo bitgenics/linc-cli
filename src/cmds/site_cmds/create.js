@@ -1,25 +1,29 @@
-'use strict';
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
-const auth = require('../../auth');
+const isThisOk = require('../../lib/isThisOk');
 const notice = require('../../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const config = require('../../config.json');
 const domainify = require('../../lib/domainify');
+const sites = require('../../lib/sites');
 const viewerProtocols = require('../../lib/viewer-protocols');
 const createErrorTemplates = require('../../lib/error-templates');
 const assertPkg = require('../../lib/package-json').assert;
 
-const LINC_API_SITES_ENDPOINT = config.Api.LincBaseEndpoint + '/sites';
+const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
+/**
+ * Ask user for site name
+ * @param name
+ */
 const askSiteName = (name) => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             site_name: {
                 // Pattern AWS uses for host names.
@@ -27,37 +31,46 @@ const askSiteName = (name) => new Promise((resolve, reject) => {
                 default: name,
                 description: 'Name of site to create:',
                 message: 'Only a-z, 0-9 and - are allowed characters. Cannot start/end with -.',
-                required: true
-            }
-        }
+                required: true,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
-    })
+
+        return resolve(result);
+    });
 });
 
+/**
+ * Ask user for description
+ * @param descr
+ */
 const askDescription = (descr) => new Promise((resolve, reject) => {
     console.log(`
 Please provide a description for your site.`);
 
-    let schema = {
+    const schema = {
         properties: {
             description: {
                 description: 'Description:',
                 default: descr,
-                required: false
-            }
-        }
+                required: false,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
-    })
+
+        return resolve(result);
+    });
 });
 
+/**
+ * Ask for error pages directory
+ */
 const askErrorPagesDir = () => new Promise((resolve, reject) => {
     console.log(`
 Please provide a directory containing custom error pages (HTML).
@@ -65,56 +78,69 @@ If such a directory doesn't yet exist, we will create one for you
 and populate it with example error page templates. The default 
 directory for custom error pages is 'errors'.`);
 
-    let schema = {
+    const schema = {
         properties: {
             error_dir: {
                 description: 'Error pages directory:',
                 required: true,
                 type: 'string',
-                default: 'errors'
-            }
-        }
+                default: 'errors',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
-    })
+
+        return resolve(result);
+    });
 });
 
+/**
+ * Ask user for viewer protocol
+ */
 const askViewerProtocol = () => new Promise((resolve, reject) => {
     console.log(`
 Please choose the viewer protocol to use:
-     A) ${viewerProtocols['A'].name} (default)
-     B) ${viewerProtocols['B'].name}
-     C) ${viewerProtocols['C'].name}`);
+     A) ${viewerProtocols.A.name} (default)
+     B) ${viewerProtocols.B.name}
+     C) ${viewerProtocols.C.name}`);
 
-    let schema = {
+    const schema = {
         properties: {
             protocol: {
-                pattern: /^(?:A|B|C|a|b|c)?$/,
+                pattern: /^[A-Ca-c]$/,
                 description: 'Protocol to use:',
                 message: 'Please enter a valid option',
                 type: 'string',
-                default: 'A'
-            }
-        }
+                default: 'A',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
-        else return resolve(result);
-    })
+
+        return resolve(result);
+    });
 });
 
+/**
+ * Validate domain name
+ * @param x
+ * @returns {boolean}
+ */
 const validateDomainName = (x) => {
     const match = /^(\*\.)?(((?!-)[a-z0-9-]{0,62}[a-z0-9])\.)+((?!-)[a-z0-9-]{1,62}[a-z0-9])$/.test(x);
-    if (! match) {
+    if (!match) {
         console.log(`ERROR: '${x}' is not a valid domain name.`);
     }
     return match;
 };
 
+/**
+ * Ask for domain names
+ */
 const askDomainNames = () => new Promise((resolve, reject) => {
     console.log(`
 If you want, you can already add domain names for your site.
@@ -122,13 +148,14 @@ However, if you don't want to do that just yet, or if you
 don't know which domain names you're going to use, you can
 also add them later using the command 'linc domain add'.
 Please enter domain names separated by a comma:`);
-    let schema = {
+
+    const schema = {
         properties: {
             domains: {
-                description: "Domains to add:",
-                type: 'string'
-            }
-        }
+                description: 'Domains to add:',
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
@@ -137,59 +164,18 @@ Please enter domain names separated by a comma:`);
         if (result.domains === '') return resolve([]);
 
         const domains = result.domains.split(',');
-        const validated_domains = domains.map(x => x.trim()).filter(validateDomainName);
-        if (domains.length !== validated_domains.length) {
+        const validatedDomains = domains.map(x => x.trim()).filter(validateDomainName);
+        if (domains.length !== validatedDomains.length) {
             console.log('ERROR: One or more domain names are invalid and have been removed from the list.');
         }
-        return resolve(validated_domains);
-    })
-});
-
-const askIsThisOk = () => new Promise((resolve, reject) => {
-    let schema = {
-        properties: {
-            ok: {
-                description: "Is this OK?",
-                default: 'Y',
-                type: 'string'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-        else return resolve(result);
+        return resolve(validatedDomains);
     });
 });
 
-const createNewSite = (linc, auth_params, method) => new Promise((resolve, reject) => {
-    const body = {
-        name: linc.siteName,
-        settings: {
-            description: linc.description,
-            viewer_protocol: linc.viewerProtocol,
-            domains: linc.domains
-        }
-    };
-    const options = {
-        method: (method === 'CREATE') ? 'POST' : 'PUT',
-        url: LINC_API_SITES_ENDPOINT + (method === 'UPDATE' ? `/${linc.siteName}` : ''),
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${auth_params.jwtToken}`
-        },
-        body: JSON.stringify(body)
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-
-        const json = JSON.parse(body);
-        if (json.error) return reject(new Error(json.error));
-        else if (response.statusCode !== 200) return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
-        else return resolve(json);
-    });
-});
-
+/**
+ * Check site name availability
+ * @param siteName
+ */
 const checkSiteName = (siteName) => new Promise((resolve, reject) => {
     const spinner = ora('Checking availability of name. Please wait...').start();
 
@@ -197,8 +183,8 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/exists`,
         headers: {
-            'Content-Type': 'application/json'
-        }
+            'Content-Type': 'application/json',
+        },
     };
     request(options, (err, response, body) => {
         if (err) {
@@ -213,35 +199,23 @@ const checkSiteName = (siteName) => new Promise((resolve, reject) => {
             else spinner.warn('Site name available');
 
             return resolve(exists);
-        } else {
-            spinner.fail('Something went wrong');
-            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
         }
+
+        spinner.fail('Something went wrong');
+        return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
     });
 });
 
-const authoriseSite = (siteName, authInfo) => new Promise((resolve, reject) => {
-    const options = {
-        method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authInfo.jwtToken}`
-        }
-    };
-    request(options, (err, response, body) => {
-        if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(new Error('Unauthorised access or invalid site.'));
-        else return resolve();
-    });
-});
-
-const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
+/**
+ * Initialise site
+ * @param packageJson
+ */
+const initSite = (packageJson) => new Promise((resolve, reject) => {
     const siteName = packageJson.linc.siteName;
 
     const linc = {};
     let p;
-    if (siteName !== undefined) {
+    if (siteName) {
         linc.siteName = siteName;
         p = Promise.resolve();
     } else {
@@ -252,7 +226,7 @@ const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
             })
             .then(exists => {
                 if (exists) throw new Error('This site name already exists.');
-            })
+            });
     }
 
     p.then(() => askDescription(packageJson.description))
@@ -274,7 +248,7 @@ const initSite = (packageJson, authParams) => new Promise((resolve, reject) => {
 You provided the following information:
 ${JSON.stringify(linc, null, 3)}
 `);
-            return askIsThisOk();
+            return isThisOk();
         })
         .then(result => {
             if (result.ok.toLowerCase().substr(0, 1) !== 'y') {
@@ -283,20 +257,21 @@ ${JSON.stringify(linc, null, 3)}
             }
 
             // Make sure linc object contains site name
+            // eslint-disable-next-line no-param-reassign
             packageJson.linc.siteName = packageJson.linc.siteName || linc.siteName;
 
             const spinner = ora('Creating site. Please wait...').start();
             const method = siteName ? 'UPDATE' : 'CREATE';
-            return createNewSite(linc, authParams, method)
-                .then(result => {
+            return sites.createSite(linc, method)
+                .then(_result => {
                     spinner.stop();
 
                     console.log('Site successfully created.');
-                    if (result.endpoint !== undefined) {
+                    if (_result.endpoint !== undefined) {
                         console.log(`
 The endpoint for your site is:
 
-    ${result.endpoint}
+    ${_result.endpoint}
 
 Use this endpoint to create CNAME entries for your custom domains
 in your DNS. 
@@ -306,7 +281,7 @@ in your DNS.
                 .catch(err => {
                     spinner.stop();
                     return reject(err);
-                })
+                });
         })
         .then(() => {
             console.log('Updating your package.json.');
@@ -320,35 +295,16 @@ in your DNS.
         .catch(err => reject(err));
 });
 
+/**
+ * Create site
+ * @param argv
+ */
 const createSite = (argv) => {
-    let authParams;
     let packageJson;
 
-    const spinner = ora('Authorising user. Please wait...').start();
+    const spinner = ora();
 
-    auth(argv.accessKey, argv.secretKey)
-        .then(auth_params => authParams = auth_params)
-        .catch(err => {
-            spinner.stop();
-            console.log(`
-${err.message}
-
-Please log in using 'linc login', or create a new user with 
-'linc user create' before creating a site in the backend.
-
-If you created a user earlier, make sure to verify your email 
-address. You cannot use LINC with an email address that is 
-unverified.
-
-If the error message doesn't make sense to you, please contact
-us at help@bitgenics.io and we'll help you out.
-`);
-            process.exit(255);
-        })
-        .then(() => {
-            spinner.stop();
-            return readPkg();
-        })
+    readPkg()
         .then(pkg => {
             packageJson = pkg;
             const linc = packageJson.linc;
@@ -356,12 +312,12 @@ us at help@bitgenics.io and we'll help you out.
                 throw new Error('This project is not initialised. Did you forget to \'linc init\'?');
             }
 
-            return initSite(packageJson, authParams);
+            return initSite(packageJson);
         })
         .then(() => {
             spinner.text = 'Authorising. Please wait...';
             spinner.start();
-            return authoriseSite(packageJson.linc.siteName, authParams);
+            return sites.authoriseSite(argv, packageJson.linc.siteName);
         })
         .then(() => spinner.stop())
         .catch(err => {

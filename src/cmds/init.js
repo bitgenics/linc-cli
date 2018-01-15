@@ -1,4 +1,3 @@
-'use strict';
 const _ = require('underscore');
 const fs = require('fs-extra');
 const ora = require('ora');
@@ -8,6 +7,7 @@ const figlet = require('figlet');
 const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
+const createDotLinc = require('../lib/createDotLinc');
 const lincProfiles = require('../lib/linc-profiles');
 const exec = require('child_process').exec;
 const assertPkg = require('../lib/package-json').assert;
@@ -34,37 +34,16 @@ Please choose a profile:
 const askProfile = () => new Promise((resolve, reject) => {
     showProfiles();
 
-    let schema = {
+    const schema = {
         properties: {
             profile: {
                 pattern: /^[A-Za-z]$/,
                 description: 'Profile to use for this site:',
                 message: 'Please enter a valid option',
                 type: 'string',
-                default: 'A'
-            }
-        }
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-
-        return resolve(result);
-    })
-});
-
-/**
- * Are the settings Ok?
- */
-const askIsThisOk = () => new Promise((resolve, reject) => {
-    let schema = {
-        properties: {
-            ok: {
-                description: "Is this OK?",
-                default: 'Y',
-                type: 'string'
-            }
-        }
+                default: 'A',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
@@ -103,10 +82,10 @@ const linclet = (msg) => new Promise((resolve, reject) => {
  * @returns {Promise<any>}
  */
 const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
-    const command = fs.existsSync(process.cwd() + '/yarn.lock')
+    const command = fs.existsSync(path.join(process.cwd(), 'yarn.lock'))
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
-    exec(command, {cwd: process.cwd()}, (err) => {
+    exec(command, { cwd: process.cwd() }, (err) => {
         if (err) return reject(err);
 
         return resolve();
@@ -119,21 +98,21 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
 const askOtherProfile = () => new Promise((resolve, reject) => {
     console.log();
 
-    let schema = {
+    const schema = {
         properties: {
             profile: {
                 description: '\nProfile name to use for this site:',
                 message: 'Please enter a valid option',
-                type: 'string'
-            }
-        }
+                type: 'string',
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.profile);
-    })
+    });
 });
 
 /**
@@ -141,21 +120,21 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
  * @param q
  */
 const promptQuestion = (q) => new Promise((resolve, reject) => {
-    let schema = {
+    const schema = {
         properties: {
             answer: {
                 description: q.text,
                 type: 'string',
-                default: q.dflt
-            }
-        }
+                default: q.dflt,
+            },
+        },
     };
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
         return resolve(result.answer);
-    })
+    });
 });
 
 /**
@@ -175,6 +154,7 @@ const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) =>
 
     let profile;
     try {
+        // eslint-disable-next-line import/no-dynamic-require,global-require
         profile = require(pkgDir);
     } catch (e) {
         return reject(e);
@@ -187,11 +167,9 @@ const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) =>
     const spinner = ora('Copying example config files. Please wait...');
     spinner.start();
 
-    const promises = _.map(configSampleFiles, f => {
-        return fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f));
-    });
+    const promises = _.map(configSampleFiles, f => fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f)));
 
-    Promise.all(promises)
+    return Promise.all(promises)
         .then(() => {
             spinner.succeed('Successfully copied example config files:');
             _.each(configSampleFiles, f => console.log(`  + ${f}`));
@@ -211,10 +189,9 @@ const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) =>
  * @param pkg
  */
 const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
-    const path = require('path');
-
     let profile;
     try {
+        // eslint-disable-next-line import/no-dynamic-require,global-require
         profile = require(path.resolve(process.cwd(), 'node_modules', pkg));
     } catch (e) {
         return reject(e);
@@ -232,18 +209,19 @@ const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
 
         const key = keys.shift();
         const q = questions[key];
-        promptQuestion(q)
+        return promptQuestion(q)
             .then(response => {
+                // eslint-disable-next-line no-param-reassign
                 linc[key] = response;
                 return askQuestion();
             })
             .catch(err => reject(err));
     };
 
-    if (!_.isEmpty(keys)) {
-        console.log('\nThis profile needs some additional information.');
-        askQuestion();
-    }
+    if (_.isEmpty(keys)) return resolve();
+
+    console.log('\nThis profile needs some additional information.');
+    return askQuestion();
 });
 
 /**
@@ -257,8 +235,11 @@ const initialise = (argv) => {
         process.exit(255);
     }
 
-    let linc = {};
-    let spinner = ora();
+    // Create .linc directory
+    createDotLinc();
+
+    const linc = {};
+    const spinner = ora();
 
     linclet('LINC')
         .then(() => askProfile())
@@ -277,29 +258,19 @@ const initialise = (argv) => {
                 .then(() => {
                     spinner.succeed('Profile package installed.');
 
-                    return handleInitQuestions(linc, profile)
+                    return handleInitQuestions(linc, profile);
                 })
                 .then(() => handleExampleConfigFiles(linc, profile));
-        })
-        .then(() => {
-            console.log(`
-The following section will be added to package.json:
-${JSON.stringify({linc: linc}, null, 3)}
-`);
-            return askIsThisOk();
-        })
-        .then(result => {
-            if (result.ok.charAt(0).toLowerCase() !== 'y') {
-                console.log('Aborted by user.');
-                return process.exit(255);
-            }
         })
         .then(() => readPkg())
         .then(packageJson => {
             spinner.succeed('Updated package.json.');
+
+            // eslint-disable-next-line no-param-reassign
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
+        .then(() => createDotLinc())
         .then(() => console.log('Done.'))
         .catch(err => error(err))
         .then(() => spinner.stop());
