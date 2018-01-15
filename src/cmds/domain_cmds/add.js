@@ -130,7 +130,7 @@ exports.handler = (argv) => {
         })
         .then(y => {
             spinner.start('Adding domain. Please wait...');
-            return domains.addDomain(y.domain_name, envName, siteName);
+            return domains.addDomain(argv, y.domain_name, envName, siteName);
         })
         .then(() => {
             spinner.stop();
