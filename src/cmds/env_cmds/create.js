@@ -91,9 +91,7 @@ const createEnvironment = (argv) => {
                 .then(json => environments.addEnvironment(argv, json, envName, siteName));
         })
         .then(() => {
-            spinner.stop();
-
-            console.log('Environment successfully added.');
+            spinner.succeed('Environment successfully added.');
         })
         .catch(err => {
             spinner.stop();
