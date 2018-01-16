@@ -23,21 +23,6 @@ const load = () => new Promise((resolve, reject) => {
 });
 
 /**
- * Remove credentials
- */
-const rm = () => new Promise((resolve) => {
-    fs.exists(credentialsFile)
-        .then((x) => {
-            if (!x) {
-                return resolve();
-            }
-        })
-        .then(() => fs.unlink(credentialsFile))
-        .then(() => resolve())
-        .catch(() => resolve());
-});
-
-/**
  * Save credentials
  * @param accessKey
  * @param secretKey
@@ -65,5 +50,4 @@ const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
 module.exports = {
     load,
     save,
-    rm,
 };
