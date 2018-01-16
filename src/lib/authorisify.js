@@ -3,6 +3,8 @@ const path = require('path');
 const auth = require('./auth');
 const dotLinc = require('../lib/dot-linc');
 
+const DOT_LINC_DIR = dotLinc.DOT_LINC_DIR;
+
 let JwtToken = null;
 
 /**
@@ -18,7 +20,7 @@ const getJwtToken = () => new Promise((resolve, reject) => {
     if (JwtToken) return resolve(JwtToken);
 
     try {
-        const tokenFile = path.resolve(process.cwd(), '.linc', 'token');
+        const tokenFile = path.join(DOT_LINC_DIR, '.linc', 'token');
         const token = fs.readFileSync(tokenFile);
         return resolve(token.toString().trim());
     } catch (e) {
@@ -37,7 +39,7 @@ const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
     dotLinc.ensureDir();
 
     try {
-        const tokenFile = path.resolve(process.cwd(), '.linc', 'token');
+        const tokenFile = path.join(DOT_LINC_DIR, '.linc', 'token');
         fs.writeFileSync(tokenFile, `${jwtToken}\n`);
         return resolve(jwtToken);
     } catch (e) {
