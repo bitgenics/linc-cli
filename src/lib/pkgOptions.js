@@ -134,8 +134,8 @@ const nameHandler = (pkg) => new Promise((resolve, reject) => {
  * Show profiles available
  */
 const showProfiles = () => {
-    console.log(`
-Please choose a profile:\n`);
+    console.log(`Please choose a profile:
+`);
     _.each(lincProfiles, (p, k) => { console.log(`${k}) ${p.name}`); });
 };
 
