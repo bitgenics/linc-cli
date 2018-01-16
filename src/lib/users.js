@@ -151,6 +151,9 @@ const confirmRegistration = (code) => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Entry point to sign up new "user"
+ */
 module.exports.signup = () => new Promise((resolve, reject) => {
     let signupResponse;
 
@@ -182,7 +185,7 @@ module.exports.signup = () => new Promise((resolve, reject) => {
         .then(() => {
             spinner.succeed('Verification succeeded.');
 
-            cred.save(signupResponse.clientId, signupResponse.clientSecret);
+            return cred.save(signupResponse.clientId, signupResponse.clientSecret);
         })
         .then(resolve)
         .catch(err => {
