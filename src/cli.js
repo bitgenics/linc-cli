@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const yargs = require('yargs');
-const fileCredentials = require('./cred.js').getCredentials();
+const fileCredentials = require('./lib/cred.js').getCredentials();
 
 // Get LINC specific variables from environment
 const lincKeys = Object.keys(process.env).filter((key) => key.startsWith('LINC_'));

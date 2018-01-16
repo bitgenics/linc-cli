@@ -1,6 +1,6 @@
 const colors = require('colors/safe');
 const prompt = require('prompt');
-const cred = require('../../cred');
+const cred = require('../../lib/cred');
 const auth = require('../../lib/auth');
 const notice = require('../../lib/notice');
 

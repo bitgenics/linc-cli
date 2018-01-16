@@ -1,7 +1,7 @@
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
-const cred = require('../../cred');
+const cred = require('../../lib/cred');
 const notice = require('../../lib/notice');
 const config = require('../../config.json');
 
