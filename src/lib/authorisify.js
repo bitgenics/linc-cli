@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const auth = require('./auth');
-const cred = require('./cred');
+const loadCredentials = require('./cred').load;
 const dotLinc = require('../lib/dot-linc');
 
 const DOT_LINC_DIR = dotLinc.DOT_LINC_DIR;
@@ -11,10 +11,7 @@ let JwtToken = null;
 /**
  * Convenience function to authorise
  */
-const authorise = () => {
-    cred.load()
-        .then(credentials => auth(credentials.accessKey, credentials.secretKey));
-};
+const authorise = () => loadCredentials().then(credentials => auth(credentials.accessKey, credentials.secretKey));
 
 /**
  * Get jwt token from file in .linc directory
