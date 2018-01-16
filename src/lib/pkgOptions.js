@@ -6,7 +6,7 @@ const request = require('request');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 const domainify = require('./domainify');
 const lincProfiles = require('./linc-profiles');
 

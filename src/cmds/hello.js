@@ -1,7 +1,7 @@
 const ora = require('ora');
 const request = require('request');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 
 const LINC_API_HELLO_ENDPOINT = `${config.Api.LincV2Endpoint}/hello`;
 

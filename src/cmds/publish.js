@@ -11,7 +11,7 @@ const environments = require('../lib/environments');
 const sites = require('../lib/sites');
 const users = require('../lib/users');
 const notice = require('../lib/notice');
-const config = require('../config.json');
+const config = require('../config/config.json');
 const assertPkg = require('../lib/package-json').assert;
 const packageOptions = require('../lib/pkgOptions');
 
