@@ -65,10 +65,9 @@ module.exports = (func) => new Promise((resolve, reject) => {
 
     getJwtToken()
         .then(tokenFunc)
-        .then(resolve)
-        .catch(() => authorise())
-        .then(saveJwtToken)
-        .then(tokenFunc)
+        .catch(() => authorise()
+            .then(saveJwtToken)
+            .then(tokenFunc))
         .then(resolve)
         .catch(reject);
 });
