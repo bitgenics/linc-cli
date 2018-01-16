@@ -1,27 +1,26 @@
 /* eslint-disable consistent-return,no-bitwise */
 const path = require('path');
 const fs = require('fs-extra');
-const homedir = require('homedir');
+const dotLinc = require('./dot-linc');
 
-const LINC_DIR = path.resolve(homedir(), '.linc');
-const credentials = path.resolve(LINC_DIR, 'credentials');
+const DOT_LINC_DIR = dotLinc.DOT_LINC_DIR;
+const credentialsFile = path.join(DOT_LINC_DIR, 'credentials');
 
 /**
  * Get credentials
  */
 const getCredentials = () => {
     try {
-        if (fs.existsSync(credentials)) {
-            if ((fs.statSync(credentials).mode & 0o777) === 0o600) {
-                const json = JSON.parse(fs.readFileSync(credentials));
-                return json.User ? json.User : {};
+        if (fs.existsSync(credentialsFile)) {
+            if ((fs.statSync(credentialsFile).mode & 0o777) === 0o600) {
+                return JSON.parse(fs.readFileSync(credentialsFile));
             }
 
-            console.log(`WARNING: permissions of credentials file ${credentials} has been tampered with.`);
+            console.log(`WARNING: permissions of credentials file ${credentialsFile} has been tampered with.`);
         }
         return {};
     } catch (e) {
-        console.log(`Error happened while parsing credentials file ${credentials}\n${e}`);
+        console.log(`Error happened while parsing credentials file ${credentialsFile}\n${e}`);
     }
 };
 
@@ -29,24 +28,24 @@ const getCredentials = () => {
  * Log user in
  */
 const login = () => new Promise((resolve, reject) => {
-    fs.exists(credentials)
+    fs.exists(credentialsFile)
         .then(x => {
             if (!x) {
                 return reject('File does not exist');
             }
         })
-        .then(() => fs.stat(credentials))
+        .then(() => fs.stat(credentialsFile))
         .then(stats => stats.mode)
         .then((mode) => {
             if ((mode & 0x1ff) !== 0x180) {
                 return reject('File permissions not 0600');
             }
         })
-        .then(() => fs.readJson(credentials))
+        .then(() => fs.readJson(credentialsFile))
         .then(data => {
-            if (!data.User) return reject('Invalid file format');
+            if (!data) return reject('Invalid file format');
 
-            return resolve(data.User);
+            return resolve(data);
         })
         .catch(err => reject(err));
 });
@@ -55,13 +54,13 @@ const login = () => new Promise((resolve, reject) => {
  * Remove credentials
  */
 const rm = () => new Promise((resolve) => {
-    fs.exists(credentials)
+    fs.exists(credentialsFile)
         .then((x) => {
             if (!x) {
                 return resolve();
             }
         })
-        .then(() => fs.unlink(credentials))
+        .then(() => fs.unlink(credentialsFile))
         .then(() => resolve())
         .catch(() => resolve());
 });
@@ -72,23 +71,21 @@ const rm = () => new Promise((resolve) => {
  * @param secretKey
  */
 const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
-    const json = {
-        User: {
-            accessKey,
-            secretKey,
-        },
+    const credentials = {
+        accessKey,
+        secretKey,
     };
 
-    fs.ensureDir(LINC_DIR)
-        .then(() => fs.exists(credentials))
+    dotLinc.ensureDir()
+        .then(() => fs.exists(credentialsFile))
         .then((x) => {
             if (x) {
                 // We don't overwrite an existing file
                 return resolve();
             }
         })
-        .then(() => fs.writeJson(credentials, json))
-        .then(() => fs.chmod(credentials, 0o600))
+        .then(() => fs.writeJson(credentialsFile, credentials))
+        .then(() => fs.chmod(credentialsFile, 0o600))
         .then(() => resolve())
         .catch(err => reject(err));
 });
