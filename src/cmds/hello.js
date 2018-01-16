@@ -1,3 +1,4 @@
+const ora = require('ora');
 const request = require('request');
 const authorisify = require('../lib/authorisify');
 const config = require('../config.json');
@@ -17,17 +18,21 @@ const hello = () => (jwtToken) => new Promise((resolve, reject) => {
         },
     };
     request(options, (err, response, body) => {
-        if (!err && response.statusCode === 200) return resolve(body);
+        if (!err && response.statusCode === 200) {
+            const obj = JSON.parse(body);
+            return resolve(obj);
+        }
 
-        return reject();
+        return reject(err);
     });
 });
 
 exports.command = ['hello'];
 exports.desc = false;
 exports.handler = () => {
-    console.log('Please wait...');
+    const spinner = ora('Please wait...').start();
+
     authorisify(hello())
-        .then(body => console.log(body.response))
-        .catch(err => console.log(`Error:\n${err}`));
+        .then(body => spinner.succeed(`${body.response}\n`))
+        .catch(err => console.log(`Error:\n${err.message ? err.message : err}`));
 };
