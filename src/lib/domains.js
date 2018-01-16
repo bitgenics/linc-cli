@@ -80,7 +80,7 @@ module.exports.showAvailableDomains = (results) => {
  * @param argv
  * @param siteName
  */
-module.exports.getAvailableDomains = (argv, siteName) => authorisify(argv, getAvailableDomains(siteName));
+module.exports.getAvailableDomains = (argv, siteName) => authorisify(getAvailableDomains(siteName));
 
 /**
  *
@@ -89,4 +89,4 @@ module.exports.getAvailableDomains = (argv, siteName) => authorisify(argv, getAv
  * @param e - envName
  * @param s - siteName
  */
-module.exports.addDomain = (argv, d, e, s) => authorisify(argv, addDomainName(d, e, s));
+module.exports.addDomain = (argv, d, e, s) => authorisify(addDomainName(d, e, s));

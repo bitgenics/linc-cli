@@ -91,11 +91,11 @@ module.exports.showAvailableReleases = (results) => {
  * @param n - domainName
  * @param e - envName
  */
-module.exports.createRelease = (argv, s, d, n, e) => authorisify(argv, createRelease(s, d, n, e));
+module.exports.createRelease = (argv, s, d, n, e) => authorisify(createRelease(s, d, n, e));
 
 /**
  * Get available releases
  * @param argv
  * @param siteName
  */
-module.exports.getAvailableReleases = (argv, siteName) => authorisify(argv, getAvailableReleases(siteName));
+module.exports.getAvailableReleases = (argv, siteName) => authorisify(getAvailableReleases(siteName));

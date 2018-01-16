@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const auth = require('./auth');
+const cred = require('./cred');
 const dotLinc = require('../lib/dot-linc');
 
 const DOT_LINC_DIR = dotLinc.DOT_LINC_DIR;
@@ -9,9 +10,11 @@ let JwtToken = null;
 
 /**
  * Convenience function to authorise
- * @param argv
  */
-const authorise = (argv) => auth(argv.accessKey, argv.secretKey);
+const authorise = () => {
+    cred.load()
+        .then(credentials => auth(credentials.accessKey, credentials.secretKey));
+};
 
 /**
  * Get jwt token from file in .linc directory
@@ -20,7 +23,7 @@ const getJwtToken = () => new Promise((resolve, reject) => {
     if (JwtToken) return resolve(JwtToken);
 
     try {
-        const tokenFile = path.join(DOT_LINC_DIR, '.linc', 'token');
+        const tokenFile = path.join(DOT_LINC_DIR, 'token');
         const token = fs.readFileSync(tokenFile);
         return resolve(token.toString().trim());
     } catch (e) {
@@ -39,7 +42,7 @@ const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
     dotLinc.ensureDir();
 
     try {
-        const tokenFile = path.join(DOT_LINC_DIR, '.linc', 'token');
+        const tokenFile = path.join(DOT_LINC_DIR, 'token');
         fs.writeFileSync(tokenFile, `${jwtToken}\n`);
         return resolve(jwtToken);
     } catch (e) {
@@ -49,10 +52,9 @@ const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
 
 /**
  * Entry point
- * @param argv
  * @param func
  */
-module.exports = (argv, func) => new Promise((resolve, reject) => {
+module.exports = (func) => new Promise((resolve, reject) => {
     let jwtToken;
 
     /**
@@ -67,7 +69,7 @@ module.exports = (argv, func) => new Promise((resolve, reject) => {
     getJwtToken()
         .then(tokenFunc)
         .then(resolve)
-        .catch(() => authorise(argv))
+        .catch(() => authorise())
         .then(saveJwtToken)
         .then(tokenFunc)
         .then(resolve)

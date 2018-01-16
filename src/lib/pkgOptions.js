@@ -125,7 +125,7 @@ const nameHandler = (argv, pkg) => new Promise((resolve, reject) => {
             // Site name already existing is a fatal error
             if (exists) process.exit(255);
 
-            return authorisify(argv, createNewSite(pkg.linc.siteName));
+            return authorisify(createNewSite(pkg.linc.siteName));
         })
         .then(() => resolve(pkg))
         .catch(reject);

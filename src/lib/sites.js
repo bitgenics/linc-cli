@@ -116,7 +116,7 @@ const invalidateCache = (siteName, pattern) => (jwtToken) => new Promise((resolv
  * @param argv
  * @param siteName
  */
-module.exports.authoriseSite = (argv, siteName) => authorisify(argv, authoriseSite(siteName));
+module.exports.authoriseSite = (argv, siteName) => authorisify(authoriseSite(siteName));
 
 /**
  * Create site
@@ -124,14 +124,14 @@ module.exports.authoriseSite = (argv, siteName) => authorisify(argv, authoriseSi
  * @param linc
  * @param method
  */
-module.exports.createSite = (argv, linc, method) => authorisify(argv, createSite(linc, method));
+module.exports.createSite = (argv, linc, method) => authorisify(createSite(linc, method));
 
 /**
  * Delete site
  * @param argv
  * @param siteName
  */
-module.exports.deleteSite = (argv, siteName) => authorisify(argv, deleteSite(siteName));
+module.exports.deleteSite = (argv, siteName) => authorisify(deleteSite(siteName));
 
 /**
  * Invalidate site cache
@@ -139,4 +139,4 @@ module.exports.deleteSite = (argv, siteName) => authorisify(argv, deleteSite(sit
  * @param siteName
  * @param pattern
  */
-module.exports.invalidateCache = (argv, siteName, pattern) => authorisify(argv, invalidateCache(siteName, pattern));
+module.exports.invalidateCache = (argv, siteName, pattern) => authorisify(invalidateCache(siteName, pattern));

@@ -1,5 +1,6 @@
 const request = require('request');
 const config = require('../config.json');
+const dotLinc = require('../lib/dot-linc');
 
 const ClientId = config.Auth.ClientId;
 

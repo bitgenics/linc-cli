@@ -133,7 +133,7 @@ module.exports.showAvailableEnvironments = (results) => {
  * @param argv
  * @param siteName
  */
-module.exports.getAvailableEnvironments = (argv, siteName) => authorisify(argv, getAvailableEnvironments(siteName));
+module.exports.getAvailableEnvironments = (argv, siteName) => authorisify(getAvailableEnvironments(siteName));
 
 /**
  * Add new environment
@@ -142,7 +142,7 @@ module.exports.getAvailableEnvironments = (argv, siteName) => authorisify(argv, 
  * @param e - envName
  * @param n - siteName
  */
-module.exports.addEnvironment = (argv, s, e, n) => authorisify(argv, addEnvironment(s, e, n));
+module.exports.addEnvironment = (argv, s, e, n) => authorisify(addEnvironment(s, e, n));
 
 /**
  * Delete environment
@@ -150,7 +150,7 @@ module.exports.addEnvironment = (argv, s, e, n) => authorisify(argv, addEnvironm
  * @param e - envName
  * @param s - siteName
  */
-module.exports.deleteEnvironment = (argv, e, s) => authorisify(argv, deleteEnvironment(e, s));
+module.exports.deleteEnvironment = (argv, e, s) => authorisify(deleteEnvironment(e, s));
 
 /**
  * Update environment
@@ -159,4 +159,4 @@ module.exports.deleteEnvironment = (argv, e, s) => authorisify(argv, deleteEnvir
  * @param e - envName
  * @param n - siteName
  */
-module.exports.updateEnvironment = (argv, s, e, n) => authorisify(argv, updateEnvironment(s, e, n));
+module.exports.updateEnvironment = (argv, s, e, n) => authorisify(updateEnvironment(s, e, n));

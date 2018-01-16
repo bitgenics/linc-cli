@@ -71,7 +71,7 @@ const deleteWebhook = (siteName, serviceName) => (jwtToken) => new Promise((reso
  * @param n - serviceName
  * @param b - body
  */
-module.exports.createWebhook = (argv, s, n, b) => authorisify(argv, createWebhook(s, n, b));
+module.exports.createWebhook = (argv, s, n, b) => authorisify(createWebhook(s, n, b));
 
 /**
  * Delete webhook
@@ -79,4 +79,4 @@ module.exports.createWebhook = (argv, s, n, b) => authorisify(argv, createWebhoo
  * @param s - siteName
  * @param n - serviceName
  */
-module.exports.deleteWebhook = (argv, s, n) => authorisify(argv, deleteWebhook(s, n));
+module.exports.deleteWebhook = (argv, s, n) => authorisify(deleteWebhook(s, n));
