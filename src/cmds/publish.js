@@ -228,7 +228,7 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
                     })
                     .catch(err => reject(err));
             },
-            Timeout * 1000,
+            Timeout * 1000 // eslint-disable-line comma-dangle
         );
     };
 
