@@ -32,9 +32,8 @@ const areYouSure = () => new Promise((resolve, reject) => {
 
 /**
  * Delete webhook
- * @param argv
  */
-const deleteWebhook = (argv) => {
+const deleteWebhook = () => {
     const spinner = ora();
     let siteName;
 
@@ -53,7 +52,7 @@ const deleteWebhook = (argv) => {
             }
 
             spinner.start('Deleting webhook. Please wait...');
-            return webhooks.deleteWebhook(argv, siteName);
+            return webhooks.deleteWebhook(siteName);
         })
         .then(reply => {
             spinner.stop();
@@ -72,5 +71,5 @@ exports.handler = (argv) => {
 
     notice();
 
-    deleteWebhook(argv);
+    deleteWebhook();
 };

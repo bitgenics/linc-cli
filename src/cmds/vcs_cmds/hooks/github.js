@@ -33,9 +33,8 @@ const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
 
 /**
  * Create a new webhook
- * @param argv
  */
-const createHook = argv => {
+const createHook = () => {
     console.log(usage);
 
     const spinner = ora();
@@ -60,7 +59,7 @@ const createHook = argv => {
             body.repositoryUrl = result.repositoryUrl;
 
             spinner.start('Creating webhook. Please wait...');
-            return webhooks.createWebhook(argv, siteName, 'github', body);
+            return webhooks.createWebhook(siteName, 'github', body);
         })
         .then(response => {
             spinner.stop();
@@ -78,9 +77,8 @@ const createHook = argv => {
 
 /**
  * Delete existing hook
- * @param argv
  */
-const deleteHook = argv => {
+const deleteHook = () => {
     const spinner = ora();
     let siteName;
     readPkg()
@@ -91,7 +89,7 @@ const deleteHook = argv => {
             }
 
             spinner.start('Deleting webhook. Please wait...');
-            return webhooks.deleteWebhook(argv, siteName, 'github');
+            return webhooks.deleteWebhook(siteName, 'github');
         })
         .then(response => {
             spinner.stop();
@@ -119,8 +117,8 @@ module.exports.handler = argv => {
     }
 
     const command = argv.command;
-    if (command === 'create') return createHook(argv);
-    if (command === 'delete') return deleteHook(argv);
+    if (command === 'create') return createHook();
+    if (command === 'delete') return deleteHook();
 
     console.log('You provided an invalid command.');
 };
