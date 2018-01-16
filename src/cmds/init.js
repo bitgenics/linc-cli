@@ -7,7 +7,7 @@ const figlet = require('figlet');
 const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
-const createDotLinc = require('../lib/createDotLinc');
+const dotLinc = require('../lib/dot-linc');
 const lincProfiles = require('../lib/linc-profiles');
 const exec = require('child_process').exec;
 const assertPkg = require('../lib/package-json').assert;
@@ -230,16 +230,17 @@ const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
  * @param argv
  */
 const initialise = (argv) => {
-    if (argv.buildProfile && argv.sourceDir) {
-        console.log('This project is already initialised.');
+    const spinner = ora();
+
+    if (argv.buildProfile) {
+        spinner.succeed('This project is already initialised.');
         process.exit(255);
     }
 
-    // Create .linc directory
-    createDotLinc();
+    // Create .linc directory if needed
+    dotLinc.ensureDir();
 
     const linc = {};
-    const spinner = ora();
 
     linclet('LINC')
         .then(() => askProfile())
@@ -270,7 +271,6 @@ const initialise = (argv) => {
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
-        .then(() => createDotLinc())
         .then(() => console.log('Done.'))
         .catch(err => error(err))
         .then(() => spinner.stop());

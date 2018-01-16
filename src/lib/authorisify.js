@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const auth = require('./auth');
-const createDotLinc = require('../lib/createDotLinc');
+const dotLinc = require('../lib/dot-linc');
 
 let JwtToken = null;
 
@@ -34,7 +34,7 @@ const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
     JwtToken = jwtToken;
 
     // Create .linc directory if not already there
-    createDotLinc();
+    dotLinc.ensureDir();
 
     try {
         const tokenFile = path.resolve(process.cwd(), '.linc', 'token');
