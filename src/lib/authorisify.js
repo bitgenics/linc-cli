@@ -4,7 +4,7 @@ const auth = require('./auth');
 const loadCredentials = require('./cred').load;
 const dotLinc = require('../lib/dot-linc');
 
-const DOT_LINC_DIR = dotLinc.DOT_LINC_DIR;
+const { DOT_LINC_DIR } = dotLinc;
 
 let JwtToken = null;
 

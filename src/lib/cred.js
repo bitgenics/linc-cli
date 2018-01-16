@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const dotLinc = require('./dot-linc');
 
-const DOT_LINC_DIR = dotLinc.DOT_LINC_DIR;
+const { DOT_LINC_DIR } = dotLinc;
 const credentialsFile = path.join(DOT_LINC_DIR, 'credentials');
 
 /**

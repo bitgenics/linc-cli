@@ -119,7 +119,7 @@ const updateEnvironment = (settings, envName, siteName) => (jwtToken) => new Pro
  * @param results
  */
 module.exports.showAvailableEnvironments = (results) => {
-    const environments = results.environments;
+    const { environments } = results;
     const siteName = results.site_name;
 
     console.log(`Here are the available environments for ${siteName}:`);

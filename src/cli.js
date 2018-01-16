@@ -11,7 +11,7 @@ lincKeys.forEach(key => {
 // Create config object to pass into yargs
 const configObject = Object.assign({}, envConfig);
 
-// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars,prefer-destructuring
 const argv = yargs
     .commandDir('cmds')
     .config(configObject)

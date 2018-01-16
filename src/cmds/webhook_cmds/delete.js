@@ -39,6 +39,7 @@ const deleteWebhook = () => {
 
     readPkg()
         .then(pkg => {
+            // eslint-disable-next-line prefer-destructuring
             siteName = pkg.linc.siteName;
             if (siteName === undefined) {
                 // eslint-disable-next-line max-len

@@ -137,7 +137,7 @@ const releaseLatest = (argv) => {
     spinner.start();
 
     const domainsToRelease = [];
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     let envName = 'prod';
     let deployKey = null;
 
@@ -201,7 +201,7 @@ const release = (argv) => {
     const spinner = ora();
 
     const domainsToRelease = [];
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     let envName = 'prod';
     let deployKey = null;
     let listOfDeployments;

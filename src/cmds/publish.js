@@ -38,7 +38,7 @@ const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex');
  */
 const createZipfile = (tempDir, sourceDir, siteName, opts) => new Promise((resolve, reject) => {
     const options = opts || { cwd: process.cwd() };
-    const cwd = options.cwd;
+    const { cwd } = options;
     const localdir = path.join(cwd, sourceDir);
     const zipfile = path.join(tempDir, `${siteName}.zip`);
 
@@ -158,6 +158,7 @@ const publishSite = (siteName, credentials) => new Promise((resolve, reject) => 
 
     return askDescription('')
         .then(result => {
+            // eslint-disable-next-line prefer-destructuring
             description = result.description;
             return createTempDir();
         })
@@ -216,17 +217,19 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
             return reject(new Error('The process timed out'));
         }
 
-        return setTimeout(() => {
-            retrieveDeploymentStatus(siteName, authInfo)
-                .then(s => {
-                    if (s.length === envs.length) return resolve(s);
+        return setTimeout(
+            () => {
+                retrieveDeploymentStatus(siteName, authInfo)
+                    .then(s => {
+                        if (s.length === envs.length) return resolve(s);
 
-                    Timeout = 8;
-                    return checkForDeployToFinish(count - 1);
-                })
-                .catch(err => reject(err));
-        },
-        Timeout * 1000);
+                        Timeout = 8;
+                        return checkForDeployToFinish(count - 1);
+                    })
+                    .catch(err => reject(err));
+            },
+            Timeout * 1000,
+        );
     };
 
     // Start the checking
@@ -255,6 +258,7 @@ const publish = () => {
         .then(pkg => {
             packageJson = pkg;
 
+            // eslint-disable-next-line prefer-destructuring
             siteName = packageJson.linc.siteName;
 
             spinner.start('Performing checks. Please wait...');

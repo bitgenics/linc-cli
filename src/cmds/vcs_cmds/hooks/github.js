@@ -42,6 +42,7 @@ const createHook = () => {
     const body = {};
     readPkg()
         .then(pkg => {
+            // eslint-disable-next-line prefer-destructuring
             siteName = pkg.linc.siteName;
             if (!siteName) {
                 // eslint-disable-next-line max-len
@@ -49,7 +50,7 @@ const createHook = () => {
             }
 
             let repositoryUrl = '';
-            const repository = pkg.repository;
+            const { repository } = pkg;
             if (repository && repository.type && repository.url) {
                 if (repository.type === 'git') repositoryUrl = repository.url;
             }
@@ -80,10 +81,10 @@ const createHook = () => {
  */
 const deleteHook = () => {
     const spinner = ora();
-    let siteName;
+
     readPkg()
         .then(pkg => {
-            siteName = pkg.linc.siteName;
+            const { siteName } = pkg.linc;
             if (!siteName) {
                 throw new Error('No site name found in package.json.');
             }
@@ -111,12 +112,12 @@ const deleteHook = () => {
  */
 // eslint-disable-next-line consistent-return
 module.exports.handler = argv => {
-    if (!argv.command) {
+    const { command } = argv;
+    if (!command) {
         console.log('You failed to provide a command.');
         process.exit(0);
     }
 
-    const command = argv.command;
     if (command === 'create') return createHook();
     if (command === 'delete') return deleteHook();
 

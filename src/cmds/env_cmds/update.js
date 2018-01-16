@@ -71,7 +71,7 @@ const updateEnvironment = (argv) => {
     const spinner = ora('Authorising. Please wait...');
     spinner.start();
 
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     let envName = 'prod';
     let fileName;
 

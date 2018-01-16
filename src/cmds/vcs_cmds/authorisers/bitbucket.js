@@ -32,7 +32,7 @@ prompt.delimiter = '';
 module.exports.handler = (argv) => {
     const spinner = ora('Authorising. Please wait...').start();
 
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     oauth.getAuthoriseUrl(siteName, 'Bitbucket')
         .then(response => {
             spinner.stop();

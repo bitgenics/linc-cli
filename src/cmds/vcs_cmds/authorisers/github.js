@@ -28,7 +28,7 @@ const areYouSure = () => new Promise((resolve, reject) => {
 module.exports.handler = (argv) => {
     const spinner = ora('Authorising. Please wait...').start();
 
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     oauth.getAuthoriseUrl(siteName, 'GitHub')
         .then(response => {
             spinner.stop();

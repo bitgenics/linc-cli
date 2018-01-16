@@ -74,7 +74,7 @@ const askSettingsFile = (argv) => new Promise((resolve, reject) => {
 const createEnvironment = (argv) => {
     let envName;
     let fileName;
-    const siteName = argv.siteName;
+    const { siteName } = argv;
 
     const spinner = ora();
     askEnvName(argv)

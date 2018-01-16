@@ -1,3 +1,4 @@
+const { exec } = require('child_process');
 const _ = require('underscore');
 const fs = require('fs-extra');
 const ora = require('ora');
@@ -9,7 +10,6 @@ const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const dotLinc = require('../lib/dot-linc');
 const lincProfiles = require('../lib/linc-profiles');
-const exec = require('child_process').exec;
 const assertPkg = require('../lib/package-json').assert;
 
 prompt.colors = false;
