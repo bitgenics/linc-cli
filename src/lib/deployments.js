@@ -35,7 +35,6 @@ const getAvailableDeployments = (siteName) => (jwtToken) => new Promise((resolve
 
 /**
  * Get available deployments
- * @param argv
  * @param siteName
  */
-module.exports.getAvailableDeployments = (argv, siteName) => authorisify(getAvailableDeployments(siteName));
+module.exports.getAvailableDeployments = (siteName) => authorisify(getAvailableDeployments(siteName));

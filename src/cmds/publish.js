@@ -235,9 +235,8 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
 
 /**
  * Main entry point for this module.
- * @param argv
  */
-const publish = (argv) => {
+const publish = () => {
     let credentials;
     let jwtToken;
     let packageJson;
@@ -252,16 +251,16 @@ const publish = (argv) => {
             console.log('It looks like you haven\'t signed up for this site yet.');
             return users.signup();
         })
-        .then(() => packageOptions(argv, ['siteName', 'buildProfile']))
+        .then(() => packageOptions(['siteName', 'buildProfile']))
         .then(pkg => {
             packageJson = pkg;
 
             siteName = packageJson.linc.siteName;
 
             spinner.start('Performing checks. Please wait...');
-            sites.authoriseSite(argv, siteName);
+            sites.authoriseSite(siteName);
         })
-        .then(() => environments.getAvailableEnvironments(argv, siteName))
+        .then(() => environments.getAvailableEnvironments(siteName))
         .then(envs => {
             spinner.stop();
 
@@ -287,10 +286,10 @@ const publish = (argv) => {
 
 exports.command = ['publish', 'deploy'];
 exports.desc = 'Publish your site';
-exports.handler = (argv) => {
+exports.handler = () => {
     assertPkg();
 
     notice();
 
-    publish(argv);
+    publish();
 };

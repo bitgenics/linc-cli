@@ -20,7 +20,7 @@ const list = (argv) => {
     const siteName = argv.siteName;
     const spinner = ora('Retrieving available domains...').start();
 
-    domains.getAvailableDomains(argv, siteName)
+    domains.getAvailableDomains(siteName)
         .then(result => {
             spinner.stop();
 

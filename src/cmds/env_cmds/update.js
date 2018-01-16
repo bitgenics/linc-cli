@@ -76,7 +76,7 @@ const updateEnvironment = (argv) => {
     let fileName;
 
     spinner.start('Retrieving environments. Please wait...');
-    environments.getAvailableEnvironments(argv, siteName)
+    environments.getAvailableEnvironments(siteName)
         .then(envs => {
             spinner.stop();
 
@@ -106,7 +106,7 @@ const updateEnvironment = (argv) => {
         .then(json => {
             spinner.start('Updating settings in environment. Please wait...');
 
-            return environments.updateEnvironment(argv, json, envName, argv.siteName);
+            return environments.updateEnvironment(json, envName, argv.siteName);
         })
         .then(() => {
             spinner.succeed('Environment successfully updated.');

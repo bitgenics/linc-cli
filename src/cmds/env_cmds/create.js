@@ -88,7 +88,7 @@ const createEnvironment = (argv) => {
 
             spinner.start('Creating environment. Please wait...');
             return fs.readJson(fileName)
-                .then(json => environments.addEnvironment(argv, json, envName, siteName));
+                .then(json => environments.addEnvironment(json, envName, siteName));
         })
         .then(() => {
             spinner.succeed('Environment successfully added.');

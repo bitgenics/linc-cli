@@ -109,10 +109,9 @@ const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
 
 /**
  * Handler name option
- * @param argv
  * @param pkg
  */
-const nameHandler = (argv, pkg) => new Promise((resolve, reject) => {
+const nameHandler = (pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     getName(domainify(pkg.name))
@@ -165,10 +164,9 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
 
 /**
  * Ask which profile to use
- * @param argv
  * @param pkg
  */
-const profileHandler = (argv, pkg) => new Promise((resolve, reject) => {
+const profileHandler = (pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     showProfiles();
@@ -211,11 +209,10 @@ const availableOptions = {
 
 /**
  * Core function that handles the options
- * @param argv
  * @param opts
  * @param pkg
  */
-const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
+const handleOptions = (opts, pkg) => new Promise((resolve, reject) => {
     const options = opts;
 
     const handleOption = () => {
@@ -227,7 +224,7 @@ const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
         const handler = availableOptions[option];
         if (!handler) return reject(new Error('Unknown option provided!'));
 
-        return handler(argv, pkg)
+        return handler(pkg)
             .then(handleOption)
             .catch(reject);
     };
@@ -237,16 +234,15 @@ const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
 
 /**
  * Option handler
- * @param argv
  * @param opts
  */
-const optionHandler = (argv, opts) => new Promise((resolve, reject) => {
+const optionHandler = (opts) => new Promise((resolve, reject) => {
     let packageJson;
     readPkg()
         .then(pkg => {
             packageJson = pkg;
             packageJson.linc = packageJson.linc || {};
-            return handleOptions(argv, opts, packageJson);
+            return handleOptions(opts, packageJson);
         })
         .then(() => writePkg(packageJson))
         .then(() => resolve(packageJson))

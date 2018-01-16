@@ -29,7 +29,7 @@ module.exports.handler = (argv) => {
     const spinner = ora('Authorising. Please wait...').start();
 
     const siteName = argv.siteName;
-    oauth.getAuthoriseUrl(argv, siteName, 'GitHub')
+    oauth.getAuthoriseUrl(siteName, 'GitHub')
         .then(response => {
             spinner.stop();
             if (!response.already_authorised) return response.authorise_uri;

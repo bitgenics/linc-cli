@@ -35,7 +35,7 @@ const invalidate = (argv) => {
     }
 
     const spinner = ora('Invalidating cache...').start();
-    sites.invalidateCache(argv, siteName, pattern)
+    sites.invalidateCache(siteName, pattern)
         .then(() => {
             spinner.succeed('Cache invalidated.');
         })

@@ -77,16 +77,14 @@ module.exports.showAvailableDomains = (results) => {
 
 /**
  * Get available domains
- * @param argv
  * @param siteName
  */
-module.exports.getAvailableDomains = (argv, siteName) => authorisify(getAvailableDomains(siteName));
+module.exports.getAvailableDomains = (siteName) => authorisify(getAvailableDomains(siteName));
 
 /**
- *
- * @param argv
+ * Add domain
  * @param d - domainName
  * @param e - envName
  * @param s - siteName
  */
-module.exports.addDomain = (argv, d, e, s) => authorisify(addDomainName(d, e, s));
+module.exports.addDomain = (d, e, s) => authorisify(addDomainName(d, e, s));

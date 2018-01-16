@@ -32,8 +32,7 @@ const getAuthoriseUri = (siteName, serviceName) => (jwtToken) => new Promise((re
 
 /**
  * Get authorise URL for oauth flow
- * @param argv
  * @param s - siteName
  * @param n - serviceName
  */
-module.exports.getAuthoriseUrl = (argv, s, n) => authorisify(getAuthoriseUri(s, n));
+module.exports.getAuthoriseUrl = (s, n) => authorisify(getAuthoriseUri(s, n));

@@ -85,17 +85,15 @@ module.exports.showAvailableReleases = (results) => {
 
 /**
  * Create a new release
- * @param argv
  * @param s - siteName
  * @param d - deployKey
  * @param n - domainName
  * @param e - envName
  */
-module.exports.createRelease = (argv, s, d, n, e) => authorisify(createRelease(s, d, n, e));
+module.exports.createRelease = (s, d, n, e) => authorisify(createRelease(s, d, n, e));
 
 /**
  * Get available releases
- * @param argv
  * @param siteName
  */
-module.exports.getAvailableReleases = (argv, siteName) => authorisify(getAvailableReleases(siteName));
+module.exports.getAvailableReleases = (siteName) => authorisify(getAvailableReleases(siteName));

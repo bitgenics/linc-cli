@@ -30,8 +30,8 @@ const show = (argv) => {
 
     spinner.start('Retrieving data. Please wait...');
     return Promise.all([
-        domains.getAvailableDomains(argv, siteName),
-        releases.getAvailableReleases(argv, siteName),
+        domains.getAvailableDomains(siteName),
+        releases.getAvailableReleases(siteName),
     ])
         .then(result => {
             spinner.stop();

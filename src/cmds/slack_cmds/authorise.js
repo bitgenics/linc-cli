@@ -47,7 +47,7 @@ exports.handler = (argv) => {
     const spinner = ora('Please wait...').start();
     const siteName = argv.siteName;
 
-    oauth.getAuthoriseUrl(argv, siteName, 'Slack')
+    oauth.getAuthoriseUrl(siteName, 'Slack')
         .then(response => {
             spinner.stop();
             if (!response.already_authorised) return response.authorise_uri;

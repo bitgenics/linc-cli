@@ -297,9 +297,8 @@ in your DNS.
 
 /**
  * Create site
- * @param argv
  */
-const createSite = (argv) => {
+const createSite = () => {
     let packageJson;
 
     const spinner = ora();
@@ -317,7 +316,7 @@ const createSite = (argv) => {
         .then(() => {
             spinner.text = 'Authorising. Please wait...';
             spinner.start();
-            return sites.authoriseSite(argv, packageJson.linc.siteName);
+            return sites.authoriseSite(packageJson.linc.siteName);
         })
         .then(() => spinner.stop())
         .catch(err => {
@@ -328,10 +327,10 @@ const createSite = (argv) => {
 
 exports.command = 'create';
 exports.desc = 'Create a site';
-exports.handler = (argv) => {
+exports.handler = () => {
     assertPkg();
 
     notice();
 
-    createSite(argv);
+    createSite();
 };

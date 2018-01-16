@@ -43,9 +43,8 @@ const error = (err) => {
 
 /**
  * Remove site
- * @param argv
  */
-const remove = (argv) => {
+const remove = () => {
     let siteName = null;
 
     assertPkg();
@@ -71,7 +70,7 @@ and it will no longer be accessible/available to you.
         })
         .then(() => {
             spinner.start('Deleting site. Please wait...');
-            return sites.deleteSite(argv, siteName);
+            return sites.deleteSite(siteName);
         })
         .then(() => {
             spinner.succeed('Site deleted. It can no longer be accessed.');
@@ -84,10 +83,10 @@ and it will no longer be accessible/available to you.
 
 exports.command = 'remove';
 exports.desc = 'Remove your site';
-exports.handler = (argv) => {
+exports.handler = () => {
     assertPkg();
 
     notice();
 
-    remove(argv);
+    remove();
 };

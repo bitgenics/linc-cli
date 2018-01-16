@@ -66,7 +66,7 @@ const deleteWebhook = () => {
 
 exports.command = 'delete';
 exports.desc = 'Delete a webhook';
-exports.handler = (argv) => {
+exports.handler = () => {
     assertPkg();
 
     notice();
