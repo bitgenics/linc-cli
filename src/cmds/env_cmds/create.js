@@ -1,4 +1,4 @@
-const fsp = require('fs-promise');
+const fs = require('fs-extra');
 const ora = require('ora');
 const prompt = require('prompt');
 const environments = require('../../lib/environments');
@@ -87,7 +87,7 @@ const createEnvironment = (argv) => {
             fileName = settingsFileName;
 
             spinner.start('Creating environment. Please wait...');
-            return fsp.readJson(fileName)
+            return fs.readJson(fileName)
                 .then(json => environments.addEnvironment(argv, json, envName, siteName));
         })
         .then(() => {

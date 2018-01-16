@@ -1,7 +1,6 @@
 /* eslint-disable consistent-return,no-bitwise */
 const path = require('path');
-const fs = require('fs');
-const fsp = require('fs-promise');
+const fs = require('fs-extra');
 const homedir = require('homedir');
 
 const LINC_DIR = path.resolve(homedir(), '.linc');
@@ -30,20 +29,20 @@ const getCredentials = () => {
  * Log user in
  */
 const login = () => new Promise((resolve, reject) => {
-    fsp.exists(credentials)
+    fs.exists(credentials)
         .then(x => {
             if (!x) {
                 return reject('File does not exist');
             }
         })
-        .then(() => fsp.stat(credentials))
+        .then(() => fs.stat(credentials))
         .then(stats => stats.mode)
         .then((mode) => {
             if ((mode & 0x1ff) !== 0x180) {
                 return reject('File permissions not 0600');
             }
         })
-        .then(() => fsp.readJson(credentials))
+        .then(() => fs.readJson(credentials))
         .then(data => {
             if (!data.User) return reject('Invalid file format');
 
@@ -56,13 +55,13 @@ const login = () => new Promise((resolve, reject) => {
  * Remove credentials
  */
 const rm = () => new Promise((resolve) => {
-    fsp.exists(credentials)
+    fs.exists(credentials)
         .then((x) => {
             if (!x) {
                 return resolve();
             }
         })
-        .then(() => fsp.unlink(credentials))
+        .then(() => fs.unlink(credentials))
         .then(() => resolve())
         .catch(() => resolve());
 });
@@ -80,16 +79,16 @@ const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
         },
     };
 
-    fsp.ensureDir(LINC_DIR)
-        .then(() => fsp.exists(credentials))
+    fs.ensureDir(LINC_DIR)
+        .then(() => fs.exists(credentials))
         .then((x) => {
             if (x) {
                 // We don't overwrite an existing file
                 return resolve();
             }
         })
-        .then(() => fsp.writeJson(credentials, json))
-        .then(() => fsp.chmod(credentials, 0o600))
+        .then(() => fs.writeJson(credentials, json))
+        .then(() => fs.chmod(credentials, 0o600))
         .then(() => resolve())
         .catch(err => reject(err));
 });

@@ -1,4 +1,4 @@
-const fsp = require('fs-promise');
+const fs = require('fs-extra');
 const ora = require('ora');
 const prompt = require('prompt');
 const environments = require('../../lib/environments');
@@ -101,7 +101,7 @@ const updateEnvironment = (argv) => {
         .then(settingsFileName => {
             fileName = settingsFileName;
 
-            return fsp.readJson(fileName);
+            return fs.readJson(fileName);
         })
         .then(json => {
             spinner.start('Updating settings in environment. Please wait...');

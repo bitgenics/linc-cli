@@ -3,10 +3,9 @@ const prompt = require('prompt');
 const request = require('request');
 const path = require('path');
 const crypto = require('crypto');
-const fs = require('fs');
 const AWS = require('aws-sdk');
 const zip = require('deterministic-zip');
-const fsPromise = require('fs-promise');
+const fs = require('fs-extra');
 const auth = require('../lib/auth');
 const environments = require('../lib/environments');
 const sites = require('../lib/sites');
@@ -43,7 +42,7 @@ const createZipfile = (tempDir, sourceDir, siteName, opts) => new Promise((resol
     const zipfile = path.join(tempDir, `${siteName}.zip`);
 
     // Check whether the directory actually exists
-    fsPromise.stat(options.cwd, (err) => {
+    fs.stat(options.cwd, (err) => {
         if (err) return reject(err);
 
         // Create zipfile from directory
@@ -83,7 +82,7 @@ const uploadZipfile = (description, codeId, credentials, siteName, zipfile) => n
     spinner.start('Upload started.');
 
     reference = sha1(`${siteName}${Math.floor(new Date() / 1000).toString()}`);
-    fsPromise.readFile(zipfile)
+    fs.readFile(zipfile)
         .then(data => ({
             Body: data,
             Bucket: BUCKET_NAME,
@@ -112,7 +111,7 @@ const uploadZipfile = (description, codeId, credentials, siteName, zipfile) => n
  * Create a temporary directory using global TMP_DIR.
  */
 const createTempDir = () => new Promise((resolve, reject) => {
-    fsPromise.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
+    fs.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
         if (err) return reject(err);
 
         return resolve(folder);
