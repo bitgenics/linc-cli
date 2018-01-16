@@ -9,45 +9,17 @@ const credentialsFile = path.join(DOT_LINC_DIR, 'credentials');
 /**
  * Get credentials
  */
-const getCredentials = () => {
-    try {
-        if (fs.existsSync(credentialsFile)) {
-            if ((fs.statSync(credentialsFile).mode & 0o777) === 0o600) {
-                return JSON.parse(fs.readFileSync(credentialsFile));
-            }
+const load = () => new Promise((resolve, reject) => {
+    if (!fs.existsSync(credentialsFile)) return reject(new Error('No credentials file found.'));
 
-            console.log(`WARNING: permissions of credentials file ${credentialsFile} has been tampered with.`);
-        }
-        return {};
-    } catch (e) {
-        console.log(`Error happened while parsing credentials file ${credentialsFile}\n${e}`);
+    if ((fs.statSync(credentialsFile).mode & 0o777) !== 0o600) {
+        console.log(`WARNING: permissions of credentials file ${credentialsFile} may have been tampered with.`);
+        process.exit(255);
     }
-};
 
-/**
- * Log user in
- */
-const login = () => new Promise((resolve, reject) => {
-    fs.exists(credentialsFile)
-        .then(x => {
-            if (!x) {
-                return reject('File does not exist');
-            }
-        })
-        .then(() => fs.stat(credentialsFile))
-        .then(stats => stats.mode)
-        .then((mode) => {
-            if ((mode & 0x1ff) !== 0x180) {
-                return reject('File permissions not 0600');
-            }
-        })
-        .then(() => fs.readJson(credentialsFile))
-        .then(data => {
-            if (!data) return reject('Invalid file format');
-
-            return resolve(data);
-        })
-        .catch(err => reject(err));
+    const credentials = fs.readJSONSync(credentialsFile, { throws: false });
+    if (!credentials.accessKey || !credentials.secretKey) return reject(new Error('No credentials found in file.'));
+    return resolve(credentials);
 });
 
 /**
@@ -91,8 +63,7 @@ const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
 });
 
 module.exports = {
-    getCredentials,
-    login,
+    load,
     save,
     rm,
 };

@@ -6,9 +6,10 @@ const crypto = require('crypto');
 const AWS = require('aws-sdk');
 const zip = require('deterministic-zip');
 const fs = require('fs-extra');
-const auth = require('../lib/auth');
+const cred = require('../lib/cred');
 const environments = require('../lib/environments');
 const sites = require('../lib/sites');
+const users = require('../lib/users');
 const notice = require('../lib/notice');
 const config = require('../config.json');
 const assertPkg = require('../lib/package-json').assert;
@@ -237,43 +238,21 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
  * @param argv
  */
 const publish = (argv) => {
-    let extendedCredentials;
+    let credentials;
     let jwtToken;
     let packageJson;
     let siteName;
     let listOfEnvironments;
 
     // Disappearing progress messages
-    const spinner = ora('Authorising user. Please wait...').start();
+    const spinner = ora();
 
-    auth.getExtentedCredentials(argv.accessKey, argv.secretKey)
-        .then(creds => {
-            extendedCredentials = creds;
-            jwtToken = creds.jwtToken;
+    cred.load()
+        .catch(() => {
+            console.log('It looks like you haven\'t signed up for this site yet.');
+            return users.signup();
         })
-        .catch(err => {
-            spinner.stop();
-
-            console.log(`
-${err.message}
-
-Please log in using 'linc login', or create a new user with 
-'linc user create' before trying to publish. 
-
-If you created a user earlier, make sure to verify your email 
-address. You cannot use LINC with an email address that is 
-unverified.
-
-If the error message doesn't make sense to you, please contact
-us using the email address shown above. 
-`);
-            process.exit(255);
-        })
-        .then(() => {
-            spinner.stop();
-
-            return packageOptions(argv, ['siteName', 'buildProfile']);
-        })
+        .then(() => packageOptions(argv, ['siteName', 'buildProfile']))
         .then(pkg => {
             packageJson = pkg;
 
@@ -287,7 +266,7 @@ us using the email address shown above.
             spinner.stop();
 
             listOfEnvironments = envs.environments.map(x => x.name);
-            return publishSite(siteName, extendedCredentials);
+            return publishSite(siteName, credentials);
         })
         .then(() => {
             spinner.start('Waiting for deploy to finish...');

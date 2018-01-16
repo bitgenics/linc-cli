@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 const yargs = require('yargs');
-const fileCredentials = require('./lib/cred.js').getCredentials();
 
 // Get LINC specific variables from environment
 const lincKeys = Object.keys(process.env).filter((key) => key.startsWith('LINC_'));
@@ -10,7 +9,7 @@ lincKeys.forEach(key => {
 });
 
 // Create config object to pass into yargs
-const configObject = Object.assign({}, fileCredentials, envConfig);
+const configObject = Object.assign({}, envConfig);
 
 // eslint-disable-next-line no-unused-vars
 const argv = yargs
