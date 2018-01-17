@@ -14,7 +14,7 @@ const authoriseSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response) => {
@@ -44,7 +44,7 @@ const createSite = (linc, method) => (jwtToken) => new Promise((resolve, reject)
         url: LINC_API_SITES_ENDPOINT + (method === 'UPDATE' ? `/${linc.siteName}` : ''),
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -71,7 +71,7 @@ const deleteSite = (siteName) => (jwtToken) => new Promise((resolve, reject) => 
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: `{"site_name":"${siteName}"}`,
     };
@@ -97,7 +97,7 @@ const invalidateCache = (siteName, pattern) => (jwtToken) => new Promise((resolv
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/invalidations`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify({ pattern }),
     };

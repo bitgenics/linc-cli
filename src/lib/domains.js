@@ -15,7 +15,7 @@ const getAvailableDomains = (siteName) => (jwtToken) => new Promise((resolve, re
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/domains`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -44,7 +44,7 @@ const addDomainName = (domainName, envName, siteName) => (jwtToken) => new Promi
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/domains`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify({
             domainName,

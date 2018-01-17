@@ -14,7 +14,7 @@ const getAvailableEnvironments = (siteName) => (jwtToken) => new Promise((resolv
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -44,7 +44,7 @@ const addEnvironment = (settings, envName, siteName) => (jwtToken) => new Promis
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -70,7 +70,7 @@ const deleteEnvironment = (envName, siteName) => (jwtToken) => new Promise((reso
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments/${envName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -99,7 +99,7 @@ const updateEnvironment = (settings, envName, siteName) => (jwtToken) => new Pro
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments/${envName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };

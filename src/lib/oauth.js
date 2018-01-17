@@ -15,7 +15,7 @@ const getAuthoriseUri = (siteName, serviceName) => (jwtToken) => new Promise((re
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {

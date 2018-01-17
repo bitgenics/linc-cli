@@ -19,7 +19,7 @@ const createWebhook = (siteName, serviceName, body) => (jwtToken) => new Promise
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/webhooks/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -48,7 +48,7 @@ const deleteWebhook = (siteName, serviceName) => (jwtToken) => new Promise((reso
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/webhooks/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {

@@ -90,7 +90,7 @@ const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };

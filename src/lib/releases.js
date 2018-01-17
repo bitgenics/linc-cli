@@ -18,7 +18,7 @@ const createRelease = (siteName, deployKey, domainName, envName) => (jwtToken) =
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify({
             domainName,
@@ -46,7 +46,7 @@ const getAvailableReleases = (siteName) => (jwtToken) => new Promise((resolve, r
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {

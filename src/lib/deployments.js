@@ -14,7 +14,7 @@ const getAvailableDeployments = (siteName) => (jwtToken) => new Promise((resolve
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/deployments`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {

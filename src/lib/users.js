@@ -45,9 +45,8 @@ You can find the Terms and Conditions here: https://bitgenics.io/link/legal
  * Get confirmation code
  */
 const getConfirmationCode = () => new Promise((resolve, reject) => {
-    console.log(`
-A verification code has been sent to your email address.
-    `);
+    console.log(`A verification code has been sent to your email address.
+`);
     const schema = {
         properties: {
             code: {
@@ -73,8 +72,8 @@ const getUserEmail = () => new Promise((resolve, reject) => {
     console.log(`Thank you for accepting the Terms and Conditions.
 
 Please enter a valid email address. After signing up, you'll receive
-an email with a validation link. You'll need to validate your email
-address by clicking this link.
+an email with a validation code. You'll need to validate your email
+address by entering that code.
 `);
     const schema = {
         properties: {
@@ -115,8 +114,9 @@ const createCredentials = (email) => {
 /**
  * Create new user in Cognito
  * @param email
+ * @param siteName
  */
-const cognitoCreateNewUser = (email) => new Promise((resolve, reject) => {
+const cognitoCreateNewUser = (email, siteName) => new Promise((resolve, reject) => {
     const attributeList = [];
 
     const dataEmail = {
@@ -124,8 +124,16 @@ const cognitoCreateNewUser = (email) => new Promise((resolve, reject) => {
         Value: email,
     };
     const attributeEmail = new AWSCognito.CognitoUserAttribute(dataEmail);
-
     attributeList.push(attributeEmail);
+
+    if (siteName) {
+        const dataSiteName = {
+            Name: 'custom:site_name',
+            Value: siteName,
+        };
+        const attributeSiteName = new AWSCognito.CognitoUserAttribute(dataSiteName);
+        attributeList.push(attributeSiteName);
+    }
 
     const credentials = createCredentials(email);
     const { clientId, clientSecret } = credentials;
@@ -142,7 +150,7 @@ const cognitoCreateNewUser = (email) => new Promise((resolve, reject) => {
  * @param code
  */
 const confirmRegistration = (code) => new Promise((resolve, reject) => {
-    if (!cognitoUser) return reject(new Error('User registration failed!'));
+    if (!cognitoUser) return reject(new Error('Registration failed!'));
 
     return cognitoUser.confirmRegistration(code, true, (err, result) => {
         if (err) return reject(err);
@@ -153,8 +161,9 @@ const confirmRegistration = (code) => new Promise((resolve, reject) => {
 
 /**
  * Entry point to sign up new "user"
+ * @param siteName
  */
-module.exports.signup = () => new Promise((resolve, reject) => {
+module.exports.signup = (siteName) => new Promise((resolve, reject) => {
     let signupResponse;
 
     const spinner = ora();
@@ -167,12 +176,18 @@ module.exports.signup = () => new Promise((resolve, reject) => {
             return getUserEmail();
         })
         .then(email => {
-            spinner.start('Creating new user. Please wait...');
+            spinner.start('Creating new credentials. Please wait...');
 
-            return cognitoCreateNewUser(email);
+            return cognitoCreateNewUser(email, siteName);
         })
         .then(response => {
-            spinner.succeed('Successfully created new user.');
+            spinner.succeed('Successfully created new credentials:');
+            console.log(`   username: ${response.clientId}`);
+            console.log(`   password: ${response.clientSecret}`);
+            console.log(`
+These credentials are stored in .linc/credentials in this directory.
+You might want to consider backing up the credentials in a safe place.
+`);
 
             signupResponse = response;
             return getConfirmationCode();

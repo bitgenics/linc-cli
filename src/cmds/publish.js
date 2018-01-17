@@ -185,7 +185,7 @@ const retrieveDeploymentStatus = (siteName, jwtToken) => new Promise((resolve, r
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/deployments/${reference}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -239,7 +239,7 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
 /**
  * Main entry point for this module.
  */
-const publish = () => {
+const publish = (argv) => {
     let credentials;
     let jwtToken;
     let packageJson;
@@ -251,8 +251,11 @@ const publish = () => {
 
     cred.load()
         .catch(() => {
-            console.log('It looks like you haven\'t signed up for this site yet.');
-            return users.signup();
+            console.log(`It looks like you haven't signed up for this site yet.
+If this is an existing LINC site, please make sure to enter
+the email address you used to create this site.`);
+
+            return users.signup(argv.siteName);
         })
         .then(() => packageOptions(['siteName', 'buildProfile']))
         .then(pkg => {
@@ -290,10 +293,10 @@ const publish = () => {
 
 exports.command = ['publish', 'deploy'];
 exports.desc = 'Publish your site';
-exports.handler = () => {
+exports.handler = (argv) => {
     assertPkg();
 
     notice();
 
-    publish();
+    publish(argv);
 };
