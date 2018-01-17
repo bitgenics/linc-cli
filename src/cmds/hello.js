@@ -3,7 +3,7 @@ const request = require('request');
 const authorisify = require('../lib/authorisify');
 const config = require('../config/config.json');
 
-const LINC_API_HELLO_ENDPOINT = `${config.Api.LincV2Endpoint}/hello`;
+const LINC_API_HELLO_ENDPOINT = `${config.Api.LincBaseEndpoint}/hello`;
 
 /**
  * Handle hello
@@ -14,7 +14,7 @@ const hello = () => (jwtToken) => new Promise((resolve, reject) => {
         url: LINC_API_HELLO_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -34,5 +34,5 @@ exports.handler = () => {
 
     authorisify(hello())
         .then(body => spinner.succeed(`${body.response}\n`))
-        .catch(err => console.log(`Error:\n${err.message ? err.message : err}`));
+        .catch(err => spinner.fail(`Error: ${err.message ? err.message : err}`));
 };
