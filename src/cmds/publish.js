@@ -1,12 +1,14 @@
+const AWS = require('aws-sdk');
+const jwt = require('jsonwebtoken');
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const path = require('path');
 const crypto = require('crypto');
-const AWS = require('aws-sdk');
 const zip = require('deterministic-zip');
 const fs = require('fs-extra');
-const cred = require('../lib/cred');
+const auth = require('../lib/auth');
+const loadCredentials = require('../lib/cred').load;
 const environments = require('../lib/environments');
 const sites = require('../lib/sites');
 const users = require('../lib/users');
@@ -20,6 +22,8 @@ const DIST_DIR = 'dist';
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 const BUCKET_NAME = config.S3.deployBucket;
+
+const IdentityPoolId = 'eu-central-1:a05922c7-303d-4b8c-9843-60f5e590a812';
 
 let reference;
 
@@ -67,27 +71,23 @@ const createKey = (userId, _sha1, siteName) => `${userId}/${siteName}-${_sha1}.z
  * Upload zip file to S3.
  * @param description
  * @param codeId
- * @param credentials
  * @param siteName
  * @param zipfile
  */
-const uploadZipfile = (description, codeId, credentials, siteName, zipfile) => new Promise((resolve, reject) => {
-    AWS.config = new AWS.Config({
-        credentials: credentials.aws,
-        signatureVersion: 'v4',
-        region: 'eu-central-1',
-    });
-    const s3 = new AWS.S3();
+const uploadZipfile = (description, codeId, siteName, zipfile) => (jwtToken) => new Promise((resolve, reject) => {
+    const decodedToken = jwt.decode(jwtToken);
 
     const spinner = ora();
-    spinner.start('Upload started.');
 
     reference = sha1(`${siteName}${Math.floor(new Date() / 1000).toString()}`);
-    fs.readFile(zipfile)
+    const key = createKey(decodedToken.sub, codeId, siteName);
+
+    const s3 = new AWS.S3();
+    return fs.readFile(zipfile)
         .then(data => ({
             Body: data,
             Bucket: BUCKET_NAME,
-            Key: createKey(credentials.userId, codeId, siteName),
+            Key: key,
             Metadata: {
                 description,
                 reference,
@@ -95,17 +95,27 @@ const uploadZipfile = (description, codeId, credentials, siteName, zipfile) => n
         }))
         .then(params => {
             let totalInKB;
+            spinner.start('Upload starting. Please wait...');
             return s3.putObject(params).on('httpUploadProgress', (progress => {
                 const loadedInKB = Math.floor(progress.loaded / 1024);
                 totalInKB = Math.floor(progress.total / 1024);
                 const progressInPct = Math.floor(((progress.loaded / progress.total) * 100));
                 spinner.start(`Transfered ${loadedInKB} KB of ${totalInKB} KB  [${progressInPct}%]`);
-            })).send(() => {
+            })).send((err) => {
+                if (err) {
+                    spinner.fail('Upload failed.');
+                    return reject(err);
+                }
+
                 spinner.succeed(`Upload finished. Total upload size: ${totalInKB} KB.`);
                 return resolve();
             });
         })
-        .catch(err => reject(err));
+        .catch(err => {
+            spinner.stop();
+
+            return reject(err);
+        });
 });
 
 /**
@@ -144,6 +154,17 @@ const askDescription = (descr) => new Promise((resolve, reject) => {
 });
 
 /**
+ * Get credentials
+ */
+const getCredentials = () => new Promise((resolve, reject) => {
+    AWS.config.credentials.get((err) => {
+        if (err) return reject(err);
+
+        return resolve();
+    });
+});
+
+/**
  * Actually publish the site (upload to S3, let backend take it from there).
  * @param siteName
  * @param credentials
@@ -153,11 +174,19 @@ const publishSite = (siteName, credentials) => new Promise((resolve, reject) => 
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
 
+    let idToken;
+    let zipFile;
     let tempDir;
     let description;
 
+    const spinner = ora();
+
     return askDescription('')
         .then(result => {
+            console.log();
+
+            spinner.start('Authorising. Please wait...');
+
             // eslint-disable-next-line prefer-destructuring
             description = result.description;
             return createTempDir();
@@ -167,11 +196,36 @@ const publishSite = (siteName, credentials) => new Promise((resolve, reject) => 
             // Zip the dist directory
             return createZipfile(tempDir, DIST_DIR, siteName);
         })
-        // Create "meta" zip-file containing package.json and <siteName>.zip
         .then(() => createZipfile(TMP_DIR, '/', siteName, { cwd: tempDir }))
-        .then(zipfile => uploadZipfile(description, codeId, credentials, siteName, zipfile))
+        .then(zipfile => {
+            zipFile = zipfile;
+
+            return auth(credentials.accessKey, credentials.secretKey);
+        })
+        .then(() => auth.getIdToken())
+        .then(token => {
+            idToken = token;
+            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                IdentityPoolId,
+                Logins: {
+                    'cognito-idp.eu-central-1.amazonaws.com/eu-central-1_fLLmXhVcs': idToken,
+                },
+            }, {
+                region: 'eu-central-1',
+            });
+            return getCredentials();
+        })
+        .then(() => {
+            spinner.stop();
+
+            return uploadZipfile(description, codeId, siteName, zipFile)(idToken);
+        })
         .then(() => resolve())
-        .catch(err => reject(err));
+        .catch(err => {
+            spinner.stop();
+
+            return reject(err);
+        });
 });
 
 /**
@@ -249,7 +303,8 @@ const publish = (argv) => {
     // Disappearing progress messages
     const spinner = ora();
 
-    cred.load()
+    loadCredentials()
+        .then(creds => credentials = creds) // eslint-disable-line no-return-assign
         .catch(() => {
             console.log(`It looks like you haven't signed up for this site yet.
 If this is an existing LINC site, please make sure to enter
@@ -264,7 +319,7 @@ the email address you used to create this site.`);
             // eslint-disable-next-line prefer-destructuring
             siteName = packageJson.linc.siteName;
 
-            spinner.start('Performing checks. Please wait...');
+            spinner.start('Preparing upload. Please wait...');
             sites.authoriseSite(siteName);
         })
         .then(() => environments.getAvailableEnvironments(siteName))
