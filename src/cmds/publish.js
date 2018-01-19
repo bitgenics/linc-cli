@@ -27,6 +27,8 @@ const IdentityPoolId = 'eu-central-1:a05922c7-303d-4b8c-9843-60f5e590a812';
 
 let reference;
 
+const spinner = ora();
+
 /**
  * Convenience function to create SHA1 of a string
  * @param s
@@ -77,25 +79,24 @@ const createKey = (userId, _sha1, siteName) => `${userId}/${siteName}-${_sha1}.z
 const uploadZipfile = (description, codeId, siteName, zipfile) => (jwtToken) => new Promise((resolve, reject) => {
     const decodedToken = jwt.decode(jwtToken);
 
-    const spinner = ora();
-
     reference = sha1(`${siteName}${Math.floor(new Date() / 1000).toString()}`);
     const key = createKey(decodedToken.sub, codeId, siteName);
 
     const s3 = new AWS.S3();
     return fs.readFile(zipfile)
-        .then(data => ({
-            Body: data,
-            Bucket: BUCKET_NAME,
-            Key: key,
-            Metadata: {
-                description,
-                reference,
-            },
-        }))
-        .then(params => {
+        .then(data => {
             let totalInKB;
-            spinner.start('Upload starting. Please wait...');
+            spinner.start('(4/4) Upload starting. Please wait...');
+
+            const params = {
+                Body: data,
+                Bucket: BUCKET_NAME,
+                Key: key,
+                Metadata: {
+                    description,
+                    reference,
+                },
+            };
             return s3.putObject(params).on('httpUploadProgress', (progress => {
                 const loadedInKB = Math.floor(progress.loaded / 1024);
                 totalInKB = Math.floor(progress.total / 1024);
@@ -104,6 +105,7 @@ const uploadZipfile = (description, codeId, siteName, zipfile) => (jwtToken) => 
             })).send((err) => {
                 if (err) {
                     spinner.fail('Upload failed.');
+                    console.log(err);
                     return reject(err);
                 }
 
@@ -155,9 +157,17 @@ const askDescription = (descr) => new Promise((resolve, reject) => {
 
 /**
  * Get credentials
+ * @param token
  */
-const getCredentials = () => new Promise((resolve, reject) => {
-    AWS.config.credentials.get((err) => {
+const getCredentials = (token) => new Promise((resolve, reject) => {
+    AWS.config.region = 'eu-central-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+        IdentityPoolId,
+        Logins: {
+            'cognito-idp.eu-central-1.amazonaws.com/eu-central-1_fLLmXhVcs': token,
+        },
+    });
+    return AWS.config.credentials.get((err) => {
         if (err) return reject(err);
 
         return resolve();
@@ -167,9 +177,10 @@ const getCredentials = () => new Promise((resolve, reject) => {
 /**
  * Actually publish the site (upload to S3, let backend take it from there).
  * @param siteName
+ * @param description
  * @param credentials
  */
-const publishSite = (siteName, credentials) => new Promise((resolve, reject) => {
+const publishSite = (siteName, description, credentials) => new Promise((resolve, reject) => {
     const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
@@ -177,20 +188,9 @@ const publishSite = (siteName, credentials) => new Promise((resolve, reject) => 
     let idToken;
     let zipFile;
     let tempDir;
-    let description;
 
-    const spinner = ora();
-
-    return askDescription('')
-        .then(result => {
-            console.log();
-
-            spinner.start('Authorising. Please wait...');
-
-            // eslint-disable-next-line prefer-destructuring
-            description = result.description;
-            return createTempDir();
-        })
+    spinner.start('(2/4) Packaging site. Please wait...');
+    createTempDir()
         .then(tmp => {
             tempDir = tmp;
             // Zip the dist directory
@@ -200,27 +200,17 @@ const publishSite = (siteName, credentials) => new Promise((resolve, reject) => 
         .then(zipfile => {
             zipFile = zipfile;
 
+            spinner.start('(3/4) Authorising. Please wait...');
             return auth(credentials.accessKey, credentials.secretKey);
         })
         .then(() => auth.getIdToken())
         .then(token => {
             idToken = token;
-            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-                IdentityPoolId,
-                Logins: {
-                    'cognito-idp.eu-central-1.amazonaws.com/eu-central-1_fLLmXhVcs': idToken,
-                },
-            }, {
-                region: 'eu-central-1',
-            });
-            return getCredentials();
-        })
-        .then(() => {
-            spinner.stop();
 
-            return uploadZipfile(description, codeId, siteName, zipFile)(idToken);
+            return getCredentials(token);
         })
-        .then(() => resolve())
+        .then(() => uploadZipfile(description, codeId, siteName, zipFile)(idToken))
+        .then(resolve)
         .catch(err => {
             spinner.stop();
 
@@ -295,13 +285,11 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
  */
 const publish = (argv) => {
     let credentials;
+    let description;
     let jwtToken;
     let packageJson;
     let siteName;
     let listOfEnvironments;
-
-    // Disappearing progress messages
-    const spinner = ora();
 
     loadCredentials()
         .then(creds => credentials = creds) // eslint-disable-line no-return-assign
@@ -319,15 +307,23 @@ the email address you used to create this site.`);
             // eslint-disable-next-line prefer-destructuring
             siteName = packageJson.linc.siteName;
 
-            spinner.start('Preparing upload. Please wait...');
-            sites.authoriseSite(siteName);
+            return askDescription('');
+        })
+        .then(result => {
+            console.log();
+
+            // eslint-disable-next-line prefer-destructuring
+            description = result.description;
+
+            spinner.start('(1/4) Preparing upload. Please wait...');
+            return sites.authoriseSite(siteName);
         })
         .then(() => environments.getAvailableEnvironments(siteName))
         .then(envs => {
             spinner.stop();
 
             listOfEnvironments = envs.environments.map(x => x.name);
-            return publishSite(siteName, credentials);
+            return publishSite(siteName, description, credentials);
         })
         .then(() => {
             spinner.start('Waiting for deploy to finish...');
