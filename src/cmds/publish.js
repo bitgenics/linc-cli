@@ -1,5 +1,4 @@
 const AWS = require('aws-sdk');
-const jwt = require('jsonwebtoken');
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
@@ -8,6 +7,7 @@ const crypto = require('crypto');
 const zip = require('deterministic-zip');
 const fs = require('fs-extra');
 const auth = require('../lib/auth');
+const authorisify = require('../lib/authorisify');
 const loadCredentials = require('../lib/cred').load;
 const environments = require('../lib/environments');
 const sites = require('../lib/sites');
@@ -75,19 +75,15 @@ const createKey = (userId, _sha1, siteName) => `${userId}/${siteName}-${_sha1}.z
  * @param codeId
  * @param siteName
  * @param zipfile
+ * @param jwtToken
  */
-const uploadZipfile = (description, codeId, siteName, zipfile) => (jwtToken) => new Promise((resolve, reject) => {
-    const decodedToken = jwt.decode(jwtToken);
-
+const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new Promise((resolve, reject) => {
     reference = sha1(`${siteName}${Math.floor(new Date() / 1000).toString()}`);
-    const key = createKey(decodedToken.sub, codeId, siteName);
+    const key = createKey(AWS.config.credentials.identityId, codeId, siteName);
 
     const s3 = new AWS.S3();
     return fs.readFile(zipfile)
         .then(data => {
-            let totalInKB;
-            spinner.start('(4/4) Upload starting. Please wait...');
-
             const params = {
                 Body: data,
                 Bucket: BUCKET_NAME,
@@ -95,21 +91,18 @@ const uploadZipfile = (description, codeId, siteName, zipfile) => (jwtToken) => 
                 Metadata: {
                     description,
                     reference,
+                    jwt: jwtToken,
                 },
             };
-            return s3.putObject(params).on('httpUploadProgress', (progress => {
-                const loadedInKB = Math.floor(progress.loaded / 1024);
-                totalInKB = Math.floor(progress.total / 1024);
-                const progressInPct = Math.floor(((progress.loaded / progress.total) * 100));
-                spinner.start(`Transfered ${loadedInKB} KB of ${totalInKB} KB  [${progressInPct}%]`);
+            return s3.putObject(params).on('httpUploadProgress', (() => {
+                spinner.start('(4/4) Uploading. Please wait...');
             })).send((err) => {
                 if (err) {
                     spinner.fail('Upload failed.');
-                    console.log(err);
                     return reject(err);
                 }
 
-                spinner.succeed(`Upload finished. Total upload size: ${totalInKB} KB.`);
+                spinner.succeed('Upload finished.');
                 return resolve();
             });
         })
@@ -136,7 +129,7 @@ const createTempDir = () => new Promise((resolve, reject) => {
  * @param descr
  */
 const askDescription = (descr) => new Promise((resolve, reject) => {
-    console.log('It\'s benefial to provide a description for your deployment.');
+    console.log('It\'s beneficial to provide a description for your deployment.');
 
     const schema = {
         properties: {
@@ -185,9 +178,9 @@ const publishSite = (siteName, description, credentials) => new Promise((resolve
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
 
-    let idToken;
     let zipFile;
     let tempDir;
+    let jwtToken;
 
     spinner.start('(2/4) Packaging site. Please wait...');
     createTempDir()
@@ -203,13 +196,12 @@ const publishSite = (siteName, description, credentials) => new Promise((resolve
             spinner.start('(3/4) Authorising. Please wait...');
             return auth(credentials.accessKey, credentials.secretKey);
         })
-        .then(() => auth.getIdToken())
         .then(token => {
-            idToken = token;
-
-            return getCredentials(token);
+            jwtToken = token;
+            return auth.getIdToken();
         })
-        .then(() => uploadZipfile(description, codeId, siteName, zipFile)(idToken))
+        .then(token => getCredentials(token))
+        .then(() => uploadZipfile(description, codeId, siteName, zipFile, jwtToken))
         .then(resolve)
         .catch(err => {
             spinner.stop();
@@ -221,9 +213,8 @@ const publishSite = (siteName, description, credentials) => new Promise((resolve
 /**
  * Retrieve deployment status using reference
  * @param siteName
- * @param jwtToken
  */
-const retrieveDeploymentStatus = (siteName, jwtToken) => new Promise((resolve, reject) => {
+const retrieveDeploymentStatus = (siteName) => (jwtToken) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/deployments/${reference}`,
@@ -232,6 +223,7 @@ const retrieveDeploymentStatus = (siteName, jwtToken) => new Promise((resolve, r
             Authorization: `X-Bearer ${jwtToken}`,
         },
     };
+    console.log(options);
     request(options, (err, response, body) => {
         if (err) return reject(err);
 
@@ -246,9 +238,8 @@ const retrieveDeploymentStatus = (siteName, jwtToken) => new Promise((resolve, r
  * Wait for deploy to finish (or to time out - timeout is set to three minutes)
  * @param envs
  * @param siteName
- * @param authInfo
  */
-const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve, reject) => {
+const waitForDeployToFinish = (envs, siteName) => new Promise((resolve, reject) => {
     const Count = 20;
     let Timeout = 4;
 
@@ -262,16 +253,14 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
         }
 
         return setTimeout(
-            () => {
-                retrieveDeploymentStatus(siteName, authInfo)
-                    .then(s => {
-                        if (s.length === envs.length) return resolve(s);
+            () => authorisify(retrieveDeploymentStatus(siteName))
+                .then(s => {
+                    if (s.length === envs.length) return resolve(s);
 
-                        Timeout = 8;
-                        return checkForDeployToFinish(count - 1);
-                    })
-                    .catch(err => reject(err));
-            },
+                    Timeout = 8;
+                    return checkForDeployToFinish(count - 1);
+                })
+                .catch(err => reject(err)),
             Timeout * 1000 // eslint-disable-line comma-dangle
         );
     };
@@ -286,7 +275,6 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
 const publish = (argv) => {
     let credentials;
     let description;
-    let jwtToken;
     let packageJson;
     let siteName;
     let listOfEnvironments;
@@ -328,7 +316,7 @@ the email address you used to create this site.`);
         .then(() => {
             spinner.start('Waiting for deploy to finish...');
 
-            return waitForDeployToFinish(listOfEnvironments, siteName, jwtToken);
+            return waitForDeployToFinish(listOfEnvironments, siteName);
         })
         .then(envs => {
             spinner.succeed('Deployment finished');
