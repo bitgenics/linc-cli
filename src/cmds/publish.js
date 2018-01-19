@@ -223,7 +223,6 @@ const retrieveDeploymentStatus = (siteName) => (jwtToken) => new Promise((resolv
             Authorization: `X-Bearer ${jwtToken}`,
         },
     };
-    console.log(options);
     request(options, (err, response, body) => {
         if (err) return reject(err);
 
