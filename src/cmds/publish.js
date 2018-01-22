@@ -29,6 +29,7 @@ let reference;
 
 const spinner = ora();
 
+// Some progress message for publishing process
 const messages = [
     'Preparing upload.',
     'Creating upload package.',
@@ -103,10 +104,9 @@ const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new 
                     jwt: jwtToken,
                 },
             };
-            return s3.putObject(params).on('httpUploadProgress', (() => {
-                msgSucceed(2);
-                msgStart(3);
-            })).send((err) => {
+            msgSucceed(2);
+            msgStart(3);
+            return s3.putObject(params).send((err) => {
                 if (err) {
                     spinner.fail('Upload failed.');
                     return reject(err);
