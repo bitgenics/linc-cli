@@ -91,36 +91,34 @@ const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new 
     reference = sha1(`${siteName}${Math.floor(new Date() / 1000).toString()}`);
     const key = createKey(AWS.config.credentials.identityId, codeId, siteName);
 
-    const s3 = new AWS.S3();
-    return fs.readFile(zipfile)
-        .then(data => {
-            const params = {
-                Body: data,
-                Bucket: BUCKET_NAME,
-                Key: key,
-                Metadata: {
-                    description,
-                    reference,
-                    jwt: jwtToken,
-                },
-            };
-            msgSucceed(2);
-            msgStart(3);
-            return s3.putObject(params).send((err) => {
-                if (err) {
-                    spinner.fail('Upload failed.');
-                    return reject(err);
-                }
+    msgSucceed(2);
+    const stream = fs.createReadStream(zipfile);
+    const params = {
+        Body: stream,
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Metadata: {
+            description,
+            reference,
+            jwt: jwtToken,
+        },
+    };
 
-                msgSucceed(3);
-                return resolve();
-            });
-        })
-        .catch(err => {
-            spinner.stop();
-
+    msgStart(3);
+    const upload = new AWS.S3.ManagedUpload({ params });
+    upload.on('httpUploadProgress', (progress) => {
+        const loadedInKB = Math.floor(progress.loaded / 1024);
+        spinner.start(`Uploading ${loadedInKB} KB. Please wait...`);
+    });
+    return upload.send((err) => {
+        if (err) {
+            spinner.fail('Upload failed.');
             return reject(err);
-        });
+        }
+
+        msgSucceed(3);
+        return resolve();
+    });
 });
 
 /**
