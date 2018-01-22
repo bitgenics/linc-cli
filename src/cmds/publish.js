@@ -29,6 +29,15 @@ let reference;
 
 const spinner = ora();
 
+const messages = [
+    'Preparing upload.',
+    'Creating upload package.',
+    'Authorising.',
+    'Uploading package.',
+];
+const msgStart = (n) => spinner.start(`${messages[n]} Please wait...`);
+const msgSucceed = (n) => spinner.succeed(`${messages[n]} Done.`);
+
 /**
  * Convenience function to create SHA1 of a string
  * @param s
@@ -95,14 +104,15 @@ const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new 
                 },
             };
             return s3.putObject(params).on('httpUploadProgress', (() => {
-                spinner.start('(4/4) Uploading. Please wait...');
+                msgSucceed(2);
+                msgStart(3);
             })).send((err) => {
                 if (err) {
                     spinner.fail('Upload failed.');
                     return reject(err);
                 }
 
-                spinner.succeed('Upload finished.');
+                msgSucceed(3);
                 return resolve();
             });
         })
@@ -182,7 +192,8 @@ const publishSite = (siteName, description, credentials) => new Promise((resolve
     let tempDir;
     let jwtToken;
 
-    spinner.start('(2/4) Packaging site. Please wait...');
+    msgSucceed(0);
+    msgStart(1);
     createTempDir()
         .then(tmp => {
             tempDir = tmp;
@@ -192,8 +203,8 @@ const publishSite = (siteName, description, credentials) => new Promise((resolve
         .then(() => createZipfile(TMP_DIR, '/', siteName, { cwd: tempDir }))
         .then(zipfile => {
             zipFile = zipfile;
-
-            spinner.start('(3/4) Authorising. Please wait...');
+            msgSucceed(1);
+            msgStart(2);
             return auth(credentials.accessKey, credentials.secretKey);
         })
         .then(token => {
@@ -302,7 +313,7 @@ the email address you used to create this site.`);
             // eslint-disable-next-line prefer-destructuring
             description = result.description;
 
-            spinner.start('(1/4) Preparing upload. Please wait...');
+            msgStart(0);
             return sites.authoriseSite(siteName);
         })
         .then(() => environments.getAvailableEnvironments(siteName))
