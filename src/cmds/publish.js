@@ -288,13 +288,20 @@ const publish = (argv) => {
     let listOfEnvironments;
 
     loadCredentials()
-        .then(creds => credentials = creds) // eslint-disable-line no-return-assign
+        .then(creds => {
+            credentials = creds;
+            return Promise.resolve();
+        })
         .catch(() => {
             console.log(`It looks like you haven't signed up for this site yet.
 If this is an existing LINC site, please make sure to enter
 the email address you used to create this site.`);
 
-            return users.signup(argv.siteName);
+            return users.signup(argv.siteName)
+                .then(creds => {
+                    credentials = creds;
+                    return Promise.resolve();
+                });
         })
         .then(() => packageOptions(['siteName', 'buildProfile']))
         .then(pkg => {

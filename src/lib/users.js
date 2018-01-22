@@ -202,7 +202,10 @@ You might want to consider backing up the credentials in a safe place.
 
             return cred.save(signupResponse.clientId, signupResponse.clientSecret);
         })
-        .then(resolve)
+        .then(() => resolve({
+            accessKey: signupResponse.clientId,
+            secretKey: signupResponse.clientSecret,
+        }))
         .catch(err => {
             spinner.stop();
 
