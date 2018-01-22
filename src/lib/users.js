@@ -19,8 +19,7 @@ prompt.delimiter = '';
  * Ask user to accept terms and conditions
  */
 const getTCAcceptance = () => new Promise((resolve, reject) => {
-    console.log(`
-In order to use LINC, you'll need to accept the Terms and Conditions.
+    console.log(`In order to use LINC, you'll need to accept the Terms and Conditions.
 You can find the Terms and Conditions here: https://bitgenics.io/link/legal
 `);
     const schema = {

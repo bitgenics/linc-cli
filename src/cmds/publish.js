@@ -8,6 +8,7 @@ const zip = require('deterministic-zip');
 const fs = require('fs-extra');
 const auth = require('../lib/auth');
 const authorisify = require('../lib/authorisify');
+const backupCredentials = require('../lib/cred').backup;
 const loadCredentials = require('../lib/cred').load;
 const environments = require('../lib/environments');
 const sites = require('../lib/sites');
@@ -122,17 +123,6 @@ const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new 
 });
 
 /**
- * Create a temporary directory using global TMP_DIR.
- */
-const createTempDir = () => new Promise((resolve, reject) => {
-    fs.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
-        if (err) return reject(err);
-
-        return resolve(folder);
-    });
-});
-
-/**
  * Ask user for a publication description.
  * @param descr
  */
@@ -176,28 +166,24 @@ const getCredentials = (token) => new Promise((resolve, reject) => {
 });
 
 /**
- * Actually publish the site (upload to S3, let backend take it from there).
+ * Actually upload the site (upload to S3, let backend take it from there).
  * @param siteName
  * @param description
  * @param credentials
  */
-const publishSite = (siteName, description, credentials) => new Promise((resolve, reject) => {
+const uploadSite = (siteName, description, credentials) => new Promise((resolve, reject) => {
     const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
 
     let zipFile;
-    let tempDir;
     let jwtToken;
 
     msgSucceed(0);
     msgStart(1);
-    createTempDir()
-        .then(tmp => {
-            tempDir = tmp;
-            // Zip the dist directory
-            return createZipfile(tempDir, DIST_DIR, siteName);
-        })
+
+    const tempDir = fs.mkdtempSync(`${TMP_DIR}linc-`);
+    return createZipfile(tempDir, DIST_DIR, siteName)
         .then(() => createZipfile(TMP_DIR, '/', siteName, { cwd: tempDir }))
         .then(zipfile => {
             zipFile = zipfile;
@@ -278,40 +264,14 @@ const waitForDeployToFinish = (envs, siteName) => new Promise((resolve, reject) 
 });
 
 /**
- * Main entry point for this module.
+ *
  */
-const publish = (argv) => {
-    let credentials;
+const publishSite = (credentials, siteName) => {
     let description;
-    let packageJson;
-    let siteName;
     let listOfEnvironments;
 
-    loadCredentials()
-        .then(creds => {
-            credentials = creds;
-            return Promise.resolve();
-        })
-        .catch(() => {
-            console.log(`It looks like you haven't signed up for this site yet.
-If this is an existing LINC site, please make sure to enter
-the email address you used to create this site.`);
-
-            return users.signup(argv.siteName)
-                .then(creds => {
-                    credentials = creds;
-                    return Promise.resolve();
-                });
-        })
-        .then(() => packageOptions(['siteName', 'buildProfile']))
-        .then(pkg => {
-            packageJson = pkg;
-
-            // eslint-disable-next-line prefer-destructuring
-            siteName = packageJson.linc.siteName;
-
-            return askDescription('');
-        })
+    return packageOptions(['buildProfile'])
+        .then(() => askDescription(''))
         .then(result => {
             console.log();
 
@@ -326,7 +286,7 @@ the email address you used to create this site.`);
             spinner.stop();
 
             listOfEnvironments = envs.environments.map(x => x.name);
-            return publishSite(siteName, description, credentials);
+            return uploadSite(siteName, description, credentials);
         })
         .then(() => {
             spinner.start('Waiting for deploy to finish...');
@@ -343,6 +303,75 @@ the email address you used to create this site.`);
             spinner.stop();
             console.log(err.message ? err.message : err);
         });
+};
+
+/**
+ * Copy existing .linc/credentials to .linc/credentials.bak
+ */
+const moveCredentials = () => {
+    console.log(`I found credentials in this folder, but no siteName.
+As a precaution, I have moved your existing credentials:
+
+  .linc/credentials.bak -> .linc/credentials.
+`);
+
+    backupCredentials();
+};
+
+/**
+ * Login
+ */
+const login = () => {
+    console.log('Login not yet implemented.');
+    process.exit(255);
+};
+
+/**
+ * Main entry point for this module.
+ */
+const publish = (argv) => {
+    let credentials = null;
+    try {
+        credentials = loadCredentials();
+    } catch (e) {
+        // Empty block
+    }
+
+    /*
+     * Existing site name
+     */
+    if (argv.siteName) {
+        if (credentials) return publishSite(credentials, argv.siteName);
+
+        return login()
+            .then(creds => publishSite(creds, argv.siteName))
+            .catch(console.log);
+    }
+
+    /*
+     * New site name
+     */
+    if (credentials) {
+        // No site name but credentials found? Move credentials out of the way
+        moveCredentials();
+    }
+
+    console.log(`It looks like you haven't signed up for this site yet.
+Please follow the steps to create your credentials.
+`);
+
+    return users.signup()
+        .then(creds => {
+            credentials = creds;
+
+            return packageOptions(['siteName']);
+        })
+        .then(pkg => {
+            const { siteName } = pkg.linc;
+
+            return publishSite(credentials, siteName);
+        })
+        .catch(console.log);
 };
 
 exports.command = ['publish', 'deploy'];

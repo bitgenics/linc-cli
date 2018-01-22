@@ -9,18 +9,28 @@ const credentialsFile = path.join(DOT_LINC_DIR, 'credentials');
 /**
  * Get credentials
  */
-const load = () => new Promise((resolve, reject) => {
-    if (!fs.existsSync(credentialsFile)) return reject(new Error('No credentials file found.'));
+const load = () => {
+    if (!fs.existsSync(credentialsFile)) throw new Error('No credentials file found.');
 
     if ((fs.statSync(credentialsFile).mode & 0o777) !== 0o600) {
-        console.log(`WARNING: permissions of credentials file ${credentialsFile} may have been tampered with.`);
+        console.log(`WARNING: permissions of credentials file ${credentialsFile} may have been tampered with!
+Please check your credentials and make sure permissions are set correctly:
+
+$ chmod 0600 ${credentialsFile}
+`);
         process.exit(255);
     }
 
     const credentials = fs.readJSONSync(credentialsFile, { throws: false });
-    if (!credentials.accessKey || !credentials.secretKey) return reject(new Error('No credentials found in file.'));
-    return resolve(credentials);
-});
+    if (!credentials.accessKey || !credentials.secretKey) throw new Error('No credentials found in file.');
+
+    return credentials;
+};
+
+/**
+ * Backup existing credentials
+ */
+const backup = () => fs.renameSync(credentialsFile, `${credentialsFile}.bak`);
 
 /**
  * Save credentials
@@ -48,6 +58,7 @@ const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
 });
 
 module.exports = {
+    backup,
     load,
     save,
 };

@@ -11,7 +11,15 @@ let JwtToken = null;
 /**
  * Convenience function to authorise
  */
-const authorise = () => loadCredentials().then(credentials => auth(credentials.accessKey, credentials.secretKey));
+const authorise = () => {
+    let credentials = null;
+    try {
+        credentials = loadCredentials();
+        return auth(credentials.accessKey, credentials.secretKey);
+    } catch (e) {
+        return Promise.reject(e);
+    }
+};
 
 /**
  * Get jwt token from file in .linc directory
