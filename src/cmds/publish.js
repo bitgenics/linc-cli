@@ -367,6 +367,7 @@ const publish = (argv) => {
     }
 
     let suppressSignupMessage = false;
+
     /*
      * Existing site name
      */
