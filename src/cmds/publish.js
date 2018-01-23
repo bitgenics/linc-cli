@@ -9,6 +9,7 @@ const fs = require('fs-extra');
 const auth = require('../lib/auth');
 const backupCredentials = require('../lib/cred').backup;
 const loadCredentials = require('../lib/cred').load;
+const { removeToken } = require('../lib/cred');
 const saveCredentials = require('../lib/cred').save;
 const authorisify = require('../lib/authorisify');
 const environments = require('../lib/environments');
@@ -321,6 +322,7 @@ As a precaution, I have moved your existing credentials:
 `);
 
     backupCredentials();
+    removeToken();
 };
 
 /**

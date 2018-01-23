@@ -5,6 +5,7 @@ const dotLinc = require('./dot-linc');
 
 const { DOT_LINC_DIR } = dotLinc;
 const credentialsFile = path.join(DOT_LINC_DIR, 'credentials');
+const tokenFile = path.join(DOT_LINC_DIR, 'token');
 
 /**
  * Get credentials
@@ -39,6 +40,19 @@ const backup = () => {
 };
 
 /**
+ * Remove token from .linc directory
+ */
+const removeToken = () => {
+    if (fs.existsSync(tokenFile)) {
+        try {
+            fs.unlinkSync(tokenFile);
+        } catch (e) {
+            // Do nothing
+        }
+    }
+};
+
+/**
  * Save credentials
  * @param accessKey
  * @param secretKey
@@ -66,5 +80,6 @@ const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
 module.exports = {
     backup,
     load,
+    removeToken,
     save,
 };
