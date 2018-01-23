@@ -269,7 +269,7 @@ const waitForDeployToFinish = (envs, siteName) => new Promise((resolve, reject) 
 });
 
 /**
- *
+ * Publish site
  */
 const publishSite = (credentials, siteName) => {
     let description;
