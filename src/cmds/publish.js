@@ -7,9 +7,10 @@ const crypto = require('crypto');
 const zip = require('deterministic-zip');
 const fs = require('fs-extra');
 const auth = require('../lib/auth');
-const authorisify = require('../lib/authorisify');
 const backupCredentials = require('../lib/cred').backup;
 const loadCredentials = require('../lib/cred').load;
+const saveCredentials = require('../lib/cred').save;
+const authorisify = require('../lib/authorisify');
 const environments = require('../lib/environments');
 const sites = require('../lib/sites');
 const users = require('../lib/users');
@@ -25,6 +26,10 @@ const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 const BUCKET_NAME = config.S3.deployBucket;
 
 const IdentityPoolId = 'eu-central-1:a05922c7-303d-4b8c-9843-60f5e590a812';
+
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
 
 let reference;
 
@@ -319,12 +324,49 @@ As a precaution, I have moved your existing credentials:
 };
 
 /**
- * Login
+ * Ask for user credentials
  */
-const login = () => {
-    console.log('Login not yet implemented.');
-    process.exit(255);
-};
+const credentialsFromPrompt = () => new Promise((resolve, reject) => {
+    const schema = {
+        properties: {
+            access_key_id: {
+                description: 'Access key:',
+                required: true,
+            },
+            secret_access_key: {
+                description: 'Secret key:',
+                hidden: true,
+            },
+        },
+    };
+
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve({
+            access_key_id: result.access_key_id,
+            secret_access_key: result.secret_access_key,
+        });
+    });
+});
+
+/**
+ * Log in user
+ */
+const login = () => new Promise((resolve, reject) => {
+    let credentials;
+
+    return credentialsFromPrompt()
+        .then(creds => {
+            credentials = creds;
+            return auth(creds.access_key_id, creds.secret_access_key);
+        })
+        .then(() => backupCredentials())
+        .then(() => saveCredentials(credentials.access_key_id, credentials.secret_access_key))
+        .then(resolve)
+        .catch(reject);
+});
 
 /**
  * Check for existing site name in back end
@@ -332,7 +374,7 @@ const login = () => {
  */
 const existingSite = (siteName) => {
     const existingSites = [
-        'coffee-bean-ninja',
+        // 'coffee-bean-ninja',
         'bitgenics',
         'dabeanz',
         'linc-react-games',
@@ -402,7 +444,7 @@ Please follow the steps to create your credentials.
 `);
     }
 
-    return users.signup()
+    return users.signup(siteName)
         .then(creds => {
             credentials = creds;
 

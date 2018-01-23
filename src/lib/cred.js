@@ -30,7 +30,13 @@ $ chmod 0600 ${credentialsFile}
 /**
  * Backup existing credentials
  */
-const backup = () => fs.renameSync(credentialsFile, `${credentialsFile}.bak`);
+const backup = () => {
+    try {
+        fs.renameSync(credentialsFile, `${credentialsFile}.bak`);
+    } catch (e) {
+        // Do nothing
+    }
+};
 
 /**
  * Save credentials
@@ -53,7 +59,7 @@ const save = (accessKey, secretKey) => new Promise((resolve, reject) => {
         })
         .then(() => fs.writeJson(credentialsFile, credentials))
         .then(() => fs.chmod(credentialsFile, 0o600))
-        .then(() => resolve())
+        .then(() => resolve(credentials))
         .catch(err => reject(err));
 });
 
