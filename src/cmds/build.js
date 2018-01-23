@@ -1,6 +1,7 @@
 /* eslint-disable global-require,import/no-dynamic-require */
 const fs = require('fs-extra');
 const path = require('path');
+const installProfilePackage = require('../lib/install-profile-pkg');
 const assertPkg = require('../lib/package-json').assert;
 const notice = require('../lib/notice');
 const packageOptions = require('../lib/pkgOptions');
@@ -38,6 +39,7 @@ exports.handler = () => {
 
     clean();
     packageOptions(['buildProfile'])
+        .then(pkg => installProfilePackage(pkg.linc.buildProfile))
         .then(() => {
             console.log('Building. Please wait...');
             return build();

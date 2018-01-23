@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const zip = require('deterministic-zip');
 const fs = require('fs-extra');
 const auth = require('../lib/auth');
+const installProfilePackage = require('../lib/install-profile-pkg');
 const backupCredentials = require('../lib/cred').backup;
 const loadCredentials = require('../lib/cred').load;
 const { removeToken } = require('../lib/cred');
@@ -277,7 +278,16 @@ const publishSite = (credentials, siteName) => {
     let listOfEnvironments;
 
     return packageOptions(['buildProfile'])
-        .then(() => askDescription(''))
+        .then(pkg => {
+            spinner.start('Installing profile package. Please wait...');
+
+            return installProfilePackage(pkg.linc.buildProfile);
+        })
+        .then(() => {
+            spinner.succeed('Profile package installed.');
+
+            return askDescription('');
+        })
         .then(result => {
             console.log();
 

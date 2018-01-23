@@ -1,4 +1,3 @@
-const { exec } = require('child_process');
 const _ = require('underscore');
 const fs = require('fs-extra');
 const ora = require('ora');
@@ -8,6 +7,7 @@ const figlet = require('figlet');
 const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
+const installProfilePackage = require('../lib/install-profile-pkg');
 const dotLinc = require('../lib/dot-linc');
 const lincProfiles = require('../lib/linc-profiles');
 const assertPkg = require('../lib/package-json').assert;
@@ -72,22 +72,6 @@ const linclet = (msg) => new Promise((resolve, reject) => {
         if (err) return reject();
 
         console.log(data);
-        return resolve();
-    });
-});
-
-/**
- * Install selected profile package
- * @param pkgName
- * @returns {Promise<any>}
- */
-const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
-    const command = fs.existsSync(path.join(process.cwd(), 'yarn.lock'))
-        ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
-
-    exec(command, { cwd: process.cwd() }, (err) => {
-        if (err) return reject(err);
-
         return resolve();
     });
 });
@@ -255,7 +239,7 @@ const initialise = (argv) => {
 
             spinner.start('Installing profile package. Please wait...');
 
-            return installProfilePkg(profile)
+            return installProfilePackage(profile)
                 .then(() => {
                     spinner.succeed('Profile package installed.');
 
