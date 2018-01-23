@@ -327,9 +327,38 @@ const login = () => {
 };
 
 /**
+ * Check for existing site name in back end
+ * @param siteName
+ */
+const existingSite = (siteName) => {
+    const existingSites = [
+        'coffee-bean-ninja',
+        'bitgenics',
+        'dabeanz',
+        'linc-react-games',
+        'localised',
+        'fysho-web',
+        'geodash',
+        'armory-react',
+        'linc-demo-site',
+        'buildkite-www-t',
+        'linc-github-demo',
+        'bankwest-test',
+        'fysho',
+        'linc-demo',
+        'jetstar-cards',
+        'react-trello-board',
+        'cath-github-demo',
+    ];
+    return existingSites.indexOf(siteName) >= 0;
+};
+
+/**
  * Main entry point for this module.
  */
 const publish = (argv) => {
+    let { siteName } = argv;
+
     let credentials = null;
     try {
         credentials = loadCredentials();
@@ -337,15 +366,25 @@ const publish = (argv) => {
         // Empty block
     }
 
+    let suppressSignupMessage = false;
     /*
      * Existing site name
      */
-    if (argv.siteName) {
-        if (credentials) return publishSite(credentials, argv.siteName);
+    if (siteName) {
+        if (credentials) return publishSite(credentials, siteName);
 
-        return login()
-            .then(creds => publishSite(creds, argv.siteName))
-            .catch(console.log);
+        if (!existingSite(siteName)) {
+            return login()
+                .then(creds => publishSite(creds, siteName))
+                .catch(console.log);
+        }
+
+        suppressSignupMessage = true;
+
+        console.log(`Your existing site ${siteName} needs to be ported. Please follow 
+the instructions below. Please use the same email address you used 
+when you originally signed up this site.
+`);
     }
 
     /*
@@ -356,9 +395,11 @@ const publish = (argv) => {
         moveCredentials();
     }
 
-    console.log(`It looks like you haven't signed up for this site yet.
+    if (!suppressSignupMessage) {
+        console.log(`It looks like you haven't signed up for this site yet.
 Please follow the steps to create your credentials.
 `);
+    }
 
     return users.signup()
         .then(creds => {
@@ -367,7 +408,8 @@ Please follow the steps to create your credentials.
             return packageOptions(['siteName']);
         })
         .then(pkg => {
-            const { siteName } = pkg.linc;
+            // eslint-disable-next-line prefer-destructuring
+            siteName = pkg.linc.siteName;
 
             return publishSite(credentials, siteName);
         })
