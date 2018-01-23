@@ -359,6 +359,10 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 const login = () => new Promise((resolve, reject) => {
     let credentials;
 
+    console.log(`Your site has a name, but I can't find any credentials. Please log
+in by entering your access key and secret key when prompted.
+`);
+
     return credentialsFromPrompt()
         .then(creds => {
             credentials = creds;
