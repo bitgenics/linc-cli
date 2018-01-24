@@ -392,7 +392,6 @@ const existingSite = (siteName) => {
         'armory-react',
         'linc-demo-site',
         'buildkite-www-t',
-        'linc-github-demo',
         'bankwest-test',
         'fysho',
         'linc-demo',
