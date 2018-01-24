@@ -19,7 +19,7 @@ module.exports = (rule, options) => {
     try {
         const ignore = fs.readFileSync(ignorePath).toString();
         const lines = _.filter(ignore.split('\n'), x => x.length > 0);
-        if (lines.indexOf(rule.trim()) === 0) {
+        if (lines.indexOf(rule.trim()) < 0) {
             lines.push(rule.trim());
             fs.writeFileSync(ignorePath, `${lines.join('\n')}\n`);
         }
