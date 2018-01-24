@@ -8,6 +8,7 @@ const writePkg = require('write-pkg');
 const authorisify = require('../lib/authorisify');
 const config = require('../config/config.json');
 const domainify = require('./domainify');
+const installProfilePackage = require('../lib/install-profile-pkg');
 const lincProfiles = require('./linc-profiles');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
@@ -190,11 +191,18 @@ const profileHandler = (pkg) => new Promise((resolve, reject) => {
         const profile = lincProfiles[selectedProfile].pkg;
         if (profile) {
             pkg.linc.buildProfile = profile;
-            return resolve(pkg);
+
+            return installProfilePackage(profile)
+                .then(() => resolve(pkg))
+                .catch(reject);
         }
         return askOtherProfile()
             .then(p => {
                 pkg.linc.buildProfile = p;
+
+                return installProfilePackage(profile)
+                    .then(() => resolve(pkg))
+                    .catch(reject);
             });
     });
 });

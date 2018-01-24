@@ -5,9 +5,8 @@ const path = require('path');
 /**
  * Install selected profile package
  * @param pkgName
- * @returns {Promise<any>}
  */
-const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
+module.exports = (pkgName) => new Promise((resolve, reject) => {
     const command = fs.existsSync(path.join(process.cwd(), 'yarn.lock'))
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
@@ -17,5 +16,3 @@ const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
         return resolve();
     });
 });
-
-module.exports = installProfilePkg;
