@@ -1,6 +1,6 @@
 const request = require('request');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
@@ -14,7 +14,7 @@ const getAvailableEnvironments = (siteName) => (jwtToken) => new Promise((resolv
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -44,7 +44,7 @@ const addEnvironment = (settings, envName, siteName) => (jwtToken) => new Promis
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -70,7 +70,7 @@ const deleteEnvironment = (envName, siteName) => (jwtToken) => new Promise((reso
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments/${envName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -99,7 +99,7 @@ const updateEnvironment = (settings, envName, siteName) => (jwtToken) => new Pro
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/environments/${envName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -119,7 +119,7 @@ const updateEnvironment = (settings, envName, siteName) => (jwtToken) => new Pro
  * @param results
  */
 module.exports.showAvailableEnvironments = (results) => {
-    const environments = results.environments;
+    const { environments } = results;
     const siteName = results.site_name;
 
     console.log(`Here are the available environments for ${siteName}:`);
@@ -130,33 +130,29 @@ module.exports.showAvailableEnvironments = (results) => {
 
 /**
  * Get available environments
- * @param argv
  * @param siteName
  */
-module.exports.getAvailableEnvironments = (argv, siteName) => authorisify(argv, getAvailableEnvironments(siteName));
+module.exports.getAvailableEnvironments = (siteName) => authorisify(getAvailableEnvironments(siteName));
 
 /**
  * Add new environment
- * @param argv
  * @param s - settings
  * @param e - envName
  * @param n - siteName
  */
-module.exports.addEnvironment = (argv, s, e, n) => authorisify(argv, addEnvironment(s, e, n));
+module.exports.addEnvironment = (s, e, n) => authorisify(addEnvironment(s, e, n));
 
 /**
  * Delete environment
- * @param argv
  * @param e - envName
  * @param s - siteName
  */
-module.exports.deleteEnvironment = (argv, e, s) => authorisify(argv, deleteEnvironment(e, s));
+module.exports.deleteEnvironment = (e, s) => authorisify(deleteEnvironment(e, s));
 
 /**
  * Update environment
- * @param argv
  * @param s - settings
  * @param e - envName
  * @param n - siteName
  */
-module.exports.updateEnvironment = (argv, s, e, n) => authorisify(argv, updateEnvironment(s, e, n));
+module.exports.updateEnvironment = (s, e, n) => authorisify(updateEnvironment(s, e, n));

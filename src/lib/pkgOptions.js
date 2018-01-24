@@ -6,8 +6,9 @@ const request = require('request');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 const domainify = require('./domainify');
+const installProfilePackage = require('../lib/install-profile-pkg');
 const lincProfiles = require('./linc-profiles');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
@@ -90,7 +91,7 @@ const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -109,10 +110,9 @@ const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
 
 /**
  * Handler name option
- * @param argv
  * @param pkg
  */
-const nameHandler = (argv, pkg) => new Promise((resolve, reject) => {
+const nameHandler = (pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     getName(domainify(pkg.name))
@@ -125,7 +125,7 @@ const nameHandler = (argv, pkg) => new Promise((resolve, reject) => {
             // Site name already existing is a fatal error
             if (exists) process.exit(255);
 
-            return authorisify(argv, createNewSite(pkg.linc.siteName));
+            return authorisify(createNewSite(pkg.linc.siteName));
         })
         .then(() => resolve(pkg))
         .catch(reject);
@@ -135,8 +135,8 @@ const nameHandler = (argv, pkg) => new Promise((resolve, reject) => {
  * Show profiles available
  */
 const showProfiles = () => {
-    console.log(`
-Please choose a profile:\n`);
+    console.log(`Please choose a profile:
+`);
     _.each(lincProfiles, (p, k) => { console.log(`${k}) ${p.name}`); });
 };
 
@@ -165,10 +165,9 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
 
 /**
  * Ask which profile to use
- * @param argv
  * @param pkg
  */
-const profileHandler = (argv, pkg) => new Promise((resolve, reject) => {
+const profileHandler = (pkg) => new Promise((resolve, reject) => {
     pkg.linc = pkg.linc || {};
 
     showProfiles();
@@ -192,11 +191,18 @@ const profileHandler = (argv, pkg) => new Promise((resolve, reject) => {
         const profile = lincProfiles[selectedProfile].pkg;
         if (profile) {
             pkg.linc.buildProfile = profile;
-            return resolve(pkg);
+
+            return installProfilePackage(profile)
+                .then(() => resolve(pkg))
+                .catch(reject);
         }
         return askOtherProfile()
             .then(p => {
                 pkg.linc.buildProfile = p;
+
+                return installProfilePackage(profile)
+                    .then(() => resolve(pkg))
+                    .catch(reject);
             });
     });
 });
@@ -211,11 +217,10 @@ const availableOptions = {
 
 /**
  * Core function that handles the options
- * @param argv
  * @param opts
  * @param pkg
  */
-const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
+const handleOptions = (opts, pkg) => new Promise((resolve, reject) => {
     const options = opts;
 
     const handleOption = () => {
@@ -227,7 +232,7 @@ const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
         const handler = availableOptions[option];
         if (!handler) return reject(new Error('Unknown option provided!'));
 
-        return handler(argv, pkg)
+        return handler(pkg)
             .then(handleOption)
             .catch(reject);
     };
@@ -237,16 +242,15 @@ const handleOptions = (argv, opts, pkg) => new Promise((resolve, reject) => {
 
 /**
  * Option handler
- * @param argv
  * @param opts
  */
-const optionHandler = (argv, opts) => new Promise((resolve, reject) => {
+const optionHandler = (opts) => new Promise((resolve, reject) => {
     let packageJson;
     readPkg()
         .then(pkg => {
             packageJson = pkg;
             packageJson.linc = packageJson.linc || {};
-            return handleOptions(argv, opts, packageJson);
+            return handleOptions(opts, packageJson);
         })
         .then(() => writePkg(packageJson))
         .then(() => resolve(packageJson))

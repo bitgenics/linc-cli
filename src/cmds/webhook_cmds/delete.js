@@ -32,14 +32,14 @@ const areYouSure = () => new Promise((resolve, reject) => {
 
 /**
  * Delete webhook
- * @param argv
  */
-const deleteWebhook = (argv) => {
+const deleteWebhook = () => {
     const spinner = ora();
     let siteName;
 
     readPkg()
         .then(pkg => {
+            // eslint-disable-next-line prefer-destructuring
             siteName = pkg.linc.siteName;
             if (siteName === undefined) {
                 // eslint-disable-next-line max-len
@@ -53,7 +53,7 @@ const deleteWebhook = (argv) => {
             }
 
             spinner.start('Deleting webhook. Please wait...');
-            return webhooks.deleteWebhook(argv, siteName);
+            return webhooks.deleteWebhook(siteName);
         })
         .then(reply => {
             spinner.stop();
@@ -67,10 +67,10 @@ const deleteWebhook = (argv) => {
 
 exports.command = 'delete';
 exports.desc = 'Delete a webhook';
-exports.handler = (argv) => {
+exports.handler = () => {
     assertPkg();
 
     notice();
 
-    deleteWebhook(argv);
+    deleteWebhook();
 };

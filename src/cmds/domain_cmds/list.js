@@ -8,7 +8,8 @@ const assertPkg = require('../../lib/package-json').assert;
  * @param argv
  */
 const list = (argv) => {
-    if (!argv.siteName) {
+    const { siteName } = argv;
+    if (!siteName) {
         console.log('This project does not have a site name. Please create a site first.');
         process.exit(255);
     }
@@ -17,10 +18,9 @@ const list = (argv) => {
 
     notice();
 
-    const siteName = argv.siteName;
     const spinner = ora('Retrieving available domains...').start();
 
-    domains.getAvailableDomains(argv, siteName)
+    domains.getAvailableDomains(siteName)
         .then(result => {
             spinner.stop();
 

@@ -1,6 +1,6 @@
 const request = require('request');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
@@ -14,7 +14,7 @@ const getAvailableDeployments = (siteName) => (jwtToken) => new Promise((resolve
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/deployments`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -35,7 +35,6 @@ const getAvailableDeployments = (siteName) => (jwtToken) => new Promise((resolve
 
 /**
  * Get available deployments
- * @param argv
  * @param siteName
  */
-module.exports.getAvailableDeployments = (argv, siteName) => authorisify(argv, getAvailableDeployments(siteName));
+module.exports.getAvailableDeployments = (siteName) => authorisify(getAvailableDeployments(siteName));

@@ -18,20 +18,21 @@ const error = (err) => {
  * @param argv
  */
 const show = (argv) => {
-    if (!argv.siteName) {
+    const { siteName } = argv;
+
+    if (!siteName) {
         console.log('This project does not have a site name. Please create a site first.');
         process.exit(255);
     }
 
-    console.log(`The current site is: '${argv.siteName}'\n`);
+    console.log(`The current site is: '${siteName}'\n`);
 
-    const siteName = argv.siteName;
     const spinner = ora();
 
     spinner.start('Retrieving data. Please wait...');
     return Promise.all([
-        domains.getAvailableDomains(argv, siteName),
-        releases.getAvailableReleases(argv, siteName),
+        domains.getAvailableDomains(siteName),
+        releases.getAvailableReleases(siteName),
     ])
         .then(result => {
             spinner.stop();

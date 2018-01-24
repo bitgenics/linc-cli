@@ -1,4 +1,4 @@
-const fsp = require('fs-promise');
+const fs = require('fs-extra');
 const ora = require('ora');
 const prompt = require('prompt');
 const environments = require('../../lib/environments');
@@ -71,12 +71,12 @@ const updateEnvironment = (argv) => {
     const spinner = ora('Authorising. Please wait...');
     spinner.start();
 
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     let envName = 'prod';
     let fileName;
 
     spinner.start('Retrieving environments. Please wait...');
-    environments.getAvailableEnvironments(argv, siteName)
+    environments.getAvailableEnvironments(siteName)
         .then(envs => {
             spinner.stop();
 
@@ -101,12 +101,12 @@ const updateEnvironment = (argv) => {
         .then(settingsFileName => {
             fileName = settingsFileName;
 
-            return fsp.readJson(fileName);
+            return fs.readJson(fileName);
         })
         .then(json => {
             spinner.start('Updating settings in environment. Please wait...');
 
-            return environments.updateEnvironment(argv, json, envName, argv.siteName);
+            return environments.updateEnvironment(json, envName, argv.siteName);
         })
         .then(() => {
             spinner.succeed('Environment successfully updated.');

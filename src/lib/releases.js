@@ -1,7 +1,7 @@
 const _ = require('underscore');
 const request = require('request');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
@@ -18,7 +18,7 @@ const createRelease = (siteName, deployKey, domainName, envName) => (jwtToken) =
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify({
             domainName,
@@ -46,7 +46,7 @@ const getAvailableReleases = (siteName) => (jwtToken) => new Promise((resolve, r
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/releases`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -85,17 +85,15 @@ module.exports.showAvailableReleases = (results) => {
 
 /**
  * Create a new release
- * @param argv
  * @param s - siteName
  * @param d - deployKey
  * @param n - domainName
  * @param e - envName
  */
-module.exports.createRelease = (argv, s, d, n, e) => authorisify(argv, createRelease(s, d, n, e));
+module.exports.createRelease = (s, d, n, e) => authorisify(createRelease(s, d, n, e));
 
 /**
  * Get available releases
- * @param argv
  * @param siteName
  */
-module.exports.getAvailableReleases = (argv, siteName) => authorisify(argv, getAvailableReleases(siteName));
+module.exports.getAvailableReleases = (siteName) => authorisify(getAvailableReleases(siteName));

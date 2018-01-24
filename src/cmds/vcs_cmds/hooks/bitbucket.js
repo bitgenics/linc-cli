@@ -33,9 +33,8 @@ const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
 
 /**
  * Create new hook
- * @param argv
  */
-const createHook = argv => {
+const createHook = () => {
     console.log(usage);
 
     const spinner = ora();
@@ -43,13 +42,14 @@ const createHook = argv => {
     const body = {};
     readPkg()
         .then(pkg => {
+            // eslint-disable-next-line prefer-destructuring
             siteName = pkg.linc.siteName;
             if (!siteName) {
                 throw new Error('No site name found in package.json.');
             }
 
             let repositoryUrl = '';
-            const repository = pkg.repository;
+            const { repository } = pkg;
             if (repository && repository.type && repository.url) {
                 if (repository.type === 'git') repositoryUrl = repository.url;
             }
@@ -59,7 +59,7 @@ const createHook = argv => {
             body.repositoryUrl = result.repositoryUrl;
 
             spinner.start('Creating webhook. Please wait...');
-            return webhooks.createWebhook(argv, siteName, 'bitbucket', body);
+            return webhooks.createWebhook(siteName, 'bitbucket', body);
         })
         .then(response => {
             spinner.stop();
@@ -77,20 +77,19 @@ const createHook = argv => {
 
 /**
  * Delete existing hook
- * @param argv
  */
-const deleteHook = argv => {
+const deleteHook = () => {
     const spinner = ora();
-    let siteName;
+
     readPkg()
         .then(pkg => {
-            siteName = pkg.linc.siteName;
+            const { siteName } = pkg.linc;
             if (!siteName) {
                 throw new Error('No site name found in package.json.');
             }
 
             spinner.start('Deleting webhook. Please wait...');
-            return webhooks.deleteWebhook(argv, siteName, 'bitbucket');
+            return webhooks.deleteWebhook(siteName, 'bitbucket');
         })
         .then(response => {
             spinner.stop();
@@ -112,14 +111,14 @@ const deleteHook = argv => {
  */
 // eslint-disable-next-line consistent-return
 module.exports.handler = argv => {
-    if (!argv.command) {
+    const { command } = argv;
+    if (!command) {
         console.log('You failed to provide a command.');
         process.exit(0);
     }
 
-    const command = argv.command;
-    if (command === 'create') return createHook(argv);
-    if (command === 'delete') return deleteHook(argv);
+    if (command === 'create') return createHook();
+    if (command === 'delete') return deleteHook();
 
     console.log('You provided an invalid command.');
 };

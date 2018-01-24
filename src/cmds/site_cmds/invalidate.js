@@ -22,20 +22,19 @@ const error = (err) => {
  * @param argv
  */
 const invalidate = (argv) => {
-    if (!argv.siteName) {
+    const { siteName } = argv;
+    if (!siteName) {
         console.log('This project does not have a site name. Please create a site first.');
         process.exit(255);
     }
 
-    const siteName = argv.siteName;
-
-    let pattern = '/*';
-    if (argv.pattern) {
-        pattern = argv.pattern;
+    let { pattern } = argv;
+    if (!pattern) {
+        pattern = '/*';
     }
 
     const spinner = ora('Invalidating cache...').start();
-    sites.invalidateCache(argv, siteName, pattern)
+    sites.invalidateCache(siteName, pattern)
         .then(() => {
             spinner.succeed('Cache invalidated.');
         })

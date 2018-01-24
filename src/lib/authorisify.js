@@ -1,15 +1,25 @@
 const fs = require('fs-extra');
 const path = require('path');
 const auth = require('./auth');
-const createDotLinc = require('../lib/createDotLinc');
+const loadCredentials = require('./cred').load;
+const dotLinc = require('../lib/dot-linc');
+
+const { DOT_LINC_DIR } = dotLinc;
 
 let JwtToken = null;
 
 /**
  * Convenience function to authorise
- * @param argv
  */
-const authorise = (argv) => auth(argv.accessKey, argv.secretKey);
+const authorise = () => {
+    let credentials = null;
+    try {
+        credentials = loadCredentials();
+        return auth(credentials.accessKey, credentials.secretKey);
+    } catch (e) {
+        return Promise.reject(e);
+    }
+};
 
 /**
  * Get jwt token from file in .linc directory
@@ -18,7 +28,7 @@ const getJwtToken = () => new Promise((resolve, reject) => {
     if (JwtToken) return resolve(JwtToken);
 
     try {
-        const tokenFile = path.resolve(process.cwd(), '.linc', 'token');
+        const tokenFile = path.join(DOT_LINC_DIR, 'token');
         const token = fs.readFileSync(tokenFile);
         return resolve(token.toString().trim());
     } catch (e) {
@@ -34,10 +44,10 @@ const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
     JwtToken = jwtToken;
 
     // Create .linc directory if not already there
-    createDotLinc();
+    dotLinc.ensureDir();
 
     try {
-        const tokenFile = path.resolve(process.cwd(), '.linc', 'token');
+        const tokenFile = path.join(DOT_LINC_DIR, 'token');
         fs.writeFileSync(tokenFile, `${jwtToken}\n`);
         return resolve(jwtToken);
     } catch (e) {
@@ -47,10 +57,9 @@ const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
 
 /**
  * Entry point
- * @param argv
  * @param func
  */
-module.exports = (argv, func) => new Promise((resolve, reject) => {
+module.exports = (func) => new Promise((resolve, reject) => {
     let jwtToken;
 
     /**
@@ -64,7 +73,7 @@ module.exports = (argv, func) => new Promise((resolve, reject) => {
 
     getJwtToken()
         .then(tokenFunc)
-        .catch(() => authorise(argv)
+        .catch(() => authorise()
             .then(saveJwtToken)
             .then(tokenFunc))
         .then(resolve)

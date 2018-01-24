@@ -92,9 +92,8 @@ type to 'application/json', or your webhook calls will fail.
 
 /**
  * Create webhook
- * @param argv
  */
-const createWebhook = (argv) => {
+const createWebhook = () => {
     console.log(explanation);
 
     const spinner = ora();
@@ -103,6 +102,7 @@ const createWebhook = (argv) => {
 
     readPkg()
         .then(pkg => {
+            // eslint-disable-next-line prefer-destructuring
             siteName = pkg.linc.siteName;
             if (siteName === undefined) {
                 // eslint-disable-next-line max-len
@@ -119,7 +119,7 @@ const createWebhook = (argv) => {
             body.access_token = result.access_token;
 
             spinner.start('Creating webhook. Please wait...');
-            return webhooks.createWebhook(argv, siteName, body);
+            return webhooks.createWebhook(siteName, body);
         })
         .then(response => {
             spinner.stop();
@@ -133,10 +133,10 @@ const createWebhook = (argv) => {
 
 exports.command = 'create';
 exports.desc = 'Create a webhook';
-exports.handler = (argv) => {
+exports.handler = () => {
     assertPkg();
 
     notice();
 
-    createWebhook(argv);
+    createWebhook();
 };

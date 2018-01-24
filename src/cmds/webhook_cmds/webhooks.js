@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 const request = require('request');
 const authorisify = require('../../lib/authorisify');
-const config = require('../../config.json');
+const config = require('../../config/config.json');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
@@ -19,7 +19,7 @@ const createWebhook = (siteName, serviceName, body) => (jwtToken) => new Promise
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/webhooks/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -48,7 +48,7 @@ const deleteWebhook = (siteName, serviceName) => (jwtToken) => new Promise((reso
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/webhooks/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -66,17 +66,15 @@ const deleteWebhook = (siteName, serviceName) => (jwtToken) => new Promise((reso
 
 /**
  * Create webhook
- * @param argv
  * @param s - siteName
  * @param n - serviceName
  * @param b - body
  */
-module.exports.createWebhook = (argv, s, n, b) => authorisify(argv, createWebhook(s, n, b));
+module.exports.createWebhook = (s, n, b) => authorisify(createWebhook(s, n, b));
 
 /**
  * Delete webhook
- * @param argv
  * @param s - siteName
  * @param n - serviceName
  */
-module.exports.deleteWebhook = (argv, s, n) => authorisify(argv, deleteWebhook(s, n));
+module.exports.deleteWebhook = (s, n) => authorisify(deleteWebhook(s, n));

@@ -86,7 +86,9 @@ so we can assist in adding the domain.`);
 exports.command = 'add';
 exports.desc = 'Add a domain name';
 exports.handler = (argv) => {
-    if (!argv.siteName) {
+    const { siteName } = argv;
+
+    if (!siteName) {
         console.log('This project does not have a site name. Please create a site first.');
         process.exit(255);
     }
@@ -96,17 +98,16 @@ exports.handler = (argv) => {
     notice();
 
     const spinner = ora();
-    const siteName = argv.siteName;
     let envName;
     readPkg()
         .then(pkg => {
-            const linc = pkg.linc;
+            const { linc } = pkg;
             if (!linc || !linc.buildProfile) {
                 return Promise.reject(new Error('Initalisation incomplete. Did you forget to run `linc site create`?'));
             }
 
             spinner.start('Retrieving environments. Please wait...');
-            return environments.getAvailableEnvironments(argv, siteName);
+            return environments.getAvailableEnvironments(siteName);
         })
         .then(envs => {
             spinner.stop();
@@ -130,7 +131,7 @@ exports.handler = (argv) => {
         })
         .then(y => {
             spinner.start('Adding domain. Please wait...');
-            return domains.addDomain(argv, y.domain_name, envName, siteName);
+            return domains.addDomain(y.domain_name, envName, siteName);
         })
         .then(() => {
             spinner.stop();

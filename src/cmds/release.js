@@ -112,12 +112,11 @@ Please select the environment to which you want to attach the domain.
 
 /**
  * Get domains and deployments in one go
- * @param argv
  * @param site
  */
-const getDomainsAndDeployments = (argv, site) => Promise.all([
-    domains.getAvailableDomains(argv, site),
-    deployments.getAvailableDeployments(argv, site),
+const getDomainsAndDeployments = (site) => Promise.all([
+    domains.getAvailableDomains(site),
+    deployments.getAvailableDeployments(site),
 ]);
 
 /**
@@ -138,12 +137,12 @@ const releaseLatest = (argv) => {
     spinner.start();
 
     const domainsToRelease = [];
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     let envName = 'prod';
     let deployKey = null;
 
     spinner.start('Retrieving environments. Please wait...');
-    return environments.getAvailableEnvironments(argv, siteName)
+    return environments.getAvailableEnvironments(siteName)
         .then(envs => {
             spinner.stop();
 
@@ -164,7 +163,7 @@ const releaseLatest = (argv) => {
             envName = env;
 
             spinner.start('Retrieving domains and deployments. Please wait...');
-            return getDomainsAndDeployments(argv, siteName);
+            return getDomainsAndDeployments(siteName);
         })
         .then(result => {
             spinner.stop();
@@ -182,7 +181,7 @@ const releaseLatest = (argv) => {
             spinner.text = 'Creating new release(s)...';
             spinner.start();
 
-            return Promise.all(domainsToRelease.map(d => releases.createRelease(argv, siteName, deployKey, d, envName)));
+            return Promise.all(domainsToRelease.map(d => releases.createRelease(siteName, deployKey, d, envName)));
         })
         .then(() => {
             spinner.stop();
@@ -202,13 +201,13 @@ const release = (argv) => {
     const spinner = ora();
 
     const domainsToRelease = [];
-    const siteName = argv.siteName;
+    const { siteName } = argv;
     let envName = 'prod';
     let deployKey = null;
     let listOfDeployments;
 
     spinner.start('Retrieving environments. Please wait...');
-    environments.getAvailableEnvironments(argv, siteName)
+    environments.getAvailableEnvironments(siteName)
         .then(envs => {
             spinner.stop();
 
@@ -229,7 +228,7 @@ const release = (argv) => {
             envName = env;
 
             spinner.start('Retrieving domains and deployments. Please wait...');
-            return getDomainsAndDeployments(argv, siteName);
+            return getDomainsAndDeployments(siteName);
         })
         .then(result => {
             spinner.stop();
@@ -279,7 +278,7 @@ const release = (argv) => {
                     spinner.start();
                 });
         })
-        .then(() => Promise.all(domainsToRelease.map(d => releases.createRelease(argv, siteName, deployKey, d, envName))))
+        .then(() => Promise.all(domainsToRelease.map(d => releases.createRelease(siteName, deployKey, d, envName))))
         .then(() => {
             spinner.stop();
             console.log(`

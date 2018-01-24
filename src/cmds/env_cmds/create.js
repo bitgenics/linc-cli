@@ -1,4 +1,4 @@
-const fsp = require('fs-promise');
+const fs = require('fs-extra');
 const ora = require('ora');
 const prompt = require('prompt');
 const environments = require('../../lib/environments');
@@ -74,7 +74,7 @@ const askSettingsFile = (argv) => new Promise((resolve, reject) => {
 const createEnvironment = (argv) => {
     let envName;
     let fileName;
-    const siteName = argv.siteName;
+    const { siteName } = argv;
 
     const spinner = ora();
     askEnvName(argv)
@@ -87,8 +87,8 @@ const createEnvironment = (argv) => {
             fileName = settingsFileName;
 
             spinner.start('Creating environment. Please wait...');
-            return fsp.readJson(fileName)
-                .then(json => environments.addEnvironment(argv, json, envName, siteName));
+            return fs.readJson(fileName)
+                .then(json => environments.addEnvironment(json, envName, siteName));
         })
         .then(() => {
             spinner.succeed('Environment successfully added.');

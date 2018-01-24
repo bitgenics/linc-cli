@@ -1,7 +1,7 @@
 const _ = require('underscore');
 const request = require('request');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
@@ -15,7 +15,7 @@ const getAvailableDomains = (siteName) => (jwtToken) => new Promise((resolve, re
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/domains`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -44,7 +44,7 @@ const addDomainName = (domainName, envName, siteName) => (jwtToken) => new Promi
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/domains`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify({
             domainName,
@@ -77,16 +77,14 @@ module.exports.showAvailableDomains = (results) => {
 
 /**
  * Get available domains
- * @param argv
  * @param siteName
  */
-module.exports.getAvailableDomains = (argv, siteName) => authorisify(argv, getAvailableDomains(siteName));
+module.exports.getAvailableDomains = (siteName) => authorisify(getAvailableDomains(siteName));
 
 /**
- *
- * @param argv
+ * Add domain
  * @param d - domainName
  * @param e - envName
  * @param s - siteName
  */
-module.exports.addDomain = (argv, d, e, s) => authorisify(argv, addDomainName(d, e, s));
+module.exports.addDomain = (d, e, s) => authorisify(addDomainName(d, e, s));

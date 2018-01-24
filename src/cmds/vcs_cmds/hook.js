@@ -12,7 +12,8 @@ exports.command = 'hook <name> [command]';
 exports.desc = 'Handle webhook for your VCS';
 // eslint-disable-next-line consistent-return
 exports.handler = (argv) => {
-    if (!argv.siteName) {
+    const { siteName } = argv;
+    if (!siteName) {
         console.log('This project is not initialised. Did you forget to \'linc init\'?');
         process.exit(255);
     }
@@ -21,7 +22,7 @@ exports.handler = (argv) => {
 
     notice();
 
-    const name = argv.name;
+    const { name } = argv;
     if (name === 'bitbucket') return hookBitbucket(argv);
     if (name === 'github') return hookGithub(argv);
 

@@ -7,9 +7,9 @@ const figlet = require('figlet');
 const notice = require('../lib/notice');
 const readPkg = require('read-pkg');
 const writePkg = require('write-pkg');
-const createDotLinc = require('../lib/createDotLinc');
+const installProfilePackage = require('../lib/install-profile-pkg');
+const dotLinc = require('../lib/dot-linc');
 const lincProfiles = require('../lib/linc-profiles');
-const exec = require('child_process').exec;
 const assertPkg = require('../lib/package-json').assert;
 
 prompt.colors = false;
@@ -72,22 +72,6 @@ const linclet = (msg) => new Promise((resolve, reject) => {
         if (err) return reject();
 
         console.log(data);
-        return resolve();
-    });
-});
-
-/**
- * Install selected profile package
- * @param pkgName
- * @returns {Promise<any>}
- */
-const installProfilePkg = (pkgName) => new Promise((resolve, reject) => {
-    const command = fs.existsSync(path.join(process.cwd(), 'yarn.lock'))
-        ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
-
-    exec(command, { cwd: process.cwd() }, (err) => {
-        if (err) return reject(err);
-
         return resolve();
     });
 });
@@ -230,16 +214,17 @@ const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
  * @param argv
  */
 const initialise = (argv) => {
-    if (argv.buildProfile && argv.sourceDir) {
-        console.log('This project is already initialised.');
+    const spinner = ora();
+
+    if (argv.buildProfile) {
+        spinner.succeed('This project is already initialised.');
         process.exit(255);
     }
 
-    // Create .linc directory
-    createDotLinc();
+    // Create .linc directory if needed
+    dotLinc.ensureDir();
 
     const linc = {};
-    const spinner = ora();
 
     linclet('LINC')
         .then(() => askProfile())
@@ -254,7 +239,7 @@ const initialise = (argv) => {
 
             spinner.start('Installing profile package. Please wait...');
 
-            return installProfilePkg(profile)
+            return installProfilePackage(profile)
                 .then(() => {
                     spinner.succeed('Profile package installed.');
 
@@ -270,7 +255,6 @@ const initialise = (argv) => {
             packageJson.linc = linc;
             return writePkg(packageJson);
         })
-        .then(() => createDotLinc())
         .then(() => console.log('Done.'))
         .catch(err => error(err))
         .then(() => spinner.stop());

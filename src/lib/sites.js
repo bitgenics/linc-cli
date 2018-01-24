@@ -1,6 +1,6 @@
 const request = require('request');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
@@ -14,7 +14,7 @@ const authoriseSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response) => {
@@ -44,7 +44,7 @@ const createSite = (linc, method) => (jwtToken) => new Promise((resolve, reject)
         url: LINC_API_SITES_ENDPOINT + (method === 'UPDATE' ? `/${linc.siteName}` : ''),
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify(body),
     };
@@ -71,7 +71,7 @@ const deleteSite = (siteName) => (jwtToken) => new Promise((resolve, reject) => 
         url: LINC_API_SITES_ENDPOINT,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: `{"site_name":"${siteName}"}`,
     };
@@ -97,7 +97,7 @@ const invalidateCache = (siteName, pattern) => (jwtToken) => new Promise((resolv
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/invalidations`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
         body: JSON.stringify({ pattern }),
     };
@@ -113,30 +113,26 @@ const invalidateCache = (siteName, pattern) => (jwtToken) => new Promise((resolv
 
 /**
  * Authorise site
- * @param argv
  * @param siteName
  */
-module.exports.authoriseSite = (argv, siteName) => authorisify(argv, authoriseSite(siteName));
+module.exports.authoriseSite = (siteName) => authorisify(authoriseSite(siteName));
 
 /**
  * Create site
- * @param argv
  * @param linc
  * @param method
  */
-module.exports.createSite = (argv, linc, method) => authorisify(argv, createSite(linc, method));
+module.exports.createSite = (linc, method) => authorisify(createSite(linc, method));
 
 /**
  * Delete site
- * @param argv
  * @param siteName
  */
-module.exports.deleteSite = (argv, siteName) => authorisify(argv, deleteSite(siteName));
+module.exports.deleteSite = (siteName) => authorisify(deleteSite(siteName));
 
 /**
  * Invalidate site cache
- * @param argv
  * @param siteName
  * @param pattern
  */
-module.exports.invalidateCache = (argv, siteName, pattern) => authorisify(argv, invalidateCache(siteName, pattern));
+module.exports.invalidateCache = (siteName, pattern) => authorisify(invalidateCache(siteName, pattern));

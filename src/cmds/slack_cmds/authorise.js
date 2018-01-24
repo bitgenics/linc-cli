@@ -35,7 +35,8 @@ const areYouSure = () => new Promise((resolve, reject) => {
 exports.command = 'authorise';
 exports.desc = 'Authorise LINC and install LINC app in your Slack';
 exports.handler = (argv) => {
-    if (!argv.siteName) {
+    const { siteName } = argv;
+    if (!siteName) {
         console.log('This project does not have a site name. Please create a site first.');
         process.exit(255);
     }
@@ -45,9 +46,8 @@ exports.handler = (argv) => {
     notice();
 
     const spinner = ora('Please wait...').start();
-    const siteName = argv.siteName;
 
-    oauth.getAuthoriseUrl(argv, siteName, 'Slack')
+    oauth.getAuthoriseUrl(siteName, 'Slack')
         .then(response => {
             spinner.stop();
             if (!response.already_authorised) return response.authorise_uri;

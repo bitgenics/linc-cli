@@ -55,10 +55,10 @@ const deleteEnvironment = (argv) => {
     spinner.start();
 
     let envName = 'prod';
-    const siteName = argv.siteName;
+    const { siteName } = argv;
 
     spinner.start('Retrieving environments. Please wait...');
-    environments.getAvailableEnvironments(argv, siteName)
+    environments.getAvailableEnvironments(siteName)
         .then(envs => {
             spinner.stop();
 
@@ -84,7 +84,7 @@ const deleteEnvironment = (argv) => {
 
             spinner.start('Deleting environment. Please wait...');
 
-            return environments.deleteEnvironment(argv, envName, siteName);
+            return environments.deleteEnvironment(envName, siteName);
         })
         .then(() => {
             spinner.succeed('Environment successfully deleted.');

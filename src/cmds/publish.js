@@ -1,17 +1,22 @@
+const AWS = require('aws-sdk');
 const ora = require('ora');
 const prompt = require('prompt');
 const request = require('request');
 const path = require('path');
 const crypto = require('crypto');
-const fs = require('fs');
-const AWS = require('aws-sdk');
 const zip = require('deterministic-zip');
-const fsPromise = require('fs-promise');
+const fs = require('fs-extra');
 const auth = require('../lib/auth');
+const backupCredentials = require('../lib/cred').backup;
+const loadCredentials = require('../lib/cred').load;
+const { removeToken } = require('../lib/cred');
+const saveCredentials = require('../lib/cred').save;
+const authorisify = require('../lib/authorisify');
 const environments = require('../lib/environments');
 const sites = require('../lib/sites');
+const users = require('../lib/users');
 const notice = require('../lib/notice');
-const config = require('../config.json');
+const config = require('../config/config.json');
 const assertPkg = require('../lib/package-json').assert;
 const packageOptions = require('../lib/pkgOptions');
 
@@ -21,7 +26,25 @@ const DIST_DIR = 'dist';
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 const BUCKET_NAME = config.S3.deployBucket;
 
+const IdentityPoolId = 'eu-central-1:a05922c7-303d-4b8c-9843-60f5e590a812';
+
+prompt.colors = false;
+prompt.message = '';
+prompt.delimiter = '';
+
 let reference;
+
+const spinner = ora();
+
+// Some progress message for publishing process
+const messages = [
+    'Preparing upload.',
+    'Creating upload package.',
+    'Authorising.',
+    'Uploading package.',
+];
+const msgStart = (n) => spinner.start(`${messages[n]} Please wait...`);
+const msgSucceed = (n) => spinner.succeed(`${messages[n]} Done.`);
 
 /**
  * Convenience function to create SHA1 of a string
@@ -38,12 +61,12 @@ const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex');
  */
 const createZipfile = (tempDir, sourceDir, siteName, opts) => new Promise((resolve, reject) => {
     const options = opts || { cwd: process.cwd() };
-    const cwd = options.cwd;
+    const { cwd } = options;
     const localdir = path.join(cwd, sourceDir);
     const zipfile = path.join(tempDir, `${siteName}.zip`);
 
     // Check whether the directory actually exists
-    fsPromise.stat(options.cwd, (err) => {
+    fs.stat(options.cwd, (err) => {
         if (err) return reject(err);
 
         // Create zipfile from directory
@@ -67,55 +90,41 @@ const createKey = (userId, _sha1, siteName) => `${userId}/${siteName}-${_sha1}.z
  * Upload zip file to S3.
  * @param description
  * @param codeId
- * @param credentials
  * @param siteName
  * @param zipfile
+ * @param jwtToken
  */
-const uploadZipfile = (description, codeId, credentials, siteName, zipfile) => new Promise((resolve, reject) => {
-    AWS.config = new AWS.Config({
-        credentials: credentials.aws,
-        signatureVersion: 'v4',
-        region: 'eu-central-1',
-    });
-    const s3 = new AWS.S3();
-
-    const spinner = ora();
-    spinner.start('Upload started.');
-
+const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new Promise((resolve, reject) => {
     reference = sha1(`${siteName}${Math.floor(new Date() / 1000).toString()}`);
-    fsPromise.readFile(zipfile)
-        .then(data => ({
-            Body: data,
-            Bucket: BUCKET_NAME,
-            Key: createKey(credentials.userId, codeId, siteName),
-            Metadata: {
-                description,
-                reference,
-            },
-        }))
-        .then(params => {
-            let totalInKB;
-            return s3.putObject(params).on('httpUploadProgress', (progress => {
-                const loadedInKB = Math.floor(progress.loaded / 1024);
-                totalInKB = Math.floor(progress.total / 1024);
-                const progressInPct = Math.floor(((progress.loaded / progress.total) * 100));
-                spinner.start(`Transfered ${loadedInKB} KB of ${totalInKB} KB  [${progressInPct}%]`);
-            })).send(() => {
-                spinner.succeed(`Upload finished. Total upload size: ${totalInKB} KB.`);
-                return resolve();
-            });
-        })
-        .catch(err => reject(err));
-});
+    const key = createKey(AWS.config.credentials.identityId, codeId, siteName);
 
-/**
- * Create a temporary directory using global TMP_DIR.
- */
-const createTempDir = () => new Promise((resolve, reject) => {
-    fsPromise.mkdtemp(`${TMP_DIR}linc-`, (err, folder) => {
-        if (err) return reject(err);
+    msgSucceed(2);
+    const stream = fs.createReadStream(zipfile);
+    const params = {
+        Body: stream,
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Metadata: {
+            description,
+            reference,
+            jwt: jwtToken,
+        },
+    };
 
-        return resolve(folder);
+    msgStart(3);
+    const upload = new AWS.S3.ManagedUpload({ params });
+    upload.on('httpUploadProgress', (progress) => {
+        const loadedInKB = Math.floor(progress.loaded / 1024);
+        spinner.start(`Uploading ${loadedInKB} KB. Please wait...`);
+    });
+    return upload.send((err) => {
+        if (err) {
+            spinner.fail('Upload failed.');
+            return reject(err);
+        }
+
+        msgSucceed(3);
+        return resolve();
     });
 });
 
@@ -124,7 +133,7 @@ const createTempDir = () => new Promise((resolve, reject) => {
  * @param descr
  */
 const askDescription = (descr) => new Promise((resolve, reject) => {
-    console.log('It\'s benefial to provide a description for your deployment.');
+    console.log('It\'s beneficial to provide a description for your deployment.');
 
     const schema = {
         properties: {
@@ -144,47 +153,75 @@ const askDescription = (descr) => new Promise((resolve, reject) => {
 });
 
 /**
- * Actually publish the site (upload to S3, let backend take it from there).
+ * Get credentials
+ * @param token
+ */
+const getCredentials = (token) => new Promise((resolve, reject) => {
+    AWS.config.region = 'eu-central-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+        IdentityPoolId,
+        Logins: {
+            'cognito-idp.eu-central-1.amazonaws.com/eu-central-1_fLLmXhVcs': token,
+        },
+    });
+    return AWS.config.credentials.get((err) => {
+        if (err) return reject(err);
+
+        return resolve();
+    });
+});
+
+/**
+ * Actually upload the site (upload to S3, let backend take it from there).
  * @param siteName
+ * @param description
  * @param credentials
  */
-const publishSite = (siteName, credentials) => new Promise((resolve, reject) => {
+const uploadSite = (siteName, description, credentials) => new Promise((resolve, reject) => {
     const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
 
-    let tempDir;
-    let description;
+    let zipFile;
+    let jwtToken;
 
-    return askDescription('')
-        .then(result => {
-            description = result.description;
-            return createTempDir();
-        })
-        .then(tmp => {
-            tempDir = tmp;
-            // Zip the dist directory
-            return createZipfile(tempDir, DIST_DIR, siteName);
-        })
-        // Create "meta" zip-file containing package.json and <siteName>.zip
+    msgSucceed(0);
+    msgStart(1);
+
+    const tempDir = fs.mkdtempSync(`${TMP_DIR}linc-`);
+    return createZipfile(tempDir, DIST_DIR, siteName)
         .then(() => createZipfile(TMP_DIR, '/', siteName, { cwd: tempDir }))
-        .then(zipfile => uploadZipfile(description, codeId, credentials, siteName, zipfile))
-        .then(() => resolve())
-        .catch(err => reject(err));
+        .then(zipfile => {
+            zipFile = zipfile;
+            msgSucceed(1);
+            msgStart(2);
+            return auth(credentials.accessKey, credentials.secretKey);
+        })
+        .then(token => {
+            jwtToken = token;
+            return auth.getIdToken();
+        })
+        .then(token => getCredentials(token))
+        .then(() => uploadZipfile(description, codeId, siteName, zipFile, jwtToken))
+        .then(resolve)
+        .catch(err => {
+            spinner.stop();
+
+            return reject(err);
+        });
 });
 
 /**
  * Retrieve deployment status using reference
  * @param siteName
- * @param jwtToken
  */
-const retrieveDeploymentStatus = (siteName, jwtToken) => new Promise((resolve, reject) => {
+const retrieveDeploymentStatus = (siteName) => (jwtToken) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/deployments/${reference}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -201,9 +238,8 @@ const retrieveDeploymentStatus = (siteName, jwtToken) => new Promise((resolve, r
  * Wait for deploy to finish (or to time out - timeout is set to three minutes)
  * @param envs
  * @param siteName
- * @param authInfo
  */
-const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve, reject) => {
+const waitForDeployToFinish = (envs, siteName) => new Promise((resolve, reject) => {
     const Count = 20;
     let Timeout = 4;
 
@@ -216,17 +252,17 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
             return reject(new Error('The process timed out'));
         }
 
-        return setTimeout(() => {
-            retrieveDeploymentStatus(siteName, authInfo)
+        return setTimeout(
+            () => authorisify(retrieveDeploymentStatus(siteName))
                 .then(s => {
                     if (s.length === envs.length) return resolve(s);
 
                     Timeout = 8;
                     return checkForDeployToFinish(count - 1);
                 })
-                .catch(err => reject(err));
-        },
-        Timeout * 1000);
+                .catch(err => reject(err)),
+            Timeout * 1000 // eslint-disable-line comma-dangle
+        );
     };
 
     // Start the checking
@@ -234,66 +270,39 @@ const waitForDeployToFinish = (envs, siteName, authInfo) => new Promise((resolve
 });
 
 /**
- * Main entry point for this module.
- * @param argv
+ * Publish site
  */
-const publish = (argv) => {
-    let extendedCredentials;
-    let jwtToken;
-    let packageJson;
-    let siteName;
+const publishSite = (credentials, siteName) => {
+    let description;
     let listOfEnvironments;
 
-    // Disappearing progress messages
-    const spinner = ora('Authorising user. Please wait...').start();
-
-    auth.getExtentedCredentials(argv.accessKey, argv.secretKey)
-        .then(creds => {
-            extendedCredentials = creds;
-            jwtToken = creds.jwtToken;
-        })
-        .catch(err => {
-            spinner.stop();
-
-            console.log(`
-${err.message}
-
-Please log in using 'linc login', or create a new user with 
-'linc user create' before trying to publish. 
-
-If you created a user earlier, make sure to verify your email 
-address. You cannot use LINC with an email address that is 
-unverified.
-
-If the error message doesn't make sense to you, please contact
-us using the email address shown above. 
-`);
-            process.exit(255);
-        })
+    spinner.start('Checking for profile package. Please wait...');
+    return packageOptions(['buildProfile'])
         .then(() => {
-            spinner.stop();
+            spinner.succeed('Profile package installed.');
 
-            return packageOptions(argv, ['siteName', 'buildProfile']);
+            return askDescription('');
         })
-        .then(pkg => {
-            packageJson = pkg;
+        .then(result => {
+            console.log();
 
-            siteName = packageJson.linc.siteName;
+            // eslint-disable-next-line prefer-destructuring
+            description = result.description;
 
-            spinner.start('Performing checks. Please wait...');
-            sites.authoriseSite(argv, siteName);
+            msgStart(0);
+            return sites.authoriseSite(siteName);
         })
-        .then(() => environments.getAvailableEnvironments(argv, siteName))
+        .then(() => environments.getAvailableEnvironments(siteName))
         .then(envs => {
             spinner.stop();
 
             listOfEnvironments = envs.environments.map(x => x.name);
-            return publishSite(siteName, extendedCredentials);
+            return uploadSite(siteName, description, credentials);
         })
         .then(() => {
             spinner.start('Waiting for deploy to finish...');
 
-            return waitForDeployToFinish(listOfEnvironments, siteName, jwtToken);
+            return waitForDeployToFinish(listOfEnvironments, siteName);
         })
         .then(envs => {
             spinner.succeed('Deployment finished');
@@ -305,6 +314,158 @@ us using the email address shown above.
             spinner.stop();
             console.log(err.message ? err.message : err);
         });
+};
+
+/**
+ * Copy existing .linc/credentials to .linc/credentials.bak
+ */
+const moveCredentials = () => {
+    console.log(`I found credentials in this folder, but no siteName.
+As a precaution, I have moved your existing credentials:
+
+  .linc/credentials.bak -> .linc/credentials.
+`);
+
+    backupCredentials();
+    removeToken();
+};
+
+/**
+ * Ask for user credentials
+ */
+const credentialsFromPrompt = () => new Promise((resolve, reject) => {
+    const schema = {
+        properties: {
+            access_key_id: {
+                description: 'Access key:',
+                required: true,
+            },
+            secret_access_key: {
+                description: 'Secret key:',
+                hidden: true,
+            },
+        },
+    };
+
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve({
+            access_key_id: result.access_key_id,
+            secret_access_key: result.secret_access_key,
+        });
+    });
+});
+
+/**
+ * Log in user
+ */
+const login = () => new Promise((resolve, reject) => {
+    let credentials;
+
+    console.log(`Your site has a name, but I can't find any credentials. Please log
+in by entering your access key and secret key when prompted.
+`);
+
+    return credentialsFromPrompt()
+        .then(creds => {
+            credentials = creds;
+            return auth(creds.access_key_id, creds.secret_access_key);
+        })
+        .then(() => backupCredentials())
+        .then(() => saveCredentials(credentials.access_key_id, credentials.secret_access_key))
+        .then(resolve)
+        .catch(reject);
+});
+
+/**
+ * Check for existing site name in back end
+ * @param siteName
+ */
+const existingSite = (siteName) => {
+    const existingSites = [
+        'bitgenics',
+        'linc-react-games',
+        'localised',
+        'fysho-web',
+        'geodash',
+        'armory-react',
+        'linc-demo-site',
+        'buildkite-www-t',
+        'linc-github-demo',
+        'bankwest-test',
+        'fysho',
+        'linc-demo',
+        'jetstar-cards',
+        'react-trello-board',
+        'cath-github-demo',
+    ];
+    return existingSites.indexOf(siteName) >= 0;
+};
+
+/**
+ * Main entry point for this module.
+ */
+const publish = (argv) => {
+    let { siteName } = argv;
+
+    let credentials = null;
+    try {
+        credentials = loadCredentials();
+    } catch (e) {
+        // Empty block
+    }
+
+    let suppressSignupMessage = false;
+
+    /*
+     * Existing site name
+     */
+    if (siteName) {
+        if (credentials) return publishSite(credentials, siteName);
+
+        if (!existingSite(siteName)) {
+            return login()
+                .then(creds => publishSite(creds, siteName))
+                .catch(console.log);
+        }
+
+        suppressSignupMessage = true;
+
+        console.log(`Your existing site ${siteName} needs to be ported. Please follow 
+the instructions below. Please use the same email address you used 
+when you originally signed up this site.
+`);
+    }
+
+    /*
+     * New site name
+     */
+    if (credentials) {
+        // No site name but credentials found? Move credentials out of the way
+        moveCredentials();
+    }
+
+    if (!suppressSignupMessage) {
+        console.log(`It looks like you haven't signed up for this site yet.
+Please follow the steps to create your credentials.
+`);
+    }
+
+    return users.signup(siteName)
+        .then(creds => {
+            credentials = creds;
+
+            return packageOptions(['siteName']);
+        })
+        .then(pkg => {
+            // eslint-disable-next-line prefer-destructuring
+            siteName = pkg.linc.siteName;
+
+            return publishSite(credentials, siteName);
+        })
+        .catch(console.log);
 };
 
 exports.command = ['publish', 'deploy'];

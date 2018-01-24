@@ -1,6 +1,6 @@
 const request = require('request');
 const authorisify = require('../lib/authorisify');
-const config = require('../config.json');
+const config = require('../config/config.json');
 
 const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 
@@ -15,7 +15,7 @@ const getAuthoriseUri = (siteName, serviceName) => (jwtToken) => new Promise((re
         url: `${LINC_API_SITES_ENDPOINT}/${siteName}/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${jwtToken}`,
+            Authorization: `X-Bearer ${jwtToken}`,
         },
     };
     request(options, (err, response, body) => {
@@ -32,8 +32,7 @@ const getAuthoriseUri = (siteName, serviceName) => (jwtToken) => new Promise((re
 
 /**
  * Get authorise URL for oauth flow
- * @param argv
  * @param s - siteName
  * @param n - serviceName
  */
-module.exports.getAuthoriseUrl = (argv, s, n) => authorisify(argv, getAuthoriseUri(s, n));
+module.exports.getAuthoriseUrl = (s, n) => authorisify(getAuthoriseUri(s, n));
