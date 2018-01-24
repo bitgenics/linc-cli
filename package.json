@@ -1,6 +1,6 @@
 {
   "name": "linc-cli",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "LINC command line tools",
   "main": "bin/index.js",
   "bin": {
