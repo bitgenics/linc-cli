@@ -159,14 +159,6 @@ const confirmRegistration = (code) => new Promise((resolve, reject) => {
 });
 
 /**
- * Entry point for login
- * @returns {Promise<any>}
- */
-module.exports.login = () => new Promise((resolve, reject) => {
-
-});
-
-/**
  * Entry point to sign up new "user"
  * @param siteName
  */
