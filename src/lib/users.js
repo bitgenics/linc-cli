@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const ora = require('ora');
 const prompt = require('prompt');
 const cred = require('./cred');
+const gitignoreAdd = require('./gitignore-add');
 
 const poolData = {
     UserPoolId: 'eu-central-1_fLLmXhVcs',
@@ -180,13 +181,17 @@ module.exports.signup = (siteName) => new Promise((resolve, reject) => {
             return cognitoCreateNewUser(email, siteName);
         })
         .then(response => {
+            gitignoreAdd('.linc/', { create: true });
+
             spinner.succeed('Successfully created new credentials:');
             console.log(`   username: ${response.clientId}`);
             console.log(`   password: ${response.clientSecret}`);
             console.log(`
 These credentials are stored in .linc/credentials in this directory.
 You might want to consider backing up the credentials in a safe place.
+We have added an entry to .gitignore which ignores the .linc folder.
 `);
+
 
             signupResponse = response;
             return getConfirmationCode();
