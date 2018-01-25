@@ -48,7 +48,6 @@ exports.handler = (argv) => {
     notice();
 
     invalidate(argv)
-        .then(() => {})
         .catch(err => {
             spinner.stop();
 
