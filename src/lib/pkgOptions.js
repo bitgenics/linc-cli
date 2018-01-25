@@ -112,24 +112,18 @@ const createNewSite = (siteName) => (jwtToken) => new Promise((resolve, reject) 
  * Handler name option
  * @param pkg
  */
-const nameHandler = (pkg) => new Promise((resolve, reject) => {
+const nameHandler = async (pkg) => {
     pkg.linc = pkg.linc || {};
 
-    getName(domainify(pkg.name))
-        .then(name => {
-            pkg.linc.siteName = name;
-
-            return checkSiteName(name);
-        })
-        .then(exists => {
-            // Site name already existing is a fatal error
-            if (exists) process.exit(255);
-
-            return authorisify(createNewSite(pkg.linc.siteName));
-        })
-        .then(() => resolve(pkg))
-        .catch(reject);
-});
+    const name = await getName(domainify(pkg.name));
+    pkg.linc.siteName = name;
+    const exists = checkSiteName(name);
+    if (exists) {
+        console.log('This name is already in use.');
+        process.exit(255);
+    }
+    return authorisify(createNewSite(pkg.linc.siteName));
+};
 
 /**
  * Show profiles available
@@ -164,14 +158,9 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
 });
 
 /**
- * Ask which profile to use
- * @param pkg
+ * Ask for profile
  */
-const profileHandler = (pkg) => new Promise((resolve, reject) => {
-    pkg.linc = pkg.linc || {};
-
-    showProfiles();
-
+const askProfile = () => new Promise((resolve, reject) => {
     const schema = {
         properties: {
             profile: {
@@ -187,25 +176,31 @@ const profileHandler = (pkg) => new Promise((resolve, reject) => {
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
-        const selectedProfile = result.profile.toUpperCase();
-        const profile = lincProfiles[selectedProfile].pkg;
-        if (profile) {
-            pkg.linc.buildProfile = profile;
-
-            return installProfilePackage(profile)
-                .then(() => resolve(pkg))
-                .catch(reject);
-        }
-        return askOtherProfile()
-            .then(p => {
-                pkg.linc.buildProfile = p;
-
-                return installProfilePackage(profile)
-                    .then(() => resolve(pkg))
-                    .catch(reject);
-            });
+        return result.profile;
     });
 });
+
+/**
+ * Ask which profile to use
+ * @param pkg
+ */
+const profileHandler = async (pkg) => {
+    pkg.linc = pkg.linc || {};
+
+    showProfiles();
+
+    const selectedProfile = await askProfile();
+    let profile = lincProfiles[selectedProfile].pkg;
+    if (profile) {
+        pkg.linc.buildProfile = profile;
+
+        return installProfilePackage(profile);
+    }
+
+    profile = await askOtherProfile();
+    pkg.linc.buildProfile = profile;
+    return installProfilePackage(profile);
+};
 
 /**
  * Options we have and their handlers
@@ -220,41 +215,33 @@ const availableOptions = {
  * @param opts
  * @param pkg
  */
-const handleOptions = (opts, pkg) => new Promise((resolve, reject) => {
+const handleOptions = async (opts, pkg) => {
     const options = opts;
 
-    const handleOption = () => {
-        if (_.isEmpty(options)) return resolve(pkg);
+    const handleOption = async () => {
+        if (_.isEmpty(options)) return pkg;
 
         const option = options.shift();
-        if (pkg.linc[option]) return resolve(pkg);
+        if (pkg.linc[option]) return pkg;
 
         const handler = availableOptions[option];
-        if (!handler) return reject(new Error('Unknown option provided!'));
+        if (!handler) throw new Error('Unknown option provided!');
 
-        return handler(pkg)
-            .then(handleOption)
-            .catch(reject);
+        await handler(pkg);
+        return handleOption();
     };
 
     return handleOption();
-});
+};
 
 /**
  * Option handler
  * @param opts
  */
-const optionHandler = (opts) => new Promise((resolve, reject) => {
-    let packageJson;
-    readPkg()
-        .then(pkg => {
-            packageJson = pkg;
-            packageJson.linc = packageJson.linc || {};
-            return handleOptions(opts, packageJson);
-        })
-        .then(() => writePkg(packageJson))
-        .then(() => resolve(packageJson))
-        .catch(reject);
-});
-
-module.exports = optionHandler;
+module.exports = async (opts) => {
+    const packageJson = await readPkg();
+    packageJson.linc = packageJson.linc || {};
+    await handleOptions(opts, packageJson);
+    await writePkg(packageJson);
+    return packageJson;
+};
