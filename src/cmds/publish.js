@@ -286,15 +286,15 @@ const publishSite = async (credentials, siteName) => {
 /**
  * Copy existing .linc/credentials to .linc/credentials.bak
  */
-const moveCredentials = () => {
+const moveCredentials = async () => {
     console.log(`I found credentials in this folder, but no siteName.
 As a precaution, I have moved your existing credentials:
 
   .linc/credentials.bak -> .linc/credentials.
 `);
 
-    backupCredentials();
-    removeToken();
+    await backupCredentials();
+    await removeToken();
 };
 
 /**
@@ -365,13 +365,14 @@ const existingSite = (siteName) => {
 
 /**
  * Main entry point for this module.
+ * @param argv
  */
 const publish = async (argv) => {
     const { siteName } = argv;
 
     let credentials = null;
     try {
-        credentials = loadCredentials();
+        credentials = await loadCredentials();
     } catch (e) {
         // Empty block
     }
@@ -401,7 +402,7 @@ when you originally signed up this site.
      */
     if (credentials) {
         // No site name but credentials found? Move credentials out of the way
-        moveCredentials();
+        await moveCredentials();
     }
 
     if (!suppressSignupMessage) {

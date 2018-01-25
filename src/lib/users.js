@@ -2,7 +2,7 @@ const AWSCognito = require('amazon-cognito-identity-js');
 const crypto = require('crypto');
 const ora = require('ora');
 const prompt = require('prompt');
-const cred = require('./cred');
+const saveCredentials = require('./cred').save;
 const gitignoreAdd = require('./gitignore-add');
 
 const poolData = {
@@ -204,7 +204,7 @@ We have added an entry to .gitignore which ignores the .linc folder.
         .then(() => {
             spinner.succeed('Verification succeeded.');
 
-            return cred.save(signupResponse.clientId, signupResponse.clientSecret);
+            return saveCredentials(signupResponse.clientId, signupResponse.clientSecret);
         })
         .then(() => resolve({
             accessKey: signupResponse.clientId,

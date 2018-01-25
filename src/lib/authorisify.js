@@ -12,7 +12,7 @@ let JwtToken = null;
  * Convenience function to authorise
  */
 const authorise = async () => {
-    const credentials = loadCredentials();
+    const credentials = await loadCredentials();
     return auth(credentials.accessKey, credentials.secretKey);
 };
 
