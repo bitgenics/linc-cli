@@ -20,19 +20,19 @@ const clean = () => {
 /**
  * Build site
  */
-const build = () => {
+const build = (argv) => {
     const buildssr = require('linc-build-ssr');
     const packageJson = require(path.resolve(process.cwd(), 'package.json'));
 
     buildssr({}, packageJson, (err) => {
         if (err) console.log(err);
-        else serve();
+        else if (!argv.s) serve();
     });
 };
 
 exports.command = 'build';
 exports.desc = 'Build & package a site for deployment';
-exports.handler = () => {
+exports.handler = (argv) => {
     assertPkg();
 
     notice();
@@ -42,7 +42,7 @@ exports.handler = () => {
         .then(pkg => installProfilePackage(pkg.linc.buildProfile))
         .then(() => {
             console.log('Building. Please wait...');
-            return build();
+            return build(argv);
         })
         .catch(err => console.log(err.message ? err.message : err));
 };
