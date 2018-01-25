@@ -28,43 +28,42 @@ const buildDistribution = (pkg) => new Promise((resolve, reject) => {
         if (err) return reject(err);
 
         return resolve();
-    })
+    });
 });
 
 /**
  * Build site
+ * @param argv
  */
-const build = async () => {
-    try {
-        /**
-         * Check for or add build profile and install if needed
-         */
-        const pkg = await packageOptions(['buildProfile']);
-        await installProfilePackage(pkg.linc.buildProfile);
+const build = async (argv) => {
+    /**
+     * Check for or add build profile and install if needed
+     */
+    const pkg = await packageOptions(['buildProfile']);
+    await installProfilePackage(pkg.linc.buildProfile);
 
-        /**
-         * Build distribution
-         */
-        await buildDistribution(pkg);
+    /**
+     * Build distribution
+     */
+    await buildDistribution(pkg);
 
-        /**
-         * Serve if build has succeeded
-         */
-        serve();
-    } catch (e) {
-        console.log(e);
-    }
+    /**
+     * Serve if build has succeeded
+     */
+    if (!argv.s) serve();
 };
 
 exports.command = 'build';
 exports.desc = 'Build & package a site for deployment';
-exports.handler = () => {
+exports.handler = (argv) => {
     assertPkg();
 
     notice();
 
     clean();
 
-    build()
-        .then(() => {});
+    build(argv)
+        .catch(err => {
+            console.log(err);
+        });
 };
