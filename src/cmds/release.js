@@ -9,6 +9,8 @@ const releases = require('../lib/releases');
 const notice = require('../lib/notice');
 const assertPkg = require('../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -112,12 +114,12 @@ Please select the environment to which you want to attach the domain.
 
 /**
  * Get domains and deployments in one go
- * @param site
+ * @param siteName
  */
-const getDomainsAndDeployments = (site) => Promise.all([
-    domains.getAvailableDomains(site),
-    deployments.getAvailableDeployments(site),
-]);
+const getDomainsAndDeployments = async (siteName) => ({
+    deployments: await deployments.getAvailableDeployments(siteName),
+    domains: await domains.getAvailableDomains(siteName),
+});
 
 /**
  * Show error message
@@ -129,165 +131,113 @@ const error = (err) => {
 };
 
 /**
+ * Pick environment from a list
+ * @param envs
+ */
+const pickEnvironment = async (envs) => {
+    if (envs.environments.length < 1) return 'prod';
+    if (envs.environments.length < 2) return envs.environments[0].name;
+
+    await environments.showAvailableEnvironments(envs);
+    const env = await askEnvironment();
+    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+    if (index > envs.environments.length - 1) {
+        throw new Error('Invalid input.');
+    }
+    return envs.environments[index].name;
+};
+
+/**
  * Release the latest version for all domains - don't ask for user input
  * @param argv
  */
-const releaseLatest = (argv) => {
-    const spinner = ora();
-    spinner.start();
-
+const releaseLatest = async (argv) => {
     const domainsToRelease = [];
     const { siteName } = argv;
-    let envName = 'prod';
     let deployKey = null;
 
     spinner.start('Retrieving environments. Please wait...');
-    return environments.getAvailableEnvironments(siteName)
-        .then(envs => {
-            spinner.stop();
+    const envs = await environments.getAvailableEnvironments(siteName);
+    spinner.stop();
 
-            if (envs.environments.length < 1) return Promise.resolve('prod');
-            if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
+    const envName = await pickEnvironment(envs);
 
-            environments.showAvailableEnvironments(envs);
-            return askEnvironment()
-                .then(env => {
-                    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
-                    if (index > envs.environments.length - 1) {
-                        throw new Error('Invalid input.');
-                    }
-                    return Promise.resolve(envs.environments[index].name);
-                });
-        })
-        .then(env => {
-            envName = env;
+    spinner.start('Retrieving domains and deployments. Please wait...');
+    const results = await getDomainsAndDeployments(siteName);
+    spinner.stop();
 
-            spinner.start('Retrieving domains and deployments. Please wait...');
-            return getDomainsAndDeployments(siteName);
-        })
-        .then(result => {
-            spinner.stop();
+    const listOfDeployments = _.filter(results.deployments.deployments, d => d.env === envName);
+    const listOfDomains = _.filter(results.domains.domains, d => d.env === envName);
+    if (listOfDomains.length === 0) {
+        throw new Error('This environment contains no domains.');
+    }
 
-            const listOfDeployments = _.filter(result[1].deployments, d => d.env === envName);
-            const listOfDomains = _.filter(result[0].domains, d => d.env === envName);
+    deployKey = listOfDeployments[0].deploy_key;
+    listOfDomains.map(d => domainsToRelease.push(d.domain_name));
 
-            if (listOfDomains.length === 0) {
-                throw new Error('This environment contains no domains.');
-            }
-
-            deployKey = listOfDeployments[0].deploy_key;
-            listOfDomains.map(d => domainsToRelease.push(d.domain_name));
-
-            spinner.text = 'Creating new release(s)...';
-            spinner.start();
-
-            return Promise.all(domainsToRelease.map(d => releases.createRelease(siteName, deployKey, d, envName)));
-        })
-        .then(() => {
-            spinner.stop();
-            console.log('Release(s) successfully created.');
-        })
-        .catch(err => {
-            spinner.stop();
-            return error(err);
-        });
+    spinner.start('Creating new release(s)...');
+    await Promise.all(domainsToRelease.map(d => releases.createRelease(siteName, deployKey, d, envName)));
+    spinner.succeed('Release(s) successfully created.');
 };
 
 /**
  * Release a new version for one or more domains - ask for user input
  * @param argv
  */
-const release = (argv) => {
-    const spinner = ora();
-
+const release = async (argv) => {
     const domainsToRelease = [];
     const { siteName } = argv;
-    let envName = 'prod';
     let deployKey = null;
-    let listOfDeployments;
 
     spinner.start('Retrieving environments. Please wait...');
-    environments.getAvailableEnvironments(siteName)
-        .then(envs => {
-            spinner.stop();
+    const envs = await environments.getAvailableEnvironments(siteName);
+    spinner.stop();
 
-            if (envs.environments.length < 1) return Promise.resolve('prod');
-            if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
+    const envName = await pickEnvironment(envs);
 
-            environments.showAvailableEnvironments(envs);
-            return askEnvironment()
-                .then(env => {
-                    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
-                    if (index > envs.environments.length - 1) {
-                        throw new Error('Invalid input.');
-                    }
-                    return Promise.resolve(envs.environments[index].name);
-                });
-        })
-        .then(env => {
-            envName = env;
+    spinner.start('Retrieving domains and deployments. Please wait...');
+    const results = await getDomainsAndDeployments(siteName);
+    spinner.stop();
 
-            spinner.start('Retrieving domains and deployments. Please wait...');
-            return getDomainsAndDeployments(siteName);
-        })
-        .then(result => {
-            spinner.stop();
+    const listOfDeployments = _.filter(results.deployments.deployments, d => d.env === envName);
+    const listOfDomains = _.filter(results.domains.domains, d => d.env === envName);
+    if (listOfDomains.length === 0) {
+        throw new Error('This environment contains no domains.');
+    }
 
-            listOfDeployments = _.filter(result[1].deployments, d => d.env === envName);
-            const listOfDomains = _.filter(result[0].domains, d => d.env === envName);
+    showAvailableDomains(listOfDomains, siteName);
+    const domainResponse = await askReleaseDomain();
 
-            if (listOfDomains.length === 0) {
-                throw new Error('This environment contains no domains.');
+    // Convert to uppercase, remove non A-Z characters and remove duplicates
+    let ignored = false;
+    const answers = domainResponse.domain_name_index
+        .toUpperCase().replace(/[^A-Z]/, '')
+        .split('').filter((t, i, a) => a.indexOf(t) === i);
+
+    answers.forEach(a => {
+        const index = a.charCodeAt(0) - 65;
+        if (index > listOfDomains.length - 1) {
+            if (!ignored) {
+                ignored = true;
+                console.log('One or more invalid responses ignored.');
             }
+        } else {
+            domainsToRelease.push(listOfDomains[index].domain_name);
+        }
+    });
 
-            showAvailableDomains(listOfDomains, siteName);
-            return askReleaseDomain()
-                .then(reply => {
-                    let ignored = false;
+    showAvailableDeployments(listOfDeployments, siteName);
+    const deployResponse = await askDeploymentKey(true);
 
-                    // Convert to uppercase, remove non A-Z characters and remove duplicates
-                    const answers = reply.domain_name_index
-                        .toUpperCase().replace(/[^A-Z]/, '')
-                        .split('').filter((t, i, a) => a.indexOf(t) === i);
+    const index = deployResponse.deploy_key_index.substr(0, 1).toUpperCase().charCodeAt(0) - 65;
+    if (index > listOfDeployments.length - 1) {
+        throw new Error('Invalid response. Aborted by user.');
+    }
+    deployKey = listOfDeployments[index].deploy_key;
 
-                    answers.forEach(a => {
-                        const index = a.charCodeAt(0) - 65;
-                        if (index > listOfDomains.length - 1) {
-                            if (!ignored) {
-                                ignored = true;
-                                console.log('One or more invalid responses ignored.');
-                            }
-                        } else {
-                            domainsToRelease.push(listOfDomains[index].domain_name);
-                        }
-                    });
-                });
-        })
-        .then(() => {
-            spinner.stop();
-
-            showAvailableDeployments(listOfDeployments, siteName);
-            return askDeploymentKey(true)
-                .then(reply => {
-                    const index = reply.deploy_key_index.substr(0, 1).toUpperCase().charCodeAt(0) - 65;
-                    if (index > listOfDeployments.length - 1) {
-                        throw new Error('Invalid response. Aborted by user.');
-                    }
-                    deployKey = listOfDeployments[index].deploy_key;
-                    spinner.text = 'Creating new release(s)...';
-                    spinner.start();
-                });
-        })
-        .then(() => Promise.all(domainsToRelease.map(d => releases.createRelease(siteName, deployKey, d, envName))))
-        .then(() => {
-            spinner.stop();
-            console.log(`
-Release(s) successfully created.`);
-        })
-        .catch(err => {
-            spinner.stop();
-            return error(err);
-        });
+    spinner.start('Creating new release(s)...');
+    await Promise.all(domainsToRelease.map(d => releases.createRelease(siteName, deployKey, d, envName)));
+    spinner.succeed('Release(s) successfully created.');
 };
 
 exports.command = 'release';
@@ -302,9 +252,11 @@ exports.handler = (argv) => {
         process.exit(255);
     }
 
-    if (argv.a) {
-        releaseLatest(argv);
-    } else {
-        release(argv);
-    }
+    const releaseFunc = argv.a ? releaseLatest : release;
+    releaseFunc(argv)
+        .catch(err => {
+            spinner.stop();
+
+            error(err);
+        });
 };
