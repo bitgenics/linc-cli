@@ -11,71 +11,46 @@ let JwtToken = null;
 /**
  * Convenience function to authorise
  */
-const authorise = () => {
-    let credentials = null;
-    try {
-        credentials = loadCredentials();
-        return auth(credentials.accessKey, credentials.secretKey);
-    } catch (e) {
-        return Promise.reject(e);
-    }
+const authorise = async () => {
+    const credentials = loadCredentials();
+    return auth(credentials.accessKey, credentials.secretKey);
 };
 
 /**
  * Get jwt token from file in .linc directory
  */
-const getJwtToken = () => new Promise((resolve, reject) => {
-    if (JwtToken) return resolve(JwtToken);
+const getJwtToken = () => {
+    if (JwtToken) return JwtToken;
 
-    try {
-        const tokenFile = path.join(DOT_LINC_DIR, 'token');
-        const token = fs.readFileSync(tokenFile);
-        return resolve(token.toString().trim());
-    } catch (e) {
-        return reject(e);
-    }
-});
+    const tokenFile = path.join(DOT_LINC_DIR, 'token');
+    const token = fs.readFileSync(tokenFile);
+    return token.toString().trim();
+};
 
 /**
  * Save jwt token to file in .linc directory
  * @param jwtToken
  */
-const saveJwtToken = jwtToken => new Promise((resolve, reject) => {
+const saveJwtToken = (jwtToken) => {
     JwtToken = jwtToken;
 
     // Create .linc directory if not already there
     dotLinc.ensureDir();
 
-    try {
-        const tokenFile = path.join(DOT_LINC_DIR, 'token');
-        fs.writeFileSync(tokenFile, `${jwtToken}\n`);
-        return resolve(jwtToken);
-    } catch (e) {
-        return reject(e);
-    }
-});
+    const tokenFile = path.join(DOT_LINC_DIR, 'token');
+    fs.writeFileSync(tokenFile, `${jwtToken}\n`);
+};
 
 /**
  * Entry point
  * @param func
  */
-module.exports = (func) => new Promise((resolve, reject) => {
-    let jwtToken;
-
-    /**
-     * Convenience function
-     * @param token
-     */
-    const tokenFunc = token => {
-        jwtToken = token;
-        return func(jwtToken);
-    };
-
-    getJwtToken()
-        .then(tokenFunc)
-        .catch(() => authorise()
-            .then(saveJwtToken)
-            .then(tokenFunc))
-        .then(resolve)
-        .catch(reject);
-});
+module.exports = async (func) => {
+    try {
+        return func(getJwtToken());
+    } catch (e) {
+        const token = await authorise();
+        saveJwtToken(token);
+        return func(token);
+    }
+};
