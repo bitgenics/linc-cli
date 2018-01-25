@@ -5,6 +5,8 @@ const environments = require('../../lib/environments');
 const notice = require('../../lib/notice');
 const assertPkg = require('../../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -64,58 +66,44 @@ const askSettingsFile = (argv) => new Promise((resolve, reject) => {
 });
 
 /**
+ * Show error message
+ * @param err
+ */
+const error = (err) => {
+    console.log('Oops! Something went wrong:');
+    console.log(err);
+};
+
+/**
  * Update environment settings
  * @param argv
  */
-const updateEnvironment = (argv) => {
-    const spinner = ora('Authorising. Please wait...');
-    spinner.start();
-
+const updateEnvironment = async (argv) => {
     const { siteName } = argv;
-    let envName = 'prod';
-    let fileName;
 
     spinner.start('Retrieving environments. Please wait...');
-    environments.getAvailableEnvironments(siteName)
-        .then(envs => {
-            spinner.stop();
+    const envs = await environments.getAvailableEnvironments(siteName);
+    spinner.stop();
 
-            if (envs.environments.length < 1) return Promise.resolve('prod');
-            if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
+    let envName;
+    if (envs.environments.length < 1) envName = 'prod';
+    else if (envs.environments.length < 2) envName = envs.environments[0].name;
+    else {
+        await environments.showAvailableEnvironments(envs);
+        const env = await askEnvironment();
+        const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+        if (index > envs.environments.length - 1) {
+            throw new Error('Invalid input.');
+        }
+        envName = envs.environments[index].name;
+    }
 
-            environments.showAvailableEnvironments(envs);
-            return askEnvironment()
-                .then(env => {
-                    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
-                    if (index > envs.environments.length - 1) {
-                        throw new Error('Invalid input.');
-                    }
-                    return Promise.resolve(envs.environments[index].name);
-                });
-        })
-        .then(env => {
-            envName = env;
+    const fileName = await askSettingsFile(argv);
+    const json = await fs.readJson(fileName);
 
-            return askSettingsFile(argv);
-        })
-        .then(settingsFileName => {
-            fileName = settingsFileName;
-
-            return fs.readJson(fileName);
-        })
-        .then(json => {
-            spinner.start('Updating settings in environment. Please wait...');
-
-            return environments.updateEnvironment(json, envName, argv.siteName);
-        })
-        .then(() => {
-            spinner.succeed('Environment successfully updated.');
-        })
-        .catch(err => {
-            spinner.stop();
-
-            console.log(err);
-        });
+    spinner.start('Updating settings in environment. Please wait...');
+    await environments.updateEnvironment(json, envName, argv.siteName);
+    spinner.succeed('Environment successfully updated.');
 };
 
 exports.command = 'update';
@@ -130,5 +118,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    updateEnvironment(argv);
+    updateEnvironment(argv)
+        .catch(err => {
+            spinner.stop();
+
+            error(err);
+        });
 };

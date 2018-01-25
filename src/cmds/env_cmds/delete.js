@@ -4,6 +4,8 @@ const environments = require('../../lib/environments');
 const notice = require('../../lib/notice');
 const assertPkg = require('../../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -47,53 +49,45 @@ Please select the environment you want to delete.
 });
 
 /**
+ * Show error message
+ * @param err
+ */
+const error = (err) => {
+    console.log('Oops! Something went wrong:');
+    console.log(err);
+};
+
+/**
  * Delete environment
  * @param argv
  */
-const deleteEnvironment = (argv) => {
-    const spinner = ora('Authorising. Please wait...');
-    spinner.start();
-
-    let envName = 'prod';
+const deleteEnvironment = async (argv) => {
     const { siteName } = argv;
+    let envName;
 
     spinner.start('Retrieving environments. Please wait...');
-    environments.getAvailableEnvironments(siteName)
-        .then(envs => {
-            spinner.stop();
+    const envs = await environments.getAvailableEnvironments(siteName);
+    spinner.stop();
 
-            if (envs.environments.length < 1) return Promise.resolve('prod');
-            if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
+    if (envs.environments.length < 1) envName = 'prod';
+    else if (envs.environments.length < 2) envName = envs.environments[0].name;
+    else {
+        await showAvailableEnvironments(envs);
+        const env = await askEnvironment();
+        const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+        if (index > envs.environments.length - 1) {
+            throw new Error('Error: invalid input.');
+        }
+        envName = envs.environments[index].name;
+    }
 
-            showAvailableEnvironments(envs);
-            return askEnvironment()
-                .then(env => {
-                    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
-                    if (index > envs.environments.length - 1) {
-                        throw new Error('Error: invalid input.');
-                    }
-                    return Promise.resolve(envs.environments[index].name);
-                });
-        })
-        .then(env => {
-            envName = env;
+    if (envName === 'prod') {
+        throw new Error('Error: you cannot delete the default environment \'prod\'.');
+    }
 
-            if (envName === 'prod') {
-                throw new Error('Error: you cannot delete the default environment \'prod\'.');
-            }
-
-            spinner.start('Deleting environment. Please wait...');
-
-            return environments.deleteEnvironment(envName, siteName);
-        })
-        .then(() => {
-            spinner.succeed('Environment successfully deleted.');
-        })
-        .catch(err => {
-            spinner.stop();
-
-            console.log(err.message ? err.message : err);
-        });
+    spinner.start('Deleting environment. Please wait...');
+    await environments.deleteEnvironment(envName, siteName);
+    spinner.succeed('Environment successfully deleted.');
 };
 
 exports.command = 'delete';
@@ -108,5 +102,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    deleteEnvironment(argv);
+    deleteEnvironment(argv)
+        .catch(err => {
+            spinner.stop();
+
+            error(err);
+        });
 };

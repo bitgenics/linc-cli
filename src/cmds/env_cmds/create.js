@@ -5,6 +5,8 @@ const environments = require('../../lib/environments');
 const notice = require('../../lib/notice');
 const assertPkg = require('../../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -68,36 +70,28 @@ const askSettingsFile = (argv) => new Promise((resolve, reject) => {
 });
 
 /**
+ * Show error message
+ * @param err
+ */
+const error = (err) => {
+    console.log('Oops! Something went wrong:');
+    console.log(err);
+};
+
+/**
  * Create environment
  * @param argv
  */
-const createEnvironment = (argv) => {
-    let envName;
-    let fileName;
+const createEnvironment = async (argv) => {
     const { siteName } = argv;
 
-    const spinner = ora();
-    askEnvName(argv)
-        .then(_envName => {
-            envName = _envName;
+    const envName = await askEnvName(argv);
+    const fileName = await askSettingsFile(argv);
 
-            return askSettingsFile(argv);
-        })
-        .then(settingsFileName => {
-            fileName = settingsFileName;
-
-            spinner.start('Creating environment. Please wait...');
-            return fs.readJson(fileName)
-                .then(json => environments.addEnvironment(json, envName, siteName));
-        })
-        .then(() => {
-            spinner.succeed('Environment successfully added.');
-        })
-        .catch(err => {
-            spinner.stop();
-
-            console.log(err);
-        });
+    spinner.start('Creating environment. Please wait...');
+    const json = await fs.readJson(fileName);
+    await environments.addEnvironment(json, envName, siteName);
+    spinner.succeed('Environment successfully added.');
 };
 
 exports.command = 'create';
@@ -112,5 +106,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    createEnvironment(argv);
+    createEnvironment(argv)
+        .catch(err => {
+            spinner.stop();
+
+            error(err);
+        });
 };
