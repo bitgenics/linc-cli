@@ -11,19 +11,6 @@ prompt.message = '';
 prompt.delimiter = '';
 
 /**
- * Show available environments
- * @param results
- */
-const showAvailableEnvironments = (results) => {
-    const siteName = results.site_name;
-
-    console.log(`Here are the available environments for ${siteName}:`);
-
-    let code = 65; /* 'A' */
-    results.environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
-};
-
-/**
  * Ask user which environment to use
  */
 const askEnvironment = () => new Promise((resolve, reject) => {
@@ -58,29 +45,34 @@ const error = (err) => {
 };
 
 /**
+ * Pick environment from a list
+ * @param envs
+ */
+const pickEnvironment = async (envs) => {
+    if (envs.environments.length < 1) return 'prod';
+    if (envs.environments.length < 2) return envs.environments[0].name;
+
+    await environments.showAvailableEnvironments(envs);
+    const env = await askEnvironment();
+    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+    if (index > envs.environments.length - 1) {
+        throw new Error('Invalid input.');
+    }
+    return envs.environments[index].name;
+};
+
+/**
  * Delete environment
  * @param argv
  */
 const deleteEnvironment = async (argv) => {
     const { siteName } = argv;
-    let envName;
 
     spinner.start('Retrieving environments. Please wait...');
     const envs = await environments.getAvailableEnvironments(siteName);
     spinner.stop();
 
-    if (envs.environments.length < 1) envName = 'prod';
-    else if (envs.environments.length < 2) envName = envs.environments[0].name;
-    else {
-        await showAvailableEnvironments(envs);
-        const env = await askEnvironment();
-        const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
-        if (index > envs.environments.length - 1) {
-            throw new Error('Error: invalid input.');
-        }
-        envName = envs.environments[index].name;
-    }
-
+    const envName = await pickEnvironment(envs);
     if (envName === 'prod') {
         throw new Error('Error: you cannot delete the default environment \'prod\'.');
     }
