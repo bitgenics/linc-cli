@@ -97,17 +97,19 @@ const addDomain = async (siteName) => { // eslint-disable-line consistent-return
     const envs = await environments.getAvailableEnvironments(siteName);
     spinner.stop();
 
-    if (envs.environments.length < 1) return 'prod';
-    if (envs.environments.length < 2) return envs.environments[0].name;
-
-    showAvailableEnvironments(envs);
-    const env = await askEnvironment();
-
-    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
-    if (index > envs.environments.length - 1) {
-        throw new Error('Invalid input.');
+    let envName;
+    if (envs.environments.length < 1) envName = 'prod';
+    else if (envs.environments.length < 2) envName = envs.environments[0].name;
+    else {
+        showAvailableEnvironments(envs);
+        const env = await askEnvironment();
+        const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+        if (index > envs.environments.length - 1) {
+            throw new Error('Invalid input.');
+        }
+        envName = envs.environments[index].name;
     }
-    const envName = envs.environments[index].name;
+
     const { domainName } = await askDomainName();
 
     spinner.start('Adding domain. Please wait...');
