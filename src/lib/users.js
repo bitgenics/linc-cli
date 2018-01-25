@@ -12,6 +12,8 @@ const poolData = {
 const userPool = new AWSCognito.CognitoUserPool(poolData);
 let cognitoUser;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -163,56 +165,60 @@ const confirmRegistration = (code) => new Promise((resolve, reject) => {
  * Entry point to sign up new "user"
  * @param siteName
  */
-module.exports.signup = (siteName) => new Promise((resolve, reject) => {
-    let signupResponse;
+module.exports.signup = async (siteName) => {
+    /**
+     * Get user to accept T&Cs
+     */
+    const accept = await getTCAcceptance();
+    if (accept.substr(0, 1).toLowerCase() !== 'y') {
+        throw new Error('You must accept the Terms & Conditions to continue. Abort.');
+    }
 
-    const spinner = ora();
-    getTCAcceptance()
-        .then(accept => {
-            if (accept.substr(0, 1).toLowerCase() !== 'y') {
-                throw new Error('You must accept the Terms & Conditions to continue. Abort.');
-            }
+    /**
+     * Update .gitignore file to include .linc subdirectory, or create .gitignore if not found
+     */
+    gitignoreAdd('.linc/', { create: true });
 
-            return getUserEmail();
-        })
-        .then(email => {
-            spinner.start('Creating new credentials. Please wait...');
+    /**
+     * Ask for user's email address
+     */
+    const email = await getUserEmail();
 
-            return cognitoCreateNewUser(email, siteName);
-        })
-        .then(response => {
-            gitignoreAdd('.linc/', { create: true });
+    /**
+     * Starting creating new credentials
+     */
+    spinner.start('Creating new credentials. Please wait...');
+    const signupResponse = await cognitoCreateNewUser(email, siteName);
+    const { clientId, clientSecret } = signupResponse;
 
-            spinner.succeed('Successfully created new credentials:');
-            console.log(`   username: ${response.clientId}`);
-            console.log(`   password: ${response.clientSecret}`);
-            console.log(`
+    spinner.succeed('Successfully created new credentials:');
+    console.log(`   username: ${clientId}`);
+    console.log(`   password: ${clientSecret}`);
+    console.log(`
 These credentials are stored in .linc/credentials in this directory.
 You might want to consider backing up the credentials in a safe place.
 We have added an entry to .gitignore which ignores the .linc folder.
 `);
 
+    /**
+     * Get user's confirmation code and verify
+     */
+    const code = await getConfirmationCode();
 
-            signupResponse = response;
-            return getConfirmationCode();
-        })
-        .then(code => {
-            spinner.start('Verifying registration. Please wait...');
+    spinner.start('Verifying registration. Please wait...');
+    await confirmRegistration(code);
+    spinner.succeed('Verification succeeded.');
 
-            return confirmRegistration(code);
-        })
-        .then(() => {
-            spinner.succeed('Verification succeeded.');
+    /**
+     * Save credentials in .linc directory
+     */
+    await saveCredentials(clientId, clientSecret);
 
-            return saveCredentials(signupResponse.clientId, signupResponse.clientSecret);
-        })
-        .then(() => resolve({
-            accessKey: signupResponse.clientId,
-            secretKey: signupResponse.clientSecret,
-        }))
-        .catch(err => {
-            spinner.stop();
-
-            return reject(err);
-        });
-});
+    /**
+     * Return the new credentials
+     */
+    return {
+        accessKey: clientId,
+        secretKey: clientSecret,
+    };
+};
