@@ -213,7 +213,7 @@ const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
  *
  * @param argv
  */
-const initialise = (argv) => {
+const initialise = async (argv) => {
     const spinner = ora();
 
     if (argv.buildProfile) {
@@ -226,38 +226,45 @@ const initialise = (argv) => {
 
     const linc = {};
 
-    linclet('LINC')
-        .then(() => askProfile())
-        .then(result => {
-            const selectedProfile = result.profile.toUpperCase();
+    try {
+        await linclet;
 
-            const profile = lincProfiles[selectedProfile].pkg;
-            return profile ? Promise.resolve(profile) : askOtherProfile();
-        })
-        .then(profile => {
-            linc.buildProfile = profile;
+        /**
+         * Handle profile
+         */
+        const result = await askProfile();
+        const selectedProfile = result.profile.toUpperCase();
+        let profile = lincProfiles[selectedProfile].pkg;
+        if (!profile) {
+            profile = await askOtherProfile();
+        }
+        linc.buildProfile = profile;
 
-            spinner.start('Installing profile package. Please wait...');
+        /**
+         * Install profile
+         */
+        spinner.start('Installing profile package. Please wait...');
+        await installProfilePackage(profile);
+        spinner.succeed('Profile package installed.');
 
-            return installProfilePackage(profile)
-                .then(() => {
-                    spinner.succeed('Profile package installed.');
+        /**
+         * Handle additional questions and configuration files
+         */
+        await handleInitQuestions(linc, profile);
+        await handleExampleConfigFiles(linc, profile);
 
-                    return handleInitQuestions(linc, profile);
-                })
-                .then(() => handleExampleConfigFiles(linc, profile));
-        })
-        .then(() => readPkg())
-        .then(packageJson => {
-            spinner.succeed('Updated package.json.');
+        /**
+         * Update package.json
+         */
+        const packageJson = await readPkg();
+        packageJson.linc = linc;
+        await writePkg(packageJson);
 
-            // eslint-disable-next-line no-param-reassign
-            packageJson.linc = linc;
-            return writePkg(packageJson);
-        })
-        .then(() => console.log('Done.'))
-        .catch(err => error(err))
-        .then(() => spinner.stop());
+        spinner.succeed('Updated package.json.');
+        spinner.succeed('Done.');
+    } catch (e) {
+        error(e);
+    }
 };
 
 exports.command = ['init', 'create'];
@@ -267,5 +274,6 @@ exports.handler = (argv) => {
 
     notice();
 
-    initialise(argv);
+    initialise(argv)
+        .then(() => {});
 };
