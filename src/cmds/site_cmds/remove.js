@@ -4,6 +4,8 @@ const notice = require('../../lib/notice');
 const assertPkg = require('../../lib/package-json').assert;
 const sites = require('../../lib/sites');
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -15,7 +17,7 @@ prompt.delimiter = '';
 const getSiteName = (message) => new Promise((resolve, reject) => {
     const schema = {
         properties: {
-            site_name: {
+            siteName: {
                 // Only a-z, 0-9 and - are allowed. Cannot start/end with -.
                 pattern: /^(?!-)[a-z0-9-]{0,62}[a-z0-9]$/,
                 description: message,
@@ -24,7 +26,6 @@ const getSiteName = (message) => new Promise((resolve, reject) => {
             },
         },
     };
-
     prompt.start();
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
@@ -38,47 +39,28 @@ const getSiteName = (message) => new Promise((resolve, reject) => {
  * @param err
  */
 const error = (err) => {
-    console.log(`\nOops! Something went wrong: ${err.message}`);
+    console.log('Oops! Something went wrong:');
+    console.log(err);
 };
 
 /**
  * Remove site
  */
-const remove = () => {
-    let siteName = null;
-
-    assertPkg();
-
-    notice();
-
-    const spinner = ora();
-
+const remove = async () => {
     console.log(`Removing a site is a destructive operation that CANNOT be undone. 
 The operation will remove all resources associated with your site, 
 and it will no longer be accessible/available to you.
 `);
 
-    getSiteName('Name of site to remove:')
-        .then(x => {
-            siteName = x.site_name;
-            return getSiteName('Please type the name of the site again:')
-                .then(y => {
-                    if (siteName !== y.site_name) throw new Error('Error: the names don\'t match.');
+    const { siteName } = await getSiteName('Name of site to remove:');
+    const rptSiteName = await getSiteName('Please type the name of the site again:');
+    if (siteName !== rptSiteName.siteName) {
+        throw new Error('Error: the names don\'t match.');
+    }
 
-                    console.log('Please wait...');
-                });
-        })
-        .then(() => {
-            spinner.start('Deleting site. Please wait...');
-            return sites.deleteSite(siteName);
-        })
-        .then(() => {
-            spinner.succeed('Site deleted. It can no longer be accessed.');
-        })
-        .catch(err => {
-            spinner.stop();
-            return error(err);
-        });
+    spinner.start('Deleting site. Please wait...');
+    await sites.deleteSite(siteName);
+    spinner.succeed('Site deleted. It can no longer be accessed.');
 };
 
 exports.command = 'remove';
@@ -88,5 +70,10 @@ exports.handler = () => {
 
     notice();
 
-    remove();
+    remove()
+        .catch(err => {
+            spinner.stop();
+
+            error(err);
+        });
 };
