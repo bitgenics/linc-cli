@@ -18,16 +18,42 @@ const clean = () => {
 };
 
 /**
+ *
+ * @param pkg
+ */
+const buildDistribution = (pkg) => new Promise((resolve, reject) => {
+    const buildssr = require('linc-build-ssr');
+
+    return buildssr({}, pkg, (err) => {
+        if (err) return reject(err);
+
+        return resolve();
+    })
+});
+
+/**
  * Build site
  */
-const build = () => {
-    const buildssr = require('linc-build-ssr');
-    const packageJson = require(path.resolve(process.cwd(), 'package.json'));
+const build = async () => {
+    try {
+        /**
+         * Check for or add build profile and install if needed
+         */
+        const pkg = await packageOptions(['buildProfile']);
+        await installProfilePackage(pkg.linc.buildProfile);
 
-    buildssr({}, packageJson, (err) => {
-        if (err) console.log(err);
-        else serve();
-    });
+        /**
+         * Build distribution
+         */
+        await buildDistribution(pkg);
+
+        /**
+         * Serve if build has succeeded
+         */
+        serve();
+    } catch (e) {
+        console.log(e);
+    }
 };
 
 exports.command = 'build';
@@ -38,11 +64,7 @@ exports.handler = () => {
     notice();
 
     clean();
-    packageOptions(['buildProfile'])
-        .then(pkg => installProfilePackage(pkg.linc.buildProfile))
-        .then(() => {
-            console.log('Building. Please wait...');
-            return build();
-        })
-        .catch(err => console.log(err.message ? err.message : err));
+
+    build()
+        .then(() => {});
 };
