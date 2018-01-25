@@ -176,7 +176,7 @@ const askProfile = () => new Promise((resolve, reject) => {
     prompt.get(schema, (err, result) => {
         if (err) return reject(err);
 
-        return result.profile;
+        return resolve(result.profile);
     });
 });
 
