@@ -4,6 +4,8 @@ const prompt = require('prompt');
 const readPkg = require('read-pkg');
 const usage = require('./usage');
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -34,75 +36,57 @@ const askRepositoryUrl = suggestion => new Promise((resolve, reject) => {
 /**
  * Create new hook
  */
-const createHook = () => {
+const createHook = async () => {
     console.log(usage);
 
-    const spinner = ora();
-    let siteName;
     const body = {};
-    readPkg()
-        .then(pkg => {
-            // eslint-disable-next-line prefer-destructuring
-            siteName = pkg.linc.siteName;
-            if (!siteName) {
-                throw new Error('No site name found in package.json.');
-            }
+    const pkg = await readPkg();
 
-            let repositoryUrl = '';
-            const { repository } = pkg;
-            if (repository && repository.type && repository.url) {
-                if (repository.type === 'git') repositoryUrl = repository.url;
-            }
-            return askRepositoryUrl(repositoryUrl);
-        })
-        .then(result => {
-            body.repositoryUrl = result.repositoryUrl;
+    const { siteName } = pkg.linc;
+    if (!siteName) {
+        // eslint-disable-next-line max-len
+        throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
+    }
 
-            spinner.start('Creating webhook. Please wait...');
-            return webhooks.createWebhook(siteName, 'bitbucket', body);
-        })
-        .then(response => {
-            spinner.stop();
-            if (response.errors) {
-                console.log(`Oops. Something went wrong:\n${response.errors}`);
-            } else {
-                console.log('Your webhook has been created.');
-            }
-        })
-        .catch(() => {
-            spinner.stop();
-            console.log('Oops. Something seems to have gone wrong.');
-        });
+    let repositoryUrl = '';
+    const { repository } = pkg;
+    if (repository && repository.type && repository.url) {
+        if (repository.type === 'git') repositoryUrl = repository.url;
+    }
+
+    const result = await askRepositoryUrl(repositoryUrl);
+    body.repositoryUrl = result.repositoryUrl;
+
+    spinner.start('Creating webhook. Please wait...');
+    const response = await webhooks.createWebhook(siteName, 'bitbucket', body);
+    spinner.stop();
+
+    if (response.errors) {
+        console.log(`Oops. Something went wrong:\n${response.errors}`);
+    } else {
+        console.log('Your webhook has been created.');
+    }
 };
 
 /**
  * Delete existing hook
  */
-const deleteHook = () => {
-    const spinner = ora();
+const deleteHook = async () => {
+    const pkg = await readPkg();
+    const { siteName } = pkg.linc;
+    if (!siteName) {
+        throw new Error('No site name found in package.json.');
+    }
 
-    readPkg()
-        .then(pkg => {
-            const { siteName } = pkg.linc;
-            if (!siteName) {
-                throw new Error('No site name found in package.json.');
-            }
+    spinner.start('Deleting webhook. Please wait...');
+    const response = await webhooks.deleteWebhook(siteName, 'bitbucket');
+    spinner.stop();
 
-            spinner.start('Deleting webhook. Please wait...');
-            return webhooks.deleteWebhook(siteName, 'bitbucket');
-        })
-        .then(response => {
-            spinner.stop();
-            if (response.errors) {
-                console.log(`Oops. Something went wrong:\n${response.errors}`);
-            } else {
-                console.log('Your webhook has been deleted.');
-            }
-        })
-        .catch(() => {
-            spinner.stop();
-            console.log('Oops. Something seems to have gone wrong.');
-        });
+    if (response.errors) {
+        console.log(`Oops. Something went wrong:\n${response.errors}`);
+    } else {
+        console.log('Your webhook has been deleted.');
+    }
 };
 
 /**
@@ -117,8 +101,16 @@ module.exports.handler = argv => {
         process.exit(0);
     }
 
-    if (command === 'create') return createHook();
-    if (command === 'delete') return deleteHook();
+    let p;
+    if (command === 'create') p = createHook;
+    if (command === 'delete') p = deleteHook;
+    if (p) {
+        p().catch(err => {
+            spinner.stop();
 
-    console.log('You provided an invalid command.');
+            console.log(err);
+        });
+    } else {
+        console.log('You provided an invalid command.');
+    }
 };
