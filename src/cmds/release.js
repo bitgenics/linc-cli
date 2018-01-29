@@ -215,7 +215,7 @@ const release = async (argv) => {
     if (domainIndex === '') {
         // All domains in one go
         console.log(`
-You have selected to release to all available domains!`);
+WARNING: You have selected to release to all available domains!`);
 
         listOfDomains.map(d => domainsToRelease.push(d.domain_name));
     } else {
