@@ -19,7 +19,9 @@ const getAvailableEnvironments = (siteName) => (jwtToken) => new Promise((resolv
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
