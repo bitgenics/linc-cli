@@ -2,7 +2,7 @@ const request = require('request');
 const authorisify = require('../lib/authorisify');
 const config = require('../config/config.json');
 
-const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
+const LINC_API_OAUTH_ENDPOINT = `${config.Api.OAuthEndpoint}/authorise_uri`;
 
 /**
  * Get URL to authorise with Slack
@@ -12,7 +12,7 @@ const LINC_API_SITES_ENDPOINT = `${config.Api.LincBaseEndpoint}/sites`;
 const getAuthoriseUri = (siteName, serviceName) => (jwtToken) => new Promise((resolve, reject) => {
     const options = {
         method: 'GET',
-        url: `${LINC_API_SITES_ENDPOINT}/${siteName}/${serviceName}`,
+        url: `${LINC_API_OAUTH_ENDPOINT}/${siteName}/${serviceName}`,
         headers: {
             'Content-Type': 'application/json',
             Authorization: `X-Bearer ${jwtToken}`,

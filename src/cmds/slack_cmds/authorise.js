@@ -50,8 +50,7 @@ const authorise = async (siteName) => {
     }
 
     const uri = response.authorise_uri;
-    console.log(`
-The following URL will open in your browser shortly:
+    console.log(`The following URL will open in your browser shortly:
 
 ${uri}
 
