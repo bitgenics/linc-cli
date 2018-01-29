@@ -44,7 +44,10 @@ const messages = [
     'Uploading package.',
 ];
 const msgStart = (n) => spinner.start(`${messages[n]} Please wait...`);
-const msgSucceed = (n) => spinner.succeed(`${messages[n]} Done.`);
+const msgSucceed = (n, m) => {
+    spinner.succeed(`${messages[n]} Done.`);
+    if (m) msgStart(m);
+};
 
 /**
  * Convenience function to create SHA1 of a string
@@ -98,7 +101,8 @@ const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new 
     reference = sha1(`${siteName}${Math.floor(new Date() / 1000).toString()}`);
     const key = createKey(AWS.config.credentials.identityId, codeId, siteName);
 
-    msgSucceed(2);
+    msgSucceed(2, 3);
+
     const stream = fs.createReadStream(zipfile);
     const params = {
         Body: stream,
@@ -111,7 +115,6 @@ const uploadZipfile = (description, codeId, siteName, zipfile, jwtToken) => new 
         },
     };
 
-    msgStart(3);
     const upload = new AWS.S3.ManagedUpload({ params });
     upload.on('httpUploadProgress', (progress) => {
         const loadedInKB = Math.floor(progress.loaded / 1024);
@@ -177,39 +180,25 @@ const getCredentials = (token) => new Promise((resolve, reject) => {
  * @param description
  * @param credentials
  */
-const uploadSite = (siteName, description, credentials) => new Promise((resolve, reject) => {
+const uploadSite = async (siteName, description, credentials) => {
     const rendererPath = `${process.cwd()}/dist/lib/server-render.js`;
     const renderer = fs.readFileSync(rendererPath);
     const codeId = sha1(renderer);
 
-    let zipFile;
-    let jwtToken;
-
-    msgSucceed(0);
-    msgStart(1);
+    msgSucceed(0, 1);
 
     const tempDir = fs.mkdtempSync(`${TMP_DIR}linc-`);
-    return createZipfile(tempDir, DIST_DIR, siteName)
-        .then(() => createZipfile(TMP_DIR, '/', siteName, { cwd: tempDir }))
-        .then(zipfile => {
-            zipFile = zipfile;
-            msgSucceed(1);
-            msgStart(2);
-            return auth(credentials.accessKey, credentials.secretKey);
-        })
-        .then(token => {
-            jwtToken = token;
-            return auth.getIdToken();
-        })
-        .then(token => getCredentials(token))
-        .then(() => uploadZipfile(description, codeId, siteName, zipFile, jwtToken))
-        .then(resolve)
-        .catch(err => {
-            spinner.stop();
 
-            return reject(err);
-        });
-});
+    await createZipfile(tempDir, DIST_DIR, siteName);
+    const zipFile = await createZipfile(TMP_DIR, '/', siteName, { cwd: tempDir });
+
+    msgSucceed(1, 2);
+
+    const jwtToken = await auth(credentials.accessKey, credentials.secretKey);
+    const token = await auth.getIdToken();
+    await getCredentials(token);
+    return uploadZipfile(description, codeId, siteName, zipFile, jwtToken);
+};
 
 /**
  * Retrieve deployment status using reference
@@ -272,62 +261,40 @@ const waitForDeployToFinish = (envs, siteName) => new Promise((resolve, reject) 
 /**
  * Publish site
  */
-const publishSite = (credentials, siteName) => {
-    let description;
-    let listOfEnvironments;
-
+const publishSite = async (credentials, siteName) => {
     spinner.start('Checking for profile package. Please wait...');
-    return packageOptions(['buildProfile'])
-        .then(() => {
-            spinner.succeed('Profile package installed.');
+    await packageOptions(['buildProfile']);
+    spinner.succeed('Profile package installed.');
 
-            return askDescription('');
-        })
-        .then(result => {
-            console.log();
+    const { description } = await askDescription('');
+    console.log();
 
-            // eslint-disable-next-line prefer-destructuring
-            description = result.description;
+    msgStart(0);
+    await sites.authoriseSite(siteName);
 
-            msgStart(0);
-            return sites.authoriseSite(siteName);
-        })
-        .then(() => environments.getAvailableEnvironments(siteName))
-        .then(envs => {
-            spinner.stop();
+    let envs = await environments.getAvailableEnvironments(siteName);
+    const listOfEnvironments = envs.environments.map(x => x.name);
 
-            listOfEnvironments = envs.environments.map(x => x.name);
-            return uploadSite(siteName, description, credentials);
-        })
-        .then(() => {
-            spinner.start('Waiting for deploy to finish...');
+    await uploadSite(siteName, description, credentials);
+    envs = await waitForDeployToFinish(listOfEnvironments, siteName);
+    spinner.succeed('Deployment finished');
 
-            return waitForDeployToFinish(listOfEnvironments, siteName);
-        })
-        .then(envs => {
-            spinner.succeed('Deployment finished');
-
-            console.log('\nThe following deploy URLs were created:');
-            envs.forEach(e => console.log(`  https://${e.url}  (${e.env})`));
-        })
-        .catch(err => {
-            spinner.stop();
-            console.log(err.message ? err.message : err);
-        });
+    console.log('\nThe following deploy URLs were created:');
+    envs.forEach(e => console.log(`  https://${e.url}  (${e.env})`));
 };
 
 /**
  * Copy existing .linc/credentials to .linc/credentials.bak
  */
-const moveCredentials = () => {
+const moveCredentials = async () => {
     console.log(`I found credentials in this folder, but no siteName.
 As a precaution, I have moved your existing credentials:
 
   .linc/credentials.bak -> .linc/credentials.
 `);
 
-    backupCredentials();
-    removeToken();
+    await backupCredentials();
+    await removeToken();
 };
 
 /**
@@ -361,23 +328,16 @@ const credentialsFromPrompt = () => new Promise((resolve, reject) => {
 /**
  * Log in user
  */
-const login = () => new Promise((resolve, reject) => {
-    let credentials;
-
+const login = async () => {
     console.log(`Your site has a name, but I can't find any credentials. Please log
 in by entering your access key and secret key when prompted.
 `);
 
-    return credentialsFromPrompt()
-        .then(creds => {
-            credentials = creds;
-            return auth(creds.access_key_id, creds.secret_access_key);
-        })
-        .then(() => backupCredentials())
-        .then(() => saveCredentials(credentials.access_key_id, credentials.secret_access_key))
-        .then(resolve)
-        .catch(reject);
-});
+    const credentials = await credentialsFromPrompt();
+    await auth(credentials.access_key_id, credentials.secret_access_key);
+    await backupCredentials();
+    return saveCredentials(credentials.access_key_id, credentials.secret_access_key);
+};
 
 /**
  * Check for existing site name in back end
@@ -385,6 +345,7 @@ in by entering your access key and secret key when prompted.
  */
 const existingSite = (siteName) => {
     const existingSites = [
+        'coffee-bean-ninja',
         'linc-react-games',
         'localised',
         'fysho-web',
@@ -404,29 +365,28 @@ const existingSite = (siteName) => {
 
 /**
  * Main entry point for this module.
+ * @param argv
  */
-const publish = (argv) => {
-    let { siteName } = argv;
+const publish = async (argv) => {
+    const { siteName } = argv;
 
     let credentials = null;
     try {
-        credentials = loadCredentials();
+        credentials = await loadCredentials();
     } catch (e) {
         // Empty block
     }
 
-    let suppressSignupMessage = false;
-
     /*
      * Existing site name
      */
+    let suppressSignupMessage = false;
     if (siteName) {
         if (credentials) return publishSite(credentials, siteName);
 
         if (!existingSite(siteName)) {
-            return login()
-                .then(creds => publishSite(creds, siteName))
-                .catch(console.log);
+            credentials = await login();
+            return publishSite(credentials, siteName);
         }
 
         suppressSignupMessage = true;
@@ -442,7 +402,7 @@ when you originally signed up this site.
      */
     if (credentials) {
         // No site name but credentials found? Move credentials out of the way
-        moveCredentials();
+        await moveCredentials();
     }
 
     if (!suppressSignupMessage) {
@@ -451,19 +411,9 @@ Please follow the steps to create your credentials.
 `);
     }
 
-    return users.signup(siteName)
-        .then(creds => {
-            credentials = creds;
-
-            return packageOptions(['siteName']);
-        })
-        .then(pkg => {
-            // eslint-disable-next-line prefer-destructuring
-            siteName = pkg.linc.siteName;
-
-            return publishSite(credentials, siteName);
-        })
-        .catch(console.log);
+    credentials = await users.signup(siteName);
+    const pkg = await packageOptions(['siteName']);
+    return publishSite(credentials, pkg.linc.siteName);
 };
 
 exports.command = ['publish', 'deploy'];
@@ -473,5 +423,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    publish(argv);
+    publish(argv)
+        .then(() => {})
+        .catch(err => {
+            spinner.stop();
+            console.log(err);
+        });
 };

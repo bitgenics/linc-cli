@@ -4,6 +4,8 @@ const prompt = require('prompt');
 const oauth = require('../../../lib/oauth');
 const openurl = require('opn');
 
+const spinner = ora();
+
 /**
  * Ask whether user is sure
  */
@@ -29,27 +31,25 @@ prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
 
-module.exports.handler = (argv) => {
-    const spinner = ora('Authorising. Please wait...').start();
+/**
+ * Authorise
+ * @param siteName
+ */
+const authorise = async (siteName) => {
+    spinner.start('Authorising. Please wait...');
+    const response = await oauth.getAuthoriseUrl(siteName, 'Bitbucket');
+    spinner.stop();
 
-    const { siteName } = argv;
-    oauth.getAuthoriseUrl(siteName, 'Bitbucket')
-        .then(response => {
-            spinner.stop();
-            if (!response.already_authorised) return response.authorise_uri;
+    if (!response.already_authorised) return response.authorise_uri;
 
-            return areYouSure()
-                .then(result => {
-                    if (result.ok.toLowerCase() !== 'y') {
-                        console.log('Okay, not reauthorising. Exiting.');
-                        return process.exit(0);
-                    }
+    const result = await areYouSure();
+    if (result.ok.toLocaleString() !== 'y') {
+        console.log('Okay, not reauthorising. Exiting.');
+        process.exit(0);
+    }
 
-                    return response.authorise_uri;
-                });
-        })
-        .then(uri => {
-            console.log(`The following URL will open in your browser shortly:
+    const uri = response.authorise_uri;
+    console.log(`The following URL will open in your browser shortly:
 
 ${uri}
 
@@ -57,8 +57,15 @@ If your browser didn't open this URL, please click on the link or copy the link 
 
 Please note that this URL will be valid for approx. 30 minutes, after which you need to re-run this command.
 `);
-            openurl(uri);
-        })
+
+    return openurl(uri);
+};
+
+module.exports.handler = (argv) => {
+    spinner.start('Authorising. Please wait...');
+
+    const { siteName } = argv;
+    authorise(siteName)
         .catch(err => {
             spinner.stop();
             console.log(`Oops, something went wrong:\n${err}.`);

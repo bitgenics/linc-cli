@@ -5,6 +5,8 @@ const notice = require('../../lib/notice');
 const readPkg = require('read-pkg');
 const assertPkg = require('../../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -93,42 +95,28 @@ type to 'application/json', or your webhook calls will fail.
 /**
  * Create webhook
  */
-const createWebhook = () => {
+const createWebhook = async () => {
     console.log(explanation);
 
-    const spinner = ora();
-    let siteName;
     const body = {};
+    const pkg = await readPkg();
+    const { siteName } = pkg.linc;
+    if (!siteName) {
+        // eslint-disable-next-line max-len
+        throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
+    }
 
-    readPkg()
-        .then(pkg => {
-            // eslint-disable-next-line prefer-destructuring
-            siteName = pkg.linc.siteName;
-            if (siteName === undefined) {
-                // eslint-disable-next-line max-len
-                throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
-            }
+    let result = await askUsername();
+    body.user_name = result.user_name;
 
-            return askUsername();
-        })
-        .then(result => {
-            body.user_name = result.user_name;
-            return askAccessToken();
-        })
-        .then(result => {
-            body.access_token = result.access_token;
+    result = await askAccessToken();
+    body.access_token = result.access_token;
 
-            spinner.start('Creating webhook. Please wait...');
-            return webhooks.createWebhook(siteName, body);
-        })
-        .then(response => {
-            spinner.stop();
-            return showWebhookUrl(response.webhook_url);
-        })
-        .catch(err => {
-            spinner.stop();
-            console.log(err.message);
-        });
+    spinner.start('Creating webhook. Please wait...');
+    const response = await webhooks.createWebhook(siteName, body);
+    spinner.stop();
+
+    return showWebhookUrl(response.webhook_url);
 };
 
 exports.command = 'create';
@@ -138,5 +126,10 @@ exports.handler = () => {
 
     notice();
 
-    createWebhook();
+    createWebhook()
+        .catch(err => {
+            spinner.stop();
+
+            console.log(err);
+        });
 };

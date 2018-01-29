@@ -6,10 +6,11 @@ const oauth = require('../../lib/oauth');
 const openurl = require('opn');
 const assertPkg = require('../../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
-
 
 /**
  * Ask whether user is sure
@@ -32,6 +33,34 @@ const areYouSure = () => new Promise((resolve, reject) => {
     });
 });
 
+/**
+ * Authorise Slack
+ */
+const authorise = async (siteName) => {
+    spinner.start('Please wait...');
+    const response = await oauth.getAuthoriseUrl(siteName, 'Slack');
+    spinner.stop();
+
+    if (response.already_authorised) {
+        const result = await areYouSure();
+        if (result.ok.toLowerCase() !== 'y') {
+            spinner.fail('Okay, not reauthorising. Exiting.');
+            return process.exit(0);
+        }
+    }
+
+    const uri = response.authorise_uri;
+    console.log(`
+The following URL will open in your browser shortly:
+
+${uri}
+
+If your browser didn't open this URL, please click on the link or copy the link into your browser's address bar. (On Linux, you need to press the Ctrl key and click on the link.)
+`);
+
+    return openurl(uri);
+};
+
 exports.command = 'authorise';
 exports.desc = 'Authorise LINC and install LINC app in your Slack';
 exports.handler = (argv) => {
@@ -45,36 +74,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    const spinner = ora('Please wait...').start();
-
-    oauth.getAuthoriseUrl(siteName, 'Slack')
-        .then(response => {
-            spinner.stop();
-            if (!response.already_authorised) return response.authorise_uri;
-
-            return areYouSure()
-                .then(result => {
-                    if (result.ok.toLowerCase() !== 'y') {
-                        console.log('Okay, not reauthorising. Exiting.');
-                        return process.exit(0);
-                    }
-
-                    return response.authorise_uri;
-                });
-        })
-        .then(uri => {
-            spinner.stop();
-            console.log(`
-The following URL will open in your browser shortly:
-
-${uri}
-
-If your browser didn't open this URL, please click on the link or copy the link into your browser's address bar. (On Linux, you need to press the Ctrl key and click on the link.)
-`);
-            openurl(uri);
-        })
+    authorise(siteName)
         .catch(err => {
             spinner.stop();
-            console.log(`Oops, something went wrong:\n${err}.`);
+
+            console.log(err);
         });
 };

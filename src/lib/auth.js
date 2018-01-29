@@ -39,9 +39,12 @@ const cognitoAuthorise = (accessKey, secretKey) => new Promise((resolve, reject)
  * @param secretKey
  */
 // eslint-disable-next-line max-len
-module.exports = (accessKey, secretKey) => cognitoAuthorise(accessKey, secretKey).then(x => x.getAccessToken().getJwtToken());
+module.exports = async (accessKey, secretKey) => {
+    const auth = await cognitoAuthorise(accessKey, secretKey);
+    return auth.getAccessToken().getJwtToken();
+};
 
 /**
  * Get Id Token
  */
-module.exports.getIdToken = () => Promise.resolve(idToken);
+module.exports.getIdToken = async () => idToken;

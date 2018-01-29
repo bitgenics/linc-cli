@@ -4,6 +4,8 @@ const assertPkg = require('../../lib/package-json').assert;
 const notice = require('../../lib/notice');
 const sites = require('../../lib/sites');
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -21,7 +23,7 @@ const error = (err) => {
  * Handle invalidate command
  * @param argv
  */
-const invalidate = (argv) => {
+const invalidate = async (argv) => {
     const { siteName } = argv;
     if (!siteName) {
         console.log('This project does not have a site name. Please create a site first.');
@@ -33,15 +35,9 @@ const invalidate = (argv) => {
         pattern = '/*';
     }
 
-    const spinner = ora('Invalidating cache...').start();
-    sites.invalidateCache(siteName, pattern)
-        .then(() => {
-            spinner.succeed('Cache invalidated.');
-        })
-        .catch(err => {
-            spinner.stop();
-            return error(err);
-        });
+    spinner.start('Invalidating cache...');
+    await sites.invalidateCache(siteName, pattern);
+    spinner.succeed('Cache invalidated.');
 };
 
 exports.command = 'invalidate [pattern]';
@@ -51,5 +47,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    invalidate(argv);
+    invalidate(argv)
+        .catch(err => {
+            spinner.stop();
+
+            error(err);
+        });
 };

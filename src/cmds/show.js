@@ -4,6 +4,8 @@ const domains = require('../lib/domains');
 const notice = require('../lib/notice');
 const releases = require('../lib/releases');
 
+const spinner = ora();
+
 /**
  * Show error
  * @param err
@@ -17,7 +19,7 @@ const error = (err) => {
  * Show site information
  * @param argv
  */
-const show = (argv) => {
+const show = async (argv) => {
     const { siteName } = argv;
 
     if (!siteName) {
@@ -27,23 +29,13 @@ const show = (argv) => {
 
     console.log(`The current site is: '${siteName}'\n`);
 
-    const spinner = ora();
-
     spinner.start('Retrieving data. Please wait...');
-    return Promise.all([
-        domains.getAvailableDomains(siteName),
-        releases.getAvailableReleases(siteName),
-    ])
-        .then(result => {
-            spinner.stop();
-            domains.showAvailableDomains(result[0]);
-            releases.showAvailableReleases(result[1]);
-        })
-        .catch(err => {
-            spinner.stop();
+    const availableDomains = await domains.getAvailableDomains(siteName);
+    const availableReleases = await releases.getAvailableReleases(siteName);
+    spinner.stop();
 
-            error(err);
-        });
+    domains.showAvailableDomains(availableDomains);
+    releases.showAvailableReleases(availableReleases);
 };
 
 exports.command = 'show';
@@ -53,5 +45,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    show(argv);
+    show(argv)
+        .then(() => {})
+        .catch(err => {
+            spinner.stop();
+            error(err);
+        });
 };

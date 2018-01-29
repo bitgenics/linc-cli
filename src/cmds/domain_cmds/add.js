@@ -6,6 +6,8 @@ const environments = require('../../lib/environments');
 const notice = require('../../lib/notice');
 const assertPkg = require('../../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -16,7 +18,7 @@ prompt.delimiter = '';
 const askDomainName = () => new Promise((resolve, reject) => {
     const schema = {
         properties: {
-            domain_name: {
+            domainName: {
                 // This is the pattern AWS uses for domain names
                 pattern: /^(\*\.)?(((?!-)[a-z0-9-]{0,62}[a-z0-9])\.)+((?!-)[a-z0-9-]{1,62}[a-z0-9])$/,
                 description: 'Domain name to add:',
@@ -32,19 +34,6 @@ const askDomainName = () => new Promise((resolve, reject) => {
         return resolve(result);
     });
 });
-
-/**
- * Show available environments
- * @param results
- */
-const showAvailableEnvironments = (results) => {
-    const siteName = results.site_name;
-
-    console.log(`Here are the available environments for ${siteName}:`);
-
-    let code = 65; /* 'A' */
-    results.environments.forEach(e => console.log(`${String.fromCharCode(code++)})  ${e.name || 'prod'}`));
-};
 
 /**
  * Ask user which environment to use
@@ -78,9 +67,51 @@ Please select the environment to which you want to attach the domain.
 const error = (err) => {
     console.log('Oops! Something went wrong:');
     console.log(err);
-    console.log(`
-If the problem persists, please email us at help@bitgenics.io,
-so we can assist in adding the domain.`);
+};
+
+/**
+ * Pick environment from a list
+ * @param envs
+ */
+const pickEnvironment = async (envs) => {
+    if (envs.environments.length < 1) return 'prod';
+    if (envs.environments.length < 2) return envs.environments[0].name;
+
+    await environments.showAvailableEnvironments(envs);
+    const env = await askEnvironment();
+    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
+    if (index > envs.environments.length - 1) {
+        throw new Error('Invalid input.');
+    }
+    return envs.environments[index].name;
+};
+
+/**
+ * Add a domain
+ * @param siteName
+ */
+const addDomain = async (siteName) => { // eslint-disable-line consistent-return
+    const pkg = await readPkg();
+    const { linc } = pkg;
+    if (!linc || !linc.buildProfile) {
+        throw new Error('Initalisation incomplete. Did you forget to run `linc site create`?');
+    }
+
+    spinner.start('Retrieving environments. Please wait...');
+    const envs = await environments.getAvailableEnvironments(siteName);
+    spinner.stop();
+
+    const envName = await pickEnvironment(envs);
+
+    const { domainName } = await askDomainName();
+
+    spinner.start('Adding domain. Please wait...');
+    await domains.addDomain(domainName, envName, siteName);
+    spinner.stop();
+
+    console.log(`Domain name successfully added. Shortly, you may be receiving 
+emails asking you to approve an SSL certificate (if needed).
+`);
 };
 
 exports.command = 'add';
@@ -97,50 +128,10 @@ exports.handler = (argv) => {
 
     notice();
 
-    const spinner = ora();
-    let envName;
-    readPkg()
-        .then(pkg => {
-            const { linc } = pkg;
-            if (!linc || !linc.buildProfile) {
-                return Promise.reject(new Error('Initalisation incomplete. Did you forget to run `linc site create`?'));
-            }
-
-            spinner.start('Retrieving environments. Please wait...');
-            return environments.getAvailableEnvironments(siteName);
-        })
-        .then(envs => {
-            spinner.stop();
-
-            if (envs.environments.length < 1) return Promise.resolve('prod');
-            if (envs.environments.length < 2) return Promise.resolve(envs.environments[0].name);
-
-            showAvailableEnvironments(envs);
-            return askEnvironment()
-                .then(env => {
-                    const index = env.environment_index.toUpperCase().charCodeAt(0) - 65;
-                    if (index > envs.environments.length - 1) {
-                        throw new Error('Invalid input.');
-                    }
-                    return Promise.resolve(envs.environments[index].name);
-                });
-        })
-        .then(env => {
-            envName = env;
-            return askDomainName();
-        })
-        .then(y => {
-            spinner.start('Adding domain. Please wait...');
-            return domains.addDomain(y.domain_name, envName, siteName);
-        })
-        .then(() => {
-            spinner.stop();
-            console.log(`Domain name successfully added. Shortly, you may be receiving 
-emails asking you to approve an SSL certificate (if needed).
-`);
-        })
+    addDomain(siteName)
+        .then(() => {})
         .catch(err => {
             spinner.stop();
-            return error(err.message ? err.message : err);
+            error(err);
         });
 };

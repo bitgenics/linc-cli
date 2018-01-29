@@ -5,6 +5,8 @@ const notice = require('../../lib/notice');
 const readPkg = require('read-pkg');
 const assertPkg = require('../../lib/package-json').assert;
 
+const spinner = ora();
+
 prompt.colors = false;
 prompt.message = '';
 prompt.delimiter = '';
@@ -33,36 +35,24 @@ const areYouSure = () => new Promise((resolve, reject) => {
 /**
  * Delete webhook
  */
-const deleteWebhook = () => {
-    const spinner = ora();
-    let siteName;
+const deleteWebhook = async () => {
+    const pkg = await readPkg();
+    const { siteName } = pkg.linc;
+    if (!siteName) {
+        // eslint-disable-next-line max-len
+        throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
+    }
 
-    readPkg()
-        .then(pkg => {
-            // eslint-disable-next-line prefer-destructuring
-            siteName = pkg.linc.siteName;
-            if (siteName === undefined) {
-                // eslint-disable-next-line max-len
-                throw new Error('No site name found in package.json. First run \'linc site create\' before proceeding.');
-            }
-            return areYouSure();
-        })
-        .then(result => {
-            if (result.ok.toLowerCase() !== 'y') {
-                throw new Error('Aborted by user');
-            }
+    const result = await areYouSure();
+    if (result.ok.toLowerCase() !== 'y') {
+        throw new Error('Aborted by user');
+    }
 
-            spinner.start('Deleting webhook. Please wait...');
-            return webhooks.deleteWebhook(siteName);
-        })
-        .then(reply => {
-            spinner.stop();
-            console.log(reply.status);
-        })
-        .catch(err => {
-            spinner.stop();
-            console.log(err.message);
-        });
+    spinner.start('Deleting webhook. Please wait...');
+    const response = await webhooks.deleteWebhook(siteName);
+    spinner.stop();
+
+    console.log(response.status);
 };
 
 exports.command = 'delete';
@@ -72,5 +62,10 @@ exports.handler = () => {
 
     notice();
 
-    deleteWebhook();
+    deleteWebhook()
+        .catch(err => {
+            spinner.stop();
+
+            console.log(err);
+        });
 };
