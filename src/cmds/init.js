@@ -1,7 +1,5 @@
 const _ = require('underscore');
-const fs = require('fs-extra');
 const ora = require('ora');
-const path = require('path');
 const prompt = require('prompt');
 const figlet = require('figlet');
 const notice = require('../lib/notice');
@@ -100,115 +98,6 @@ const askOtherProfile = () => new Promise((resolve, reject) => {
 });
 
 /**
- * Prompt question from profile
- * @param q
- */
-const promptQuestion = (q) => new Promise((resolve, reject) => {
-    const schema = {
-        properties: {
-            answer: {
-                description: q.text,
-                type: 'string',
-                default: q.dflt,
-            },
-        },
-    };
-    prompt.start();
-    prompt.get(schema, (err, result) => {
-        if (err) return reject(err);
-
-        return resolve(result.answer);
-    });
-});
-
-/**
- * Copy example config files
- * @param linc
- * @param pkg
- * @returns {Promise<any>}
- */
-const handleExampleConfigFiles = (linc, pkg) => new Promise((resolve, reject) => {
-    const pkgDir = path.resolve(process.cwd(), 'node_modules', pkg);
-    const srcDir = path.resolve(pkgDir, 'config_samples');
-    const destDir = linc.sourceDir;
-
-    // We're done if there are no example configuration files, or no destination dir provided
-    if (!fs.existsSync(srcDir)) return resolve();
-    if (!destDir) return resolve();
-
-    let profile;
-    try {
-        // eslint-disable-next-line import/no-dynamic-require,global-require
-        profile = require(pkgDir);
-    } catch (e) {
-        return reject(e);
-    }
-
-    if (!profile.getConfigSampleFiles) return resolve();
-
-    const configSampleFiles = profile.getConfigSampleFiles();
-
-    const spinner = ora('Copying example config files. Please wait...');
-    spinner.start();
-
-    const promises = _.map(configSampleFiles, f => fs.copy(path.resolve(srcDir, f), path.resolve(destDir, f)));
-
-    return Promise.all(promises)
-        .then(() => {
-            spinner.succeed('Successfully copied example config files:');
-            _.each(configSampleFiles, f => console.log(`  + ${f}`));
-
-            return resolve();
-        })
-        .catch(err => {
-            spinner.fail('Could not copy example config files');
-
-            return reject(err);
-        });
-});
-
-/**
- * Handle init questions from profile (if any)
- * @param linc
- * @param pkg
- */
-const handleInitQuestions = (linc, pkg) => new Promise((resolve, reject) => {
-    let profile;
-    try {
-        // eslint-disable-next-line import/no-dynamic-require,global-require
-        profile = require(path.resolve(process.cwd(), 'node_modules', pkg));
-    } catch (e) {
-        return reject(e);
-    }
-
-    if (!profile.getInitQuestions) {
-        return resolve();
-    }
-
-    const questions = profile.getInitQuestions();
-    const keys = Object.keys(questions);
-
-    const askQuestion = () => {
-        if (_.isEmpty(keys)) return resolve();
-
-        const key = keys.shift();
-        const q = questions[key];
-        return promptQuestion(q)
-            .then(response => {
-                // eslint-disable-next-line no-param-reassign
-                linc[key] = response;
-                return askQuestion();
-            })
-            .catch(err => reject(err));
-    };
-
-    if (_.isEmpty(keys)) return resolve();
-
-    console.log('\nThis profile needs some additional information.');
-    return askQuestion();
-});
-
-/**
  * Initialise package.json with LINC information for site.
  *
  * @param argv
@@ -246,12 +135,6 @@ const initialise = async (argv) => {
         spinner.start('Installing profile package. Please wait...');
         await installProfilePackage(profile);
         spinner.succeed('Profile package installed.');
-
-        /**
-         * Handle additional questions and configuration files
-         */
-        await handleInitQuestions(linc, profile);
-        await handleExampleConfigFiles(linc, profile);
 
         /**
          * Update package.json
