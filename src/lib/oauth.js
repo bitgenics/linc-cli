@@ -20,11 +20,15 @@ const getAuthoriseUri = (siteName, serviceName) => (jwtToken) => new Promise((re
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (!json.authorise_uri) return reject('No authorisation_uri in response.');
+        if (!json.authorise_uri) {
+            return reject(new Error('No authorisation_uri in response.'));
+        }
 
         return resolve(json);
     });
