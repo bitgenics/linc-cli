@@ -43,15 +43,16 @@ const askReleaseDomain = () => new Promise((resolve, reject) => {
     console.log(`
 You can select one or more domains to release (using the same deployment key).
 Simply type the letters associated with all the domains you want to release,
-like so: A B E. Simply press <Enter> if you want to release the most recently
-added domain name.
+like so: A B E. 
+
+Simply press <Enter> if you want to release to all your domains in one go.
 `);
+
     const schema = {
         properties: {
             domain_name_index: {
                 description: 'Domain name(s) for release:',
-                default: 'A',
-                required: true,
+                default: '',
             },
         },
     };
@@ -127,7 +128,7 @@ const getDomainsAndDeployments = async (siteName) => ({
  */
 const error = (err) => {
     console.log('Oops! Something went wrong:');
-    console.log(err.message);
+    console.log(err.message ? err.message : err);
 };
 
 /**
@@ -210,21 +211,30 @@ const release = async (argv) => {
 
     // Convert to uppercase, remove non A-Z characters and remove duplicates
     let ignored = false;
-    const answers = domainResponse.domain_name_index
-        .toUpperCase().replace(/[^A-Z]/, '')
-        .split('').filter((t, i, a) => a.indexOf(t) === i);
+    const domainIndex = domainResponse.domain_name_index;
+    if (domainIndex === '') {
+        // All domains in one go
+        console.log(`
+You have selected to release to all available domains!`);
 
-    answers.forEach(a => {
-        const index = a.charCodeAt(0) - 65;
-        if (index > listOfDomains.length - 1) {
-            if (!ignored) {
-                ignored = true;
-                console.log('One or more invalid responses ignored.');
+        listOfDomains.map(d => domainsToRelease.push(d.domain_name));
+    } else {
+        const answers = domainIndex
+            .toUpperCase().replace(/[^A-Z]/, '')
+            .split('').filter((t, i, a) => a.indexOf(t) === i);
+
+        answers.forEach(a => {
+            const index = a.charCodeAt(0) - 65;
+            if (index > listOfDomains.length - 1) {
+                if (!ignored) {
+                    ignored = true;
+                    console.log('One or more invalid responses ignored.');
+                }
+            } else {
+                domainsToRelease.push(listOfDomains[index].domain_name);
             }
-        } else {
-            domainsToRelease.push(listOfDomains[index].domain_name);
-        }
-    });
+        });
+    }
 
     showAvailableDeployments(listOfDeployments, siteName);
     const deployResponse = await askDeploymentKey(true);
@@ -252,8 +262,7 @@ exports.handler = (argv) => {
         process.exit(255);
     }
 
-    const releaseFunc = argv.a ? releaseLatest : release;
-    releaseFunc(argv)
+    (argv.a ? releaseLatest : release)(argv)
         .catch(err => {
             spinner.stop();
 
