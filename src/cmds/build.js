@@ -69,6 +69,7 @@ exports.handler = (argv) => {
     clean();
 
     build(argv)
+        .then(() => console.log('Done.'))
         .catch(err => {
             console.log(err);
         });
