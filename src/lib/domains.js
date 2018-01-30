@@ -20,12 +20,14 @@ const getAvailableDomains = (siteName) => (jwtToken) => new Promise((resolve, re
     };
     request(options, (err, response, body) => {
         if (err) return reject(err);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         const json = JSON.parse(body);
-        if (json.error) return reject(json.error);
+        if (json.error) return reject(new Error(json.error));
         if (!json.domains || json.domains.length === 0) {
-            return reject('No domains available. Add domain names using \'linc domain add\'.');
+            return reject(new Error('No domains available. Add domain names using \'linc domain add\'.'));
         }
 
         return resolve(json);
@@ -56,7 +58,9 @@ const addDomainName = (domainName, envName, siteName) => (jwtToken) => new Promi
 
         const json = JSON.parse(body);
         if (json.error) return reject(json.error);
-        if (response.statusCode !== 200) return reject(`Error ${response.statusCode}: ${response.statusMessage}`);
+        if (response.statusCode !== 200) {
+            return reject(new Error(`Error ${response.statusCode}: ${response.statusMessage}`));
+        }
 
         return resolve(json);
     });
