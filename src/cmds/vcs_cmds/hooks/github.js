@@ -93,11 +93,12 @@ const deleteHook = async () => {
  * Entry point for this module
  * @param argv
  */
-// eslint-disable-next-line consistent-return
 module.exports.handler = argv => {
     const { command } = argv;
     if (!command) {
-        console.log('You failed to provide a command.');
+        console.log('You failed to provide a command. Valid commands are:');
+        console.log('   - create: create a new webhook');
+        console.log('   - delete: delete a existing webhook');
         process.exit(0);
     }
 
