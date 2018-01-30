@@ -39,6 +39,7 @@ const saveJwtToken = (jwtToken) => {
 
     const tokenFile = path.join(DOT_LINC_DIR, 'token');
     fs.writeFileSync(tokenFile, `${jwtToken}\n`);
+    return jwtToken;
 };
 
 /**
@@ -47,10 +48,9 @@ const saveJwtToken = (jwtToken) => {
  */
 module.exports = async (func) => {
     try {
-        return func(getJwtToken());
+        return await func(getJwtToken());
     } catch (e) {
         const token = await authorise();
-        saveJwtToken(token);
-        return func(token);
+        return func(saveJwtToken(token));
     }
 };
