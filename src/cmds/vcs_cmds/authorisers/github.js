@@ -36,12 +36,12 @@ const authorise = async (siteName) => {
     const response = await oauth.getAuthoriseUrl(siteName, 'GitHub');
     spinner.stop();
 
-    if (!response.already_authorised) return response.authorise_uri;
-
-    const result = await areYouSure();
-    if (result.ok.toLocaleString() !== 'y') {
-        console.log('Okay, not reauthorising. Exiting.');
-        process.exit(0);
+    if (response.already_authorised) {
+        const result = await areYouSure();
+        if (result.ok.toLocaleString() !== 'y') {
+            console.log('Okay, not reauthorising. Exiting.');
+            process.exit(0);
+        }
     }
 
     const uri = response.authorise_uri;
