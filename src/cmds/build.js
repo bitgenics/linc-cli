@@ -1,11 +1,14 @@
 /* eslint-disable global-require,import/no-dynamic-require */
 const fs = require('fs-extra');
 const path = require('path');
+const ora = require('ora');
 const installProfilePackage = require('../lib/install-profile-pkg');
 const assertPkg = require('../lib/package-json').assert;
 const notice = require('../lib/notice');
 const packageOptions = require('../lib/pkgOptions');
 const serve = require('../lib/serve');
+
+const spinner = ora();
 
 /**
  * Clean dist directory
@@ -40,7 +43,10 @@ const build = async (argv) => {
      * Check for or add build profile and install if needed
      */
     const pkg = await packageOptions(['buildProfile']);
+
+    spinner.start('Installing profile package. Please wait...');
     await installProfilePackage(pkg.linc.buildProfile);
+    spinner.succeed('Installed profile package.');
 
     /**
      * Build distribution
