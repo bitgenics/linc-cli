@@ -38,7 +38,7 @@ const authorise = async (siteName) => {
 
     if (response.already_authorised) {
         const result = await areYouSure();
-        if (result.ok.toLocaleString() !== 'y') {
+        if (result.ok.toLowerCase() !== 'y') {
             console.log('Okay, not reauthorising. Exiting.');
             process.exit(0);
         }
