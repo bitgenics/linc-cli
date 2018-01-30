@@ -21,7 +21,7 @@ const clean = () => {
 };
 
 /**
- *
+ * Build distribution
  * @param pkg
  */
 const buildDistribution = (pkg) => new Promise((resolve, reject) => {
@@ -36,9 +36,8 @@ const buildDistribution = (pkg) => new Promise((resolve, reject) => {
 
 /**
  * Build site
- * @param argv
  */
-const build = async (argv) => {
+const build = async () => {
     /**
      * Check for or add build profile and install if needed
      */
@@ -52,11 +51,6 @@ const build = async (argv) => {
      * Build distribution
      */
     await buildDistribution(pkg);
-
-    /**
-     * Serve if build has succeeded
-     */
-    if (!argv.s) serve();
 };
 
 exports.command = 'build';
@@ -68,8 +62,12 @@ exports.handler = (argv) => {
 
     clean();
 
-    build(argv)
-        .then(() => console.log('Done.'))
+    build()
+        .then(() => {
+            if (!argv.s) serve();
+
+            console.log('Done.');
+        })
         .catch(err => {
             console.log(err);
         });
