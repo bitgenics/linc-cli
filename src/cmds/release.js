@@ -16,6 +16,27 @@ prompt.message = '';
 prompt.delimiter = '';
 
 /**
+ * Ask whether user is sure
+ */
+const areYouSure = () => new Promise((resolve, reject) => {
+    const schema = {
+        properties: {
+            ok: {
+                description: 'Releasing to all domains at once. Are you sure?',
+                default: 'Y',
+                type: 'string',
+            },
+        },
+    };
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) return reject(err);
+
+        return resolve(result);
+    });
+});
+
+/**
  * Ask user for a deployment key
  */
 const askDeploymentKey = () => new Promise((resolve, reject) => {
@@ -213,10 +234,11 @@ const release = async (argv) => {
     let ignored = false;
     const domainIndex = domainResponse.domain_name_index;
     if (domainIndex === '') {
-        // All domains in one go
-        console.log(`
-WARNING: You have selected to release to all available domains!`);
-
+        const sure = await areYouSure();
+        if (sure.ok.toLowerCase() !== 'y') {
+            console.log('Aborted by user.');
+            process.exit(0);
+        }
         listOfDomains.map(d => domainsToRelease.push(d.domain_name));
     } else {
         const answers = domainIndex
