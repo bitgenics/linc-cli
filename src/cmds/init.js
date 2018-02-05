@@ -133,7 +133,7 @@ const initialise = async (argv) => {
          * Install profile
          */
         spinner.start('Installing profile package. Please wait...');
-        await installProfilePackage(profile);
+        await installProfilePackage(profile, { force: true });
         spinner.succeed('Profile package installed.');
 
         /**
