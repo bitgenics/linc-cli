@@ -29,5 +29,5 @@ module.exports = async (pkgName, opts) => {
     const command = fs.existsSync(path.join(process.cwd(), 'yarn.lock'))
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
-    await runCommand(command);
+    runCommand(command);
 };
