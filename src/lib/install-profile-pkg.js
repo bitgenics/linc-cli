@@ -3,26 +3,31 @@ const fs = require('fs-extra');
 const path = require('path');
 
 /**
+ * Run command
+ * @param command
+ */
+const runCommand = (command) => new Promise((resolve, reject) => exec(command, { cwd: process.cwd() }, (err) => {
+    if (err) return reject(err);
+
+    return resolve();
+}));
+
+/**
  * Install selected profile package
  * @param pkgName
  * @param opts [optional]
  */
-module.exports = (pkgName, opts) => new Promise((resolve, reject) => {
+module.exports = async (pkgName, opts) => {
     const { force } = opts || { force: false };
     if (!force) {
         const pkg = path.join(process.cwd(), 'node_modules', pkgName);
-        if (fs.existsSync(pkg)) {
-            // Already installed
-            return resolve();
-        }
+
+        // Already installed?
+        if (fs.existsSync(pkg)) return;
     }
 
     const command = fs.existsSync(path.join(process.cwd(), 'yarn.lock'))
         ? `yarn add ${pkgName} -D` : `npm i ${pkgName} -D`;
 
-    return exec(command, { cwd: process.cwd() }, (err) => {
-        if (err) return reject(err);
-
-        return resolve();
-    });
-});
+    await runCommand(command);
+};
