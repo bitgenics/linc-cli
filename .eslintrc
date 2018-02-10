@@ -1,11 +1,23 @@
 {
-  "extends": "airbnb-base",
+  "extends": [
+  	"prettier",
+  ],
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaVersion": 8
+  },
+  "plugins": [
+    "prettier"
+  ],
+  "env": {
+    "es6": true,
+    "node": true
+  },
   "rules": {
-    "arrow-parens": "off",
-    "import/no-extraneous-dependencies": "off",
-    "no-console": "off",
-    "no-plusplus": "off",
-    "indent": [2, 4],
-    "max-len": [2, {"code": 120}]
+    "prettier/prettier": ["error", {
+      "semi": false,
+      "singleQuote": true, 
+      "jsxBracketSameLine": true
+    }]
   }
 }

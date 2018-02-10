@@ -1,52 +1,27 @@
 {
   "name": "linc-cli",
-  "version": "2.2.0",
+  "version": "3.0.0-alpha.1",
   "description": "LINC command line tools",
-  "main": "bin/index.js",
+  "main": "src/index.js",
   "bin": {
     "linc": "src/cli.js"
   },
   "dependencies": {
-    "amazon-cognito-identity-js": "^1.31.0",
-    "aws-sdk": "^2.183.0",
-    "child_process": "^1.0.2",
-    "compression": "^1.7.0",
-    "copy-dir": "^0.3.0",
-    "deterministic-zip": "^1.0.5",
-    "event-collector": "^2.0.3",
-    "express": "^4.15.4",
-    "figlet": "^1.2.0",
-    "fs-extra": "^4.0.1",
-    "homedir": "^0.6.0",
-    "jsonwebtoken": "^8.1.0",
-    "libhoney": "^1.0.0-beta.10",
-    "linc-build-ssr": "^1.4.0",
-    "linc-vm": "^1.1.0",
-    "log-update": "^2.1.0",
-    "opn": "^5.1.0",
-    "ora": "^1.3.0",
-    "path": "^0.12.7",
-    "prompt": "^1.0.0",
-    "react-dev-utils": "^4.2.1",
-    "read-pkg": "^2.0.0",
-    "request": "^2.81.0",
-    "s3": "^4.4.0",
-    "underscore": "^1.8.3",
-    "write-pkg": "^2.1.0",
-    "yargs": "^7.0.2"
+    "fs-extra": "^5.0.0",
+    "inquirer": "^5.1.0"
   },
   "devDependencies": {
-    "eslint": "^4.4.1",
-    "eslint-config-airbnb": "^15.1.0",
-    "eslint-plugin-import": "^2.7.0",
-    "eslint-plugin-jsx-a11y": "^6.0.3"
+    "eslint": "^4.7.2",
+    "eslint-config-prettier": "^2.6.0",
+    "eslint-plugin-prettier": "^2.3.1",
+    "prettier": "^1.7.2"
   },
   "engines": {
     "node": ">=8.0.0"
   },
   "scripts": {
-    "lint": "eslint src test",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint src test --fix",
+    "prepare": "npm run lint"
   },
   "author": "Sander Huijsen <sander@bitgenics.io> (https://bitgenics.io)",
   "license": "ISC"

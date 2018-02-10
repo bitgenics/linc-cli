@@ -1,23 +1,25 @@
 #!/usr/bin/env node
-const yargs = require('yargs');
 
-// Get LINC specific variables from environment
-const lincKeys = Object.keys(process.env).filter((key) => key.startsWith('LINC_'));
-const envConfig = {};
-lincKeys.forEach(key => {
-    envConfig[key.toLowerCase().substring(5)] = process.env[key];
-});
+const flows = require('./index')
 
-// Create config object to pass into yargs
-const configObject = Object.assign({}, envConfig);
+const run = async () => {
+  const cmd = process.argv[2] || 'build'
+  const options = process.argv.slice(3)
 
-// eslint-disable-next-line no-unused-vars,prefer-destructuring
-const argv = yargs
-    .commandDir('cmds')
-    .config(configObject)
-    .pkgConf('linc', process.cwd())
-    .demand(1)
-    .help('help')
-    .alias('h', 'help')
-    .version()
-    .argv;
+  try {
+    switch (cmd.toLowerCase()) {
+      case 'init':
+        await flows.init.run()
+        break
+      default:
+        console.log('That is not a valid command')
+    }
+  } catch (e) {
+    console.log('An error occured: \n')
+    console.log(e.message)
+    console.log('\n')
+    process.exit(-1)
+  }
+}
+
+run()
