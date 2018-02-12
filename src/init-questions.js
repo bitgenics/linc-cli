@@ -18,12 +18,15 @@ const nextjsProfile = {
   codesplit: true
 }
 
+const PROFILE_IDS = ['linc-profile-generic-react', 'linc-profile-nextjs']
 const PUBLIC_PROFILES = [genericReactProfile, nextjsProfile]
 
-const askProfile = async () => {
-  const profileQuestion = {
+const askProfile = async (currentProfile) => {
+  const def = PROFILE_IDS.contains(currentProfile) ? currentProfile : '_custom'
+  const profileQ = {
     type: 'list',
     name: 'buildProfile',
+    default: currentProfile,
     message: `
 Linc uses different profiles to build & host different technology stacks. Pick the one closest to your technology stack.
 For more information please see https://github.com/bitgenics/linc-cli`,
@@ -32,14 +35,25 @@ For more information please see https://github.com/bitgenics/linc-cli`,
       value: '_custom'
     })
   }
-  const customQuestion = {
+  const customQ = {
     type: 'input',
     name: 'buildProfile',
+    default: currentProfile,
     message: 'What is the full npm package name for the custom profile?',
     when: answers => answers.buildProfile === '_custom'
   }
-  const answers = await inquirer.prompt([profileQuestion, customQuestion])
+  const answers = await inquirer.prompt([profileQ, customQ])
   return answers.buildProfile
 }
 
-module.exports = {askProfile}
+const confirmReset = async () => {
+  const resetQ = {
+    type: 'confirm',
+    name: 'reset',
+    message: 'You already have configured linc. Do you want to reconfigure?',
+    default: false
+  }
+  const answers = await inquirer.prompt([resetQ])
+  return answers.reset
+}
+module.exports = { askProfile, confirmReset }
