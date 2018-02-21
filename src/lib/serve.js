@@ -2,6 +2,7 @@
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const https = require('https');
 const Libhoney = require('libhoney').default;
 const openBrowser = require('react-dev-utils/openBrowser');
 const vm = require('linc-vm');
@@ -45,9 +46,25 @@ function createRenderer(rendererPath, settings) {
                 msg: 'This will contain actual user location information in production',
             };
         }
-        renderer.renderGet(req, res, settings);
+        const env = req.protocol === 'https' ? 'local_https' : 'local'
+        renderer.renderGet(req, res, settings, env);
     };
 }
+
+function readServerOptions() {
+    const keyFile = path.resolve(process.cwd(), '.linc', 'localhost.key')
+    const certFile = path.resolve(process.cwd(), '.linc', 'localhost.cert')
+    if(fs.existsSync(keyFile) && fs.existsSync(certFile)) {
+        return {
+            key: fs.readFileSync( keyFile ),
+            cert: fs.readFileSync( certFile ),
+            requestCert: false,
+            rejectUnauthorized: false
+        };
+    } else {
+        return null
+    }
+} 
 
 /**
  * Serve site locally
@@ -89,12 +106,26 @@ module.exports = () => {
     }));
     app.use('/', createRenderer(renderer, options));
 
+    
+
     app.listen(3000, (err) => {
         if (err) {
             console.log(err);
         } else {
-            console.log(`Listening on ${SERVE_URL}`);
-            openBrowser(SERVE_URL);
+            console.log(`Listening on http://localhost:3000`);
+            openBrowser('http://localhost:3000');
         }
-    });
+    })
+
+    const serverOptions = readServerOptions()
+    if(serverOptions) {
+        const server = https.createServer( serverOptions, app );
+        server.listen(3001, (err) => {
+            if (err) {
+                console.log(err);
+            } else {
+                console.log(`Listening on https://localhost:3001`);
+            }
+        });
+    }
 };
