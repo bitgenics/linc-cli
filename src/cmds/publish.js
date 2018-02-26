@@ -345,6 +345,7 @@ in by entering your access key and secret key when prompted.
  */
 const existingSite = (siteName) => {
     const existingSites = [
+        'bitgenics',
         'coffee-bean-ninja',
         'linc-react-games',
         'localised',
