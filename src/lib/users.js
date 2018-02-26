@@ -23,7 +23,7 @@ prompt.delimiter = '';
  */
 const getTCAcceptance = () => new Promise((resolve, reject) => {
     console.log(`In order to use LINC, you'll need to accept the Terms and Conditions.
-You can find the Terms and Conditions here: https://bitgenics.io/link/legal
+You can find the Terms and Conditions here: https://bitgenics.io/legal
 `);
     const schema = {
         properties: {
