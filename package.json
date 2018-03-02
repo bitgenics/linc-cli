@@ -21,7 +21,7 @@
     "jsonwebtoken": "^8.1.0",
     "libhoney": "^1.0.0-beta.10",
     "linc-build-ssr": "^1.4.0",
-    "linc-vm": "^1.1.0",
+    "linc-vm": "^1.3.4",
     "log-update": "^2.1.0",
     "opn": "^5.1.0",
     "ora": "^1.3.0",
