@@ -116,7 +116,7 @@ const nameHandler = async (pkg) => {
 
     const name = await getName(domainify(pkg.name));
     pkg.linc.siteName = name;
-    const exists = checkSiteName(name);
+    const exists = await checkSiteName(name);
     if (exists) {
         console.log('This name is already in use.');
         process.exit(255);
